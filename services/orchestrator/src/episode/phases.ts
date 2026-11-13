@@ -12,7 +12,7 @@ import {
   fixtureAccounts,
 } from "@backstop/fixture-checkout";
 import { formatNear, fromYocto, near, type Digest, type SignedBid } from "@backstop/shared";
-import { verifyArtifact } from "@backstop/verifier";
+import { attestRuling, judgeChallenge, verifyArtifact } from "@backstop/verifier";
 import { dueCommands } from "../core/keeper.js";
 import { lastCheckpointHash } from "../core/record.js";
 import { advance, attempt, record, run, type Driver } from "./driver.js";
@@ -140,18 +140,15 @@ export function challenge(driver: Driver, seed: number): void {
   const submitted = current.candidate;
   if (submitted === null) return;
   const artifact = artifactByHash(submitted.artifactHash);
-  const search = searchCounterexample(
-    {
-      taskId: driver.taskId,
-      attempt: submitted.attempt,
-      artifactHash: artifact.artifactHash,
-      artifactSource: artifact.source,
-      suite: checkoutSuite,
-    },
-    roster.kappa.agentId,
-    seed,
-  );
-  if (search.ruling === null) {
+  const target = {
+    taskId: driver.taskId,
+    attempt: submitted.attempt,
+    artifactHash: artifact.artifactHash,
+    artifactSource: artifact.source,
+    suite: checkoutSuite,
+  };
+  const search = searchCounterexample(target, roster.kappa.agentId, seed);
+  if (search.input === null) {
     driver.steps.push({
       atMs: driver.nowMs,
       actor: "kappa",
@@ -163,11 +160,16 @@ export function challenge(driver: Driver, seed: number): void {
     return;
   }
   advance(driver, 3_000);
+  const rerun = judgeChallenge({
+    ...target,
+    input: search.input,
+    challenger: roster.kappa.agentId,
+  });
   run(
     driver,
     "kappa",
-    { kind: "challenge", ruling: search.ruling },
-    `kappa found a counterexample after ${String(search.probes)} probes`,
+    { kind: "challenge", signed: attestRuling(rerun, roster.verifier.key) },
+    `kappa found a counterexample after ${String(search.probes)} probes; the verifier reproduced it`,
   );
 }
 

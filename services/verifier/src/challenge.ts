@@ -1,8 +1,11 @@
 import {
   canonicalJson,
   digestOf,
+  signValue,
   type ChallengeRuling,
   type Digest,
+  type SignedChallengeRuling,
+  type SigningKey,
   type TestSuite,
 } from "@backstop/shared";
 import { runInSandbox } from "./sandbox.js";
@@ -35,4 +38,8 @@ export function judgeChallenge(request: ChallengeRequest): ChallengeRuling {
     actual,
     challenger: request.challenger,
   };
+}
+
+export function attestRuling(ruling: ChallengeRuling, signer: SigningKey): SignedChallengeRuling {
+  return { ruling, signature: signValue(ruling, signer) };
 }

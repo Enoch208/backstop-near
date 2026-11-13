@@ -53,3 +53,9 @@ export const challengeRulingSchema = z.strictObject({
   challenger: z.string().min(1).max(48),
 });
 export type ChallengeRuling = z.infer<typeof challengeRulingSchema>;
+
+export const signedChallengeRulingSchema = z.strictObject({
+  ruling: challengeRulingSchema,
+  signature: signatureSchema,
+});
+export type SignedChallengeRuling = z.infer<typeof signedChallengeRulingSchema>;

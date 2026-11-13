@@ -1,10 +1,12 @@
 import {
   fail,
   isAuthenticEvidence,
+  isAuthenticRuling,
   succeed,
   type ChallengeRuling,
   type EvidenceBundle,
   type FailureReason,
+  type SignedChallengeRuling,
 } from "@backstop/shared";
 import type { Decision, DecisionContext } from "./commands.js";
 import type { TaskEventBody } from "./events.js";
@@ -72,9 +74,13 @@ export function decideVerification(
 
 export function decideChallenge(
   record: TaskRecord,
-  ruling: ChallengeRuling,
+  signed: SignedChallengeRuling,
   context: DecisionContext,
 ): Decision {
+  if (!isAuthenticRuling(signed, context.registry.verifierPublicKey)) {
+    return fail("BAD_SIGNATURE", "Only the verifier's own re-run can rule on a challenge");
+  }
+  const ruling = signed.ruling;
   const deadline = record.candidate?.challengeDeadlineMs ?? null;
   if (record.state !== "VERIFYING" || deadline === null) {
     return fail("INVALID_TRANSITION", "No provisional pass is open to challenge");

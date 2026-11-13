@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { roster, workFor } from "@backstop/agents";
 import { checkoutSuite, fixtureAccounts } from "@backstop/fixture-checkout";
 import { digestOf, signingKeyFromSeed, type EvidenceBundle } from "@backstop/shared";
-import { judgeChallenge, verifyArtifact } from "@backstop/verifier";
+import { attestRuling, judgeChallenge, verifyArtifact } from "@backstop/verifier";
 import { advance, run, type Driver } from "../src/index.js";
 import { assignedTask, record, refusal } from "./support.js";
 
@@ -96,7 +96,7 @@ describe("verdicts and challenges", () => {
     expect(record(driver).ledger.transfers).toEqual([]);
   });
 
-  it("dismisses a failed challenge and refuses one after the window", () => {
+  it("TC-006 accepts only verifier-signed rulings, dismisses a failed challenge, refuses a late one", () => {
     const driver = submitted();
     run(
       driver,
@@ -121,14 +121,22 @@ describe("verdicts and challenges", () => {
       challenger: "kappa",
     });
     expect(ruling.upheld).toBe(false);
-    run(driver, "kappa", { kind: "challenge", ruling }, "challenge");
+    const forged = attestRuling({ ...ruling, upheld: true }, roster.kappa.key);
+    expect(refusal(driver, "kappa", { kind: "challenge", signed: forged })).toBe("BAD_SIGNATURE");
+    run(
+      driver,
+      "kappa",
+      { kind: "challenge", signed: attestRuling(ruling, roster.verifier.key) },
+      "challenge",
+    );
     expect(record(driver).state).toBe("VERIFYING");
     advance(driver, 15_001);
-    expect(
-      refusal(driver, "kappa", {
-        kind: "challenge",
-        ruling: { ...ruling, upheld: true, reproducerHash: digestOf("late") },
-      }),
-    ).toBe("CHALLENGE_WINDOW_CLOSED");
+    const late = attestRuling(
+      { ...ruling, upheld: true, reproducerHash: digestOf("late") },
+      roster.verifier.key,
+    );
+    expect(refusal(driver, "kappa", { kind: "challenge", signed: late })).toBe(
+      "CHALLENGE_WINDOW_CLOSED",
+    );
   });
 });

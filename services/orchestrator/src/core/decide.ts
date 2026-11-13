@@ -79,7 +79,7 @@ export function decide(
     case "recordVerification":
       return decideVerification(record, command.evidence, context);
     case "challenge":
-      return decideChallenge(record, command.ruling, context);
+      return decideChallenge(record, command.signed, context);
     case "closeChallengeWindow":
       return decideCloseChallengeWindow(record, context);
     case "expireDeadline":

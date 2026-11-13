@@ -1,10 +1,10 @@
 import type {
-  ChallengeRuling,
   Checkpoint,
   Digest,
   EvidenceBundle,
   Outcome,
   SignedBid,
+  SignedChallengeRuling,
   TaskManifest,
 } from "@backstop/shared";
 import type { TaskEventBody } from "./events.js";
@@ -28,7 +28,7 @@ export type Command =
   | { kind: "bid"; bid: SignedBid }
   | { kind: "closeAuction" }
   | { kind: "recordVerification"; evidence: EvidenceBundle }
-  | { kind: "challenge"; ruling: ChallengeRuling }
+  | { kind: "challenge"; signed: SignedChallengeRuling }
   | { kind: "closeChallengeWindow" }
   | { kind: "expireDeadline" }
   | { kind: "settle" }
