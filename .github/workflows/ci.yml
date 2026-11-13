@@ -61,3 +61,30 @@ jobs:
         run: cargo test --locked
       - name: Build the contract
         run: cargo build --target wasm32-unknown-unknown --release --locked
+
+  chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install Rust 1.94.1
+        run: |
+          rustup toolchain install 1.94.1 --profile minimal --target wasm32-unknown-unknown
+          rustup default 1.94.1
+      - name: Build the contract
+        run: cargo build --manifest-path contracts/outcome-vault/Cargo.toml --target wasm32-unknown-unknown --release --locked
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        with:
+          cache: true
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run the vault on a local NEAR node
+        run: pnpm test:chain
+      - name: Replay the recovery episode on a local NEAR node
+        run: pnpm chain sandbox
