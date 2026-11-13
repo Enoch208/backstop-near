@@ -10,7 +10,7 @@ import {
 import { judgeChallenge } from "@backstop/verifier";
 
 export type Order = {
-  readonly lines: readonly { sku: string; unitPriceCents: number; quantity: number }[];
+  readonly lines: { sku: string; unitPriceCents: number; quantity: number }[];
   readonly discountPercent: number;
   readonly taxRateBps: number;
   readonly shippingCents: number;
