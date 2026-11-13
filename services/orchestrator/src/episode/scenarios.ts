@@ -20,6 +20,8 @@ export type Scenario = (typeof scenarios)[number];
 export type EpisodeOptions = {
   readonly failFirstTransfer: boolean;
   readonly challengeSeed: number;
+  readonly startMs?: number;
+  readonly taskId?: string;
 };
 
 export type Episode = {
@@ -33,9 +35,13 @@ export const episodeStartMs = Date.UTC(2026, 10, 14, 12, 0, 0);
 
 const registry = { agentKeys: publicKeys, verifierPublicKey: roster.verifier.key.publicKey };
 
-export function openCheckoutTask(taskId: string, maxAttempts: number): Driver {
-  const driver = newDriver(taskId, registry, episodeStartMs);
-  const manifest = checkoutManifest({ taskId, createdAtMs: episodeStartMs, maxAttempts });
+export function openCheckoutTask(
+  taskId: string,
+  maxAttempts: number,
+  startMs: number = episodeStartMs,
+): Driver {
+  const driver = newDriver(taskId, registry, startMs);
+  const manifest = checkoutManifest({ taskId, createdAtMs: startMs, maxAttempts });
   run(
     driver,
     fixtureAccounts.customer,
@@ -83,7 +89,7 @@ function settle(driver: Driver, options: EpisodeOptions): void {
 }
 
 function recovery(options: EpisodeOptions): Driver {
-  const driver = openCheckoutTask("checkout-recovery", 3);
+  const driver = openCheckoutTask(options.taskId ?? "checkout-recovery", 3, options.startMs);
   killPrimary(driver);
   auction(driver, []);
   recoverWith(driver, roster.beta, options.challengeSeed);
@@ -108,7 +114,7 @@ function recovery(options: EpisodeOptions): Driver {
 }
 
 function exhausted(options: EpisodeOptions): Driver {
-  const driver = openCheckoutTask("checkout-exhausted", 2);
+  const driver = openCheckoutTask(options.taskId ?? "checkout-exhausted", 2, options.startMs);
   killPrimary(driver);
   auction(driver, ["gamma", "delta", "epsilon"]);
   recoverWith(driver, roster.beta, options.challengeSeed);
@@ -118,7 +124,7 @@ function exhausted(options: EpisodeOptions): Driver {
 }
 
 function primarySuccess(options: EpisodeOptions): Driver {
-  const driver = openCheckoutTask("checkout-primary", 3);
+  const driver = openCheckoutTask(options.taskId ?? "checkout-primary", 3, options.startMs);
   const bid = primaryBid(roster.gamma, driver.taskId, "0.30", driver.nowMs);
   run(
     driver,
