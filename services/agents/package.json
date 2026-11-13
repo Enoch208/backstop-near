@@ -1,0 +1,16 @@
+{
+  "name": "@backstop/agents",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/fixture-checkout": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "@backstop/verifier": "workspace:*"
+  }
+}
