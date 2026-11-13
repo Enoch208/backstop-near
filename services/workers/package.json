@@ -1,0 +1,18 @@
+{
+  "name": "@backstop/workers",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/fixture-checkout": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "tsx": "4.23.15",
+    "zod": "4.6.7"
+  }
+}
