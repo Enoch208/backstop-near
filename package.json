@@ -15,12 +15,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "episode": "tsx scripts/episode.ts"
+    "episode": "tsx scripts/episode.ts",
+    "demo": "tsx scripts/demo.ts",
+    "api": "tsx apps/api/src/main.ts"
   },
   "devDependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/api": "workspace:*",
+    "@backstop/fixture-checkout": "workspace:*",
     "@backstop/ledger": "workspace:*",
     "@backstop/orchestrator": "workspace:*",
     "@backstop/shared": "workspace:*",
+    "@backstop/workers": "workspace:*",
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.2",
     "eslint": "10.14.0",
@@ -31,6 +37,7 @@
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.1",
-    "vitest": "5.1.0"
+    "vitest": "5.1.0",
+    "zod": "4.6.7"
   }
 }
