@@ -1,0 +1,209 @@
+[
+  {
+    "id": "single-line-taxed",
+    "visibility": "public",
+    "input": {
+      "lines": [
+        {
+          "sku": "mug",
+          "unitPriceCents": 1999,
+          "quantity": 2
+        }
+      ],
+      "discountPercent": 0,
+      "taxRateBps": 825,
+      "shippingCents": 499,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 3998,
+      "discountCents": 0,
+      "taxCents": 330,
+      "shippingCents": 499,
+      "totalCents": 4827
+    }
+  },
+  {
+    "id": "discount-before-tax",
+    "visibility": "public",
+    "input": {
+      "lines": [
+        {
+          "sku": "tee",
+          "unitPriceCents": 2500,
+          "quantity": 2
+        },
+        {
+          "sku": "cap",
+          "unitPriceCents": 1250,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 10,
+      "taxRateBps": 725,
+      "shippingCents": 499,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 6250,
+      "discountCents": 625,
+      "taxCents": 408,
+      "shippingCents": 499,
+      "totalCents": 6532
+    }
+  },
+  {
+    "id": "half-cent-tax-rounds-up",
+    "visibility": "public",
+    "input": {
+      "lines": [
+        {
+          "sku": "pin",
+          "unitPriceCents": 200,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 0,
+      "taxRateBps": 725,
+      "shippingCents": 0,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 200,
+      "discountCents": 0,
+      "taxCents": 15,
+      "shippingCents": 0,
+      "totalCents": 215
+    }
+  },
+  {
+    "id": "free-shipping-above-threshold",
+    "visibility": "public",
+    "input": {
+      "lines": [
+        {
+          "sku": "jacket",
+          "unitPriceCents": 12000,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 0,
+      "taxRateBps": 0,
+      "shippingCents": 999,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 12000,
+      "discountCents": 0,
+      "taxCents": 0,
+      "shippingCents": 0,
+      "totalCents": 12000
+    }
+  },
+  {
+    "id": "stacked-discount-and-tax",
+    "visibility": "held_out",
+    "input": {
+      "lines": [
+        {
+          "sku": "book",
+          "unitPriceCents": 3333,
+          "quantity": 3
+        }
+      ],
+      "discountPercent": 15,
+      "taxRateBps": 1350,
+      "shippingCents": 999,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 9999,
+      "discountCents": 1500,
+      "taxCents": 1147,
+      "shippingCents": 999,
+      "totalCents": 10645
+    }
+  },
+  {
+    "id": "full-discount",
+    "visibility": "held_out",
+    "input": {
+      "lines": [
+        {
+          "sku": "gift",
+          "unitPriceCents": 4200,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 100,
+      "taxRateBps": 825,
+      "shippingCents": 499,
+      "freeShippingThresholdCents": 5000
+    },
+    "expected": {
+      "subtotalCents": 4200,
+      "discountCents": 4200,
+      "taxCents": 0,
+      "shippingCents": 499,
+      "totalCents": 499
+    }
+  },
+  {
+    "id": "discount-drops-below-threshold",
+    "visibility": "held_out",
+    "input": {
+      "lines": [
+        {
+          "sku": "lamp",
+          "unitPriceCents": 10500,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 10,
+      "taxRateBps": 500,
+      "shippingCents": 999,
+      "freeShippingThresholdCents": 10000
+    },
+    "expected": {
+      "subtotalCents": 10500,
+      "discountCents": 1050,
+      "taxCents": 473,
+      "shippingCents": 999,
+      "totalCents": 10922
+    }
+  },
+  {
+    "id": "many-lines-half-cent-discount",
+    "visibility": "held_out",
+    "input": {
+      "lines": [
+        {
+          "sku": "a",
+          "unitPriceCents": 105,
+          "quantity": 1
+        },
+        {
+          "sku": "b",
+          "unitPriceCents": 0,
+          "quantity": 3
+        },
+        {
+          "sku": "c",
+          "unitPriceCents": 40,
+          "quantity": 1
+        }
+      ],
+      "discountPercent": 50,
+      "taxRateBps": 1000,
+      "shippingCents": 499,
+      "freeShippingThresholdCents": 5000
+    },
+    "expected": {
+      "subtotalCents": 145,
+      "discountCents": 73,
+      "taxCents": 7,
+      "shippingCents": 499,
+      "totalCents": 578
+    }
+  }
+]
