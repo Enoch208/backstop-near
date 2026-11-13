@@ -4,6 +4,7 @@ import {
   taskManifestSchema,
   toYocto,
   type TaskManifest,
+  type TaskPolicy,
 } from "@backstop/shared";
 import { checkoutRunnerId, checkoutSuite, checkoutSuiteHash } from "./suite.js";
 
@@ -17,6 +18,21 @@ export type CheckoutTaskOptions = {
   readonly taskId: string;
   readonly createdAtMs: number;
   readonly maxAttempts: number;
+  readonly timing?: Omit<TaskPolicy, "maxAttempts">;
+};
+
+const episodeTiming: Omit<TaskPolicy, "maxAttempts"> = {
+  leaseMs: 30_000,
+  heartbeatGraceMs: 5_000,
+  bidWindowMs: 10_000,
+  challengeWindowMs: 15_000,
+};
+
+export const liveTiming: Omit<TaskPolicy, "maxAttempts"> = {
+  leaseMs: 4_000,
+  heartbeatGraceMs: 1_000,
+  bidWindowMs: 3_000,
+  challengeWindowMs: 3_000,
 };
 
 export function checkoutManifest(options: CheckoutTaskOptions): TaskManifest {
@@ -38,12 +54,6 @@ export function checkoutManifest(options: CheckoutTaskOptions): TaskManifest {
       maxLiabilityYocto: toYocto(near("0.25")),
       compensationCapYocto: toYocto(near("0.10")),
     },
-    policy: {
-      maxAttempts: options.maxAttempts,
-      leaseMs: 30_000,
-      heartbeatGraceMs: 5_000,
-      bidWindowMs: 10_000,
-      challengeWindowMs: 15_000,
-    },
+    policy: { maxAttempts: options.maxAttempts, ...(options.timing ?? episodeTiming) },
   });
 }
