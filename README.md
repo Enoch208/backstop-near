@@ -68,6 +68,19 @@ pnpm demo
 
 The same story with real moving parts: the API starts in demo mode and spawns five agent processes (alpha, beta, gamma, epsilon, kappa) that talk to it only over signed HTTP requests and a server-sent event stream. When alpha has checkpointed, the demo sends the judge's "kill alpha" fault, and the supervisor delivers a real `SIGKILL` to alpha's operating-system process. Nobody tells the system to recover: alpha's heartbeats stop, the keeper expires the lease on a real clock, the other processes see `recovery_opened` and bid on their own, and the run proceeds as above. It takes about 19 seconds and ends with the same 0.69 NEAR reconciliation, every worker's real exit status (alpha's is `signal SIGKILL`) and a refused second settlement (HTTP 409).
 
+### On a real NEAR node
+
+```bash
+(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release)
+pnpm chain sandbox
+```
+
+This starts a local NEAR node (neard 2.14 sandbox), creates the customer, guarantor, coordinator, verifier and agent accounts, deploys the `OutcomeVault` wasm, and commits the verified recovery episode as real transactions: the escrow and premium deposits, the bond, every attempt's assignment, the lease-expiry recovery, the challenge-upheld rejection, the accepted verdict and the settlement. The payouts are real NEAR transfers confirmed by the contract's own callbacks, and a second settlement is refused on chain with `ERR_ALREADY_SETTLED`. It takes about 10 seconds after the first run downloads the node.
+
+`pnpm chain testnet` does the same on NEAR testnet. Set `BACKSTOP_TESTNET_ACCOUNT` to a funded testnet account you control, with its key in `~/.near-credentials/testnet/<account>.json` or in `BACKSTOP_TESTNET_PRIVATE_KEY`. It creates the vault and party sub-accounts it needs (about 7 NEAR in total, mostly the contract's storage), keeps their keys alongside, deploys only if needed, and records every transaction with its explorer link in `deployments/testnet.json`.
+
+Fixture agents are named `<agent>.fixture.testnet`, which exist on no chain, so each winning bid is re-issued with the agent's real payout account and signed by the same agent key; the run reports both bid hashes.
+
 ### Two more fixture scenarios
 
 ```bash
@@ -154,15 +167,15 @@ Bids are signed by their lead agent over the exact bid body, carry each member's
 
 ## What is real and what is a fixture
 
-| Piece                                                                                 | In the fixture episode                                                        |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                          |
-| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                          |
-| Agent "work"                                                                          | scripted: each agent submits a pre-written candidate patch                    |
-| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                          |
-| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                              |
-| Vault and transfers                                                                   | simulated in TypeScript with the same rules as the contract; no NEAR moves    |
-| NEAR contract                                                                         | real Rust `near-sdk` code with its own unit tests; testnet deployment is next |
+| Piece                                                                                 | In the fixture episode                                                     |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                       |
+| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                       |
+| Agent "work"                                                                          | scripted: each agent submits a pre-written candidate patch                 |
+| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                       |
+| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                           |
+| Vault and transfers                                                                   | simulated in TypeScript with the same rules as the contract; no NEAR moves |
+| NEAR contract                                                                         | real; `pnpm chain` runs it on a local NEAR node or on testnet              |
 
 ## Testing and verification
 
@@ -181,6 +194,7 @@ The suites cover, among others:
 - restart and duplicate-delivery replay rebuilding the identical task;
 - the API refusing tampered, unknown-actor and stale requests, replaying a retried request instead of applying it twice, fencing a stale heartbeat, and keeping faults off outside demo mode;
 - a live run in which five real worker processes recover from a `SIGKILL` of the primary and settle exactly once;
+- on a local NEAR node (`pnpm test:chain`): the recovery episode settling through real promises and callbacks with exact balance changes, a second settlement refused, an outside call to the private transfer callback refused, and a verdict from anyone but the verifier refused;
 - in the contract, the same scenarios as unit tests plus a seeded randomized run of funding, assignments, verdicts, settlements, failed and replayed callbacks and retries, checking conservation after every step;
 - property tests (fast-check, fixed seeds) that drive random funding, settlement and callback storms through the ledger, and random claim, heartbeat, submit and expiry storms through the orchestrator, checking conservation, monotonic fencing tokens and replay at every step.
 
@@ -196,8 +210,10 @@ services/workers/         each agent as a process: API client, event follower, d
 apps/api/                 signed HTTP API, live event stream, keeper, verifier service, supervisor
 fixtures/checkout/        the broken checkout task, candidate patches, pinned suite and oracle
 contracts/outcome-vault/  the NEAR OutcomeVault contract (Rust, near-sdk)
+packages/near/            vault client, wire formats and events, deploy, local node, chain replay
 scripts/episode.ts        replays an episode from the command line
 scripts/demo.ts           the live swarm with a real kill
+scripts/chain.ts          the recovery episode as real transactions on a local node or testnet
 ```
 
 The core packages are pure TypeScript: no IO, no clock, no randomness except an injected seed. Lint rules enforce it.
@@ -208,7 +224,7 @@ TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curv
 
 ## Status and limitations
 
-This is the protocol foundation with its API and live agent processes. Not built yet: the web interface, the NEAR testnet deployment and its adapter, live AI agents through NEAR AI Cloud, and the reliability benchmark. The API keeps its state in memory; a restart replays nothing yet.
+This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface, the API driving the contract directly (today the chain run replays a finished episode), live AI agents through NEAR AI Cloud, and the reliability benchmark. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
 
@@ -216,7 +232,8 @@ Known trust boundaries, stated plainly:
 - `node:vm` blocks the obvious escape hatches but is not a security boundary against hostile code; production verification needs a real container sandbox.
 - The auction is deterministic and auditable but centrally run.
 - The guarantee is bounded compensation, not insurance and not a promise of success.
-- The contract's callback-only and no-deposit guards exist only in the compiled wasm, so they need a sandbox integration test, which is not written yet. A transfer that fails all of its retries stays failed, with no recovery path yet, and the vault account pays for its own storage.
+- A transfer that fails all of its retries stays failed, with no recovery path yet, and the vault account pays for its own storage.
+- A task that ends off-chain with no eligible bid can only be failure-settled on chain once its deadline passes.
 
 ## License
 
