@@ -1,0 +1,18 @@
+{
+  "name": "@backstop/orchestrator",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/fixture-checkout": "workspace:*",
+    "@backstop/ledger": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "@backstop/verifier": "workspace:*"
+  }
+}

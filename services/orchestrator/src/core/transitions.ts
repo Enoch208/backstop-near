@@ -1,0 +1,36 @@
+import type { TaskState } from "@backstop/shared";
+
+const allowed: Readonly<Record<TaskState, readonly TaskState[]>> = {
+  DRAFT: ["FUNDED"],
+  FUNDED: ["BONDED", "ASSIGNED", "TERMINAL_FAILURE"],
+  BONDED: ["ASSIGNED", "TERMINAL_FAILURE"],
+  ASSIGNED: ["EXECUTING", "FAILED_ATTEMPT", "TERMINAL_FAILURE"],
+  EXECUTING: ["VERIFYING", "FAILED_ATTEMPT", "TERMINAL_FAILURE"],
+  FAILED_ATTEMPT: ["RECOVERY_OPEN", "TERMINAL_FAILURE"],
+  RECOVERY_OPEN: ["RECOVERY_ASSIGNED", "TERMINAL_FAILURE"],
+  RECOVERY_ASSIGNED: ["EXECUTING", "FAILED_ATTEMPT", "TERMINAL_FAILURE"],
+  VERIFYING: ["REJECTED", "ACCEPTED", "TERMINAL_FAILURE"],
+  REJECTED: ["RECOVERY_OPEN", "TERMINAL_FAILURE"],
+  ACCEPTED: ["SETTLEMENT_PENDING"],
+  SETTLEMENT_PENDING: ["SETTLED"],
+  SETTLED: [],
+  TERMINAL_FAILURE: ["FAILURE_SETTLEMENT_PENDING"],
+  FAILURE_SETTLEMENT_PENDING: ["FAILURE_SETTLED"],
+  FAILURE_SETTLED: [],
+};
+
+export function canTransition(from: TaskState, to: TaskState): boolean {
+  return from === to || allowed[from].includes(to);
+}
+
+export const preAcceptanceStates: readonly TaskState[] = [
+  "FUNDED",
+  "BONDED",
+  "ASSIGNED",
+  "EXECUTING",
+  "FAILED_ATTEMPT",
+  "RECOVERY_OPEN",
+  "RECOVERY_ASSIGNED",
+  "VERIFYING",
+  "REJECTED",
+];

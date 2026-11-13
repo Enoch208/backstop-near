@@ -1,0 +1,48 @@
+import type {
+  ChallengeRuling,
+  Checkpoint,
+  Digest,
+  EvidenceBundle,
+  Outcome,
+  SignedBid,
+  TaskManifest,
+} from "@backstop/shared";
+import type { TaskEventBody } from "./events.js";
+
+export type Command =
+  | { kind: "create"; manifest: TaskManifest }
+  | { kind: "deposit"; pool: "escrow" | "premium"; amount: bigint; reference: string }
+  | { kind: "postGuarantee"; guarantor: string; bond: bigint; liability: bigint; reference: string }
+  | { kind: "assignPrimary"; bid: SignedBid }
+  | { kind: "claim"; agentId: string }
+  | { kind: "heartbeat"; agentId: string; fencingToken: number }
+  | { kind: "checkpoint"; agentId: string; fencingToken: number; checkpoint: Checkpoint }
+  | {
+      kind: "submit";
+      agentId: string;
+      fencingToken: number;
+      artifactHash: Digest;
+      checkpointHash: Digest | null;
+    }
+  | { kind: "expireLease" }
+  | { kind: "bid"; bid: SignedBid }
+  | { kind: "closeAuction" }
+  | { kind: "recordVerification"; evidence: EvidenceBundle }
+  | { kind: "challenge"; ruling: ChallengeRuling }
+  | { kind: "closeChallengeWindow" }
+  | { kind: "expireDeadline" }
+  | { kind: "settle" }
+  | { kind: "settleFailure" }
+  | { kind: "resolveTransfer"; transferId: string; succeeded: boolean }
+  | { kind: "retryTransfer"; transferId: string };
+
+export type CommandKind = Command["kind"];
+
+export type Registry = {
+  readonly agentKeys: Readonly<Record<string, string>>;
+  readonly verifierPublicKey: string;
+};
+
+export type DecisionContext = { readonly nowMs: number; readonly registry: Registry };
+
+export type Decision = Outcome<TaskEventBody[]>;
