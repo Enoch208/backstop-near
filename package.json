@@ -1,0 +1,36 @@
+{
+  "name": "backstop",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "pnpm --recursive typecheck && tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "format:check": "prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "episode": "tsx scripts/episode.ts"
+  },
+  "devDependencies": {
+    "@backstop/ledger": "workspace:*",
+    "@backstop/orchestrator": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.14.0",
+    "eslint-config-prettier": "10.1.8",
+    "fast-check": "4.10.2",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.1.0"
+  }
+}

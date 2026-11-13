@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - services/*
+  - fixtures/*
+
+minimumReleaseAge: 10080
+
+onlyBuiltDependencies:
+  - esbuild
