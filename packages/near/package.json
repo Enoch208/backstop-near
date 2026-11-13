@@ -1,0 +1,19 @@
+{
+  "name": "@backstop/near",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/orchestrator": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "near-api-js": "7.4.0",
+    "near-sandbox": "0.3.5",
+    "zod": "4.6.7"
+  }
+}

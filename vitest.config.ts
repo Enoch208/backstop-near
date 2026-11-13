@@ -5,6 +5,7 @@ const workspace = (name: string, root: string) => ({
     name,
     root,
     include: ["tests/**/*.test.ts"],
+    exclude: ["tests/**/*.chain.test.ts"],
     environment: "node" as const,
   },
 });
@@ -20,6 +21,7 @@ export default defineConfig({
       workspace("orchestrator", "services/orchestrator"),
       workspace("workers", "services/workers"),
       workspace("api", "apps/api"),
+      workspace("near", "packages/near"),
     ],
   },
 });
