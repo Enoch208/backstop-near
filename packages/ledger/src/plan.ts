@@ -71,8 +71,8 @@ export function successLegs(ledger: Ledger, terms: SuccessTerms): Outcome<Leg[]>
   }
   return succeed([
     ...payeeLegs(terms.payees, fromEscrow),
-    ...premiumLeg(ledger, terms.primarySucceeded),
     ...leg(ledger.customer, ledger.available.escrow - fromEscrow, "escrow", "escrow_refund"),
+    ...premiumLeg(ledger, terms.primarySucceeded),
     ...releaseLeg(ledger, fromBond),
   ]);
 }

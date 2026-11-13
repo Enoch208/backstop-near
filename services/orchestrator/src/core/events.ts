@@ -70,6 +70,7 @@ export type TaskEventBody =
   | {
       type: "settlement_started";
       kind: "success" | "failure";
+      attempt: number;
       settlementKey: Digest;
       legs: readonly SettlementLeg[];
     }

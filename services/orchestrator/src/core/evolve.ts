@@ -151,7 +151,13 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
       return { ...record, state: "TERMINAL_FAILURE", lease: null, auction: null };
     case "settlement_started": {
       const legs = body.legs.map((leg) => ({ ...leg, amount: fromYocto(leg.amountYocto) }));
-      const ledger = settled(beginSettlement(record.ledger, body.settlementKey, body.kind, legs));
+      const ledger = settled(
+        beginSettlement(
+          record.ledger,
+          { taskId: record.taskId, kind: body.kind, attempt: body.attempt },
+          legs,
+        ),
+      );
       const state = body.kind === "success" ? "SETTLEMENT_PENDING" : "FAILURE_SETTLEMENT_PENDING";
       return { ...record, ledger, state };
     }

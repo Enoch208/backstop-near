@@ -13,7 +13,13 @@ import { demoLedger, unwrap } from "./support.js";
 
 function pendingSettlement() {
   const ledger = demoLedger();
-  return unwrap(beginSettlement(ledger, "fail-1", "failure", failureLegs(ledger, near("0.10"))));
+  return unwrap(
+    beginSettlement(
+      ledger,
+      { taskId: "checkout-001", kind: "failure", attempt: 2 },
+      failureLegs(ledger, near("0.10")),
+    ),
+  );
 }
 
 describe("transfer callbacks", () => {

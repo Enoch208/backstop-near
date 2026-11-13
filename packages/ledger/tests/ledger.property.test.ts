@@ -65,7 +65,11 @@ describe("ledger invariants", () => {
         if (!legs.ok) return;
         ledger = keep(
           ledger,
-          beginSettlement(ledger, "key", input.success ? "success" : "failure", legs.value),
+          beginSettlement(
+            ledger,
+            { taskId: "storm", kind: input.success ? "success" : "failure", attempt: 2 },
+            legs.value,
+          ),
         );
         const totalIn = statement(ledger).totalIn;
         for (const event of input.callbacks) {
@@ -74,7 +78,10 @@ describe("ledger invariants", () => {
               event.kind === "settleAgain" ? 0 : event.index % Math.max(1, ledger.transfers.length)
             ];
           if (event.kind === "settleAgain") {
-            expect(beginSettlement(ledger, "key-2", "success", legs.value).ok).toBe(false);
+            expect(
+              beginSettlement(ledger, { taskId: "storm", kind: "success", attempt: 3 }, legs.value)
+                .ok,
+            ).toBe(false);
           } else if (transfer !== undefined) {
             ledger =
               event.kind === "resolve"

@@ -1,4 +1,4 @@
-import { fail, succeed, sumYocto, type Outcome } from "@backstop/shared";
+import { digestText, fail, succeed, sumYocto, type Digest, type Outcome } from "@backstop/shared";
 import {
   maxTransferRetries,
   pools,
@@ -9,6 +9,22 @@ import {
 import type { Leg } from "./plan.js";
 
 export type SettlementKind = "success" | "failure";
+
+export type SettlementScope = {
+  readonly taskId: string;
+  readonly kind: SettlementKind;
+  readonly attempt: number;
+};
+
+export function settlementLabel(scope: SettlementScope): string {
+  return scope.kind === "success"
+    ? `${scope.taskId}:${String(scope.attempt)}`
+    : `${scope.taskId}:f`;
+}
+
+export function settlementKeyFor(scope: SettlementScope): Digest {
+  return digestText(settlementLabel(scope));
+}
 
 function debited(available: PoolAmounts, legs: readonly Leg[]): PoolAmounts {
   const spent = (pool: (typeof pools)[number]) =>
@@ -30,8 +46,7 @@ function bondUsedFor(legs: readonly Leg[]): bigint {
 
 export function beginSettlement(
   ledger: Ledger,
-  settlementKey: string,
-  kind: SettlementKind,
+  scope: SettlementScope,
   legs: readonly Leg[],
 ): Outcome<Ledger> {
   if (ledger.settlementKey !== null) {
@@ -47,7 +62,7 @@ export function beginSettlement(
   }
   const transfers: Transfer[] = legs.map((item, index) => ({
     ...item,
-    id: `${settlementKey}:${String(index)}`,
+    id: `${settlementLabel(scope)}:${String(index)}`,
     status: "PENDING",
     retries: 0,
   }));
@@ -55,8 +70,8 @@ export function beginSettlement(
     ...ledger,
     available,
     bondConsumed,
-    settlementKey,
-    settlementKind: kind,
+    settlementKey: settlementKeyFor(scope),
+    settlementKind: scope.kind,
     transfers,
   });
 }

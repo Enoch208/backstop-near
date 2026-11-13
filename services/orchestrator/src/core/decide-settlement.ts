@@ -2,6 +2,7 @@ import {
   failureLegs,
   isSettled,
   resolveTransfer,
+  settlementKeyFor,
   successLegs,
   type Leg,
   type Ledger,
@@ -50,13 +51,15 @@ export function decideSettle(record: TaskRecord): Decision {
     primarySucceeded: assignment.epoch === 0,
   });
   if (!legs.ok) return legs;
-  const settlementKey = digestOf({
-    taskId: record.taskId,
-    attempt: assignment.attempt,
-    kind: "success",
-  });
+  const scope = { taskId: record.taskId, kind: "success", attempt: assignment.attempt } as const;
   return succeed([
-    { type: "settlement_started", kind: "success", settlementKey, legs: asEventLegs(legs.value) },
+    {
+      type: "settlement_started",
+      kind: "success",
+      attempt: scope.attempt,
+      settlementKey: settlementKeyFor(scope),
+      legs: asEventLegs(legs.value),
+    },
   ]);
 }
 
@@ -75,13 +78,15 @@ export function decideSettleFailure(record: TaskRecord): Decision {
   }
   const cap = record.manifest.guarantee?.compensationCapYocto ?? "0";
   const legs = failureLegs(record.ledger, fromYocto(cap));
-  const settlementKey = digestOf({
-    taskId: record.taskId,
-    attempt: record.attempt,
-    kind: "failure",
-  });
+  const scope = { taskId: record.taskId, kind: "failure", attempt: record.attempt } as const;
   return succeed([
-    { type: "settlement_started", kind: "failure", settlementKey, legs: asEventLegs(legs) },
+    {
+      type: "settlement_started",
+      kind: "failure",
+      attempt: scope.attempt,
+      settlementKey: settlementKeyFor(scope),
+      legs: asEventLegs(legs),
+    },
   ]);
 }
 
