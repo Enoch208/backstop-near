@@ -18,6 +18,8 @@ export default defineConfig({
       workspace("verifier", "services/verifier"),
       workspace("agents", "services/agents"),
       workspace("orchestrator", "services/orchestrator"),
+      workspace("workers", "services/workers"),
+      workspace("api", "apps/api"),
     ],
   },
 });

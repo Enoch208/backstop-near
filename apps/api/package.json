@@ -1,0 +1,21 @@
+{
+  "name": "@backstop/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/fixture-checkout": "workspace:*",
+    "@backstop/ledger": "workspace:*",
+    "@backstop/orchestrator": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "@backstop/verifier": "workspace:*",
+    "@backstop/workers": "workspace:*",
+    "zod": "4.6.7"
+  }
+}
