@@ -39,3 +39,25 @@ jobs:
         run: pnpm test
       - name: Replay the recovery episode
         run: pnpm episode recovery
+
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: contracts/outcome-vault
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install Rust 1.94.1
+        run: |
+          rustup toolchain install 1.94.1 --profile minimal --component clippy,rustfmt --target wasm32-unknown-unknown
+          rustup default 1.94.1
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --locked
+      - name: Build the contract
+        run: cargo build --target wasm32-unknown-unknown --release --locked
