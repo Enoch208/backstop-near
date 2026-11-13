@@ -60,7 +60,15 @@ Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.
 Bond consumed: 0.12 NEAR (escrow was 0.4 NEAR)
 ```
 
-Two more scenarios:
+### The live swarm
+
+```bash
+pnpm demo
+```
+
+The same story with real moving parts: the API starts in demo mode and spawns five agent processes (alpha, beta, gamma, epsilon, kappa) that talk to it only over signed HTTP requests and a server-sent event stream. When alpha has checkpointed, the demo sends the judge's "kill alpha" fault, and the supervisor delivers a real `SIGKILL` to alpha's operating-system process. Nobody tells the system to recover: alpha's heartbeats stop, the keeper expires the lease on a real clock, the other processes see `recovery_opened` and bid on their own, and the run proceeds as above. It takes about 19 seconds and ends with the same 0.69 NEAR reconciliation, every worker's real exit status (alpha's is `signal SIGKILL`) and a refused second settlement (HTTP 409).
+
+### Two more fixture scenarios
 
 ```bash
 pnpm episode exhausted --fail-transfer   # every rescue fails: refund + capped compensation, one transfer fails and is retried
@@ -98,6 +106,27 @@ flowchart LR
 
 **On chain.** The `OutcomeVault` contract holds the money and enforces the economics on its own: separate escrow, premium and bond pools; a guarantee that can never cover more than its bond; assignments whose recipients and amounts are fixed when the winning bid is committed and can never exceed escrow plus the remaining liability; verdicts only from the verifier account, only for the current attempt; and settlements it computes itself, so no caller can name recipients. Every payout is a NEAR promise with a callback, recorded as pending before it is scheduled, confirmed only when the callback says so, and retried a bounded number of times if it fails. Every change emits a NEP-297 `backstop` event. The offchain ledger uses the contract's settlement keys and transfer ids, so the two reconcile one to one.
 
+**Agents are processes.** Each agent runs as its own Node process with its own ed25519 key. It follows the task's event stream, decides for itself when to offer, bid, claim, heartbeat, checkpoint, submit or challenge, and can only act through the API. Killing a process is just a dead agent: its lease lapses and the market reacts.
+
+**The API.** Every write is a signed envelope (actor, request id, timestamp, body) checked against the actor's public key, refused if older than five minutes, and idempotent: a retried request id returns the original response instead of acting twice. Errors share one envelope, `{ "error": { "code", "message", "retryable", "traceId", "taskVersion" } }`, with 400, 401, 403, 404, 409 and 422 statuses. Inside the API, the coordinator assigns the first valid primary bid, the verifier checks every submission and judges every challenge, and the keeper expires leases, closes auctions and challenge windows, and settles.
+
+| Route                                                     | Who                         | What                                                     |
+| --------------------------------------------------------- | --------------------------- | -------------------------------------------------------- |
+| `POST /api/tasks`                                         | customer                    | create a task from a manifest                            |
+| `GET /api/tasks/:id`                                      | anyone                      | the task record, its ledger statement and quote          |
+| `GET /api/tasks/:id/events`                               | anyone                      | the event log as JSON, or live as `text/event-stream`    |
+| `POST /api/tasks/:id/funding`                             | customer, guarantor         | escrow and premium deposits, or the bond (fixture vault) |
+| `POST /api/tasks/:id/bids`                                | lead agent                  | a signed primary offer or recovery bid                   |
+| `POST /api/tasks/:id/claim` · `heartbeat` · `checkpoints` | assigned agent              | lease, keep-alive and checkpoint, fenced by token        |
+| `POST /api/tasks/:id/artifacts`                           | assigned agent              | submit an artifact; verification follows automatically   |
+| `GET /api/tasks/:id/artifacts/:hash`                      | anyone                      | a submitted artifact, for challengers                    |
+| `POST /api/tasks/:id/challenge`                           | any other agent             | a counterexample input, judged by the verifier           |
+| `POST /api/tasks/:id/settle`                              | coordinator, customer       | settle (the keeper also does this)                       |
+| `GET /api/workers`                                        | anyone                      | supervised worker processes and their exit status        |
+| `POST /api/demo/faults`                                   | coordinator, demo mode only | `kill_worker`, `fail_next_transfer`, `repeat_settlement` |
+
+Run it on its own with `pnpm api` (port 8840), or with `BACKSTOP_DEMO=1 pnpm api` to have it spawn a worker swarm for every task it creates and accept faults.
+
 ## The economics
 
 Each task holds three separate pools: customer **escrow (E)**, customer **premium (P)**, and guarantor **bond (B)** with a chosen **liability cap (L ≤ B)**. The recovery budget is `E + L`.
@@ -130,7 +159,8 @@ Bids are signed by their lead agent over the exact bid body, carry each member's
 | State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                          |
 | Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                          |
 | Agent "work"                                                                          | scripted: each agent submits a pre-written candidate patch                    |
-| Clock                                                                                 | simulated, so the episode is fully deterministic                              |
+| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                          |
+| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                              |
 | Vault and transfers                                                                   | simulated in TypeScript with the same rules as the contract; no NEAR moves    |
 | NEAR contract                                                                         | real Rust `near-sdk` code with its own unit tests; testnet deployment is next |
 
@@ -149,6 +179,8 @@ The suites cover, among others:
 - concurrent bids yielding exactly one winner; forged, duplicate, late and excluded bids refused; forged or mismatched evidence refused;
 - two settlement attempts paying once; a failed transfer retried to confirmation exactly once;
 - restart and duplicate-delivery replay rebuilding the identical task;
+- the API refusing tampered, unknown-actor and stale requests, replaying a retried request instead of applying it twice, fencing a stale heartbeat, and keeping faults off outside demo mode;
+- a live run in which five real worker processes recover from a `SIGKILL` of the primary and settle exactly once;
 - in the contract, the same scenarios as unit tests plus a seeded randomized run of funding, assignments, verdicts, settlements, failed and replayed callbacks and retries, checking conservation after every step;
 - property tests (fast-check, fixed seeds) that drive random funding, settlement and callback storms through the ledger, and random claim, heartbeat, submit and expiry storms through the orchestrator, checking conservation, monotonic fencing tokens and replay at every step.
 
@@ -160,9 +192,12 @@ packages/ledger/          the vault's accounting model: pools, settlement plans,
 services/orchestrator/    src/core: pure event-sourced task machine · src/episode: fixture runner
 services/verifier/        sandbox, signed evidence, challenge rulings
 services/agents/          agent roster, signed bids and coalitions, scripted work, challenger
+services/workers/         each agent as a process: API client, event follower, decision loop
+apps/api/                 signed HTTP API, live event stream, keeper, verifier service, supervisor
 fixtures/checkout/        the broken checkout task, candidate patches, pinned suite and oracle
 contracts/outcome-vault/  the NEAR OutcomeVault contract (Rust, near-sdk)
 scripts/episode.ts        replays an episode from the command line
+scripts/demo.ts           the live swarm with a real kill
 ```
 
 The core packages are pure TypeScript: no IO, no clock, no randomness except an injected seed. Lint rules enforce it.
@@ -173,7 +208,7 @@ TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curv
 
 ## Status and limitations
 
-This is the protocol foundation. Not built yet: the web interface, the HTTP API and live event stream, the NEAR testnet deployment and its adapter, real worker processes for the kill-switch demo, live AI agents through NEAR AI Cloud, and the reliability benchmark.
+This is the protocol foundation with its API and live agent processes. Not built yet: the web interface, the NEAR testnet deployment and its adapter, live AI agents through NEAR AI Cloud, and the reliability benchmark. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
 
