@@ -17,13 +17,16 @@
     "gate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "episode": "tsx scripts/episode.ts",
     "demo": "tsx scripts/demo.ts",
-    "api": "tsx apps/api/src/main.ts"
+    "api": "tsx apps/api/src/main.ts",
+    "test:chain": "vitest run -c vitest.chain.config.ts",
+    "chain": "tsx scripts/chain.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
     "@backstop/api": "workspace:*",
     "@backstop/fixture-checkout": "workspace:*",
     "@backstop/ledger": "workspace:*",
+    "@backstop/near": "workspace:*",
     "@backstop/orchestrator": "workspace:*",
     "@backstop/shared": "workspace:*",
     "@backstop/workers": "workspace:*",
@@ -33,6 +36,7 @@
     "eslint-config-prettier": "10.1.8",
     "fast-check": "4.10.2",
     "globals": "17.14.0",
+    "near-api-js": "7.4.0",
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
