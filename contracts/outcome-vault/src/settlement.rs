@@ -57,7 +57,9 @@ impl OutcomeVault {
 
     pub fn finalize_failure(&mut self, task_id: String) {
         let task = self.load_task(&task_id);
-        self.require_settler(&task);
+        if !task.deadline_passed() {
+            self.require_settler(&task);
+        }
         require!(task.settlement_key.is_none(), ERR_ALREADY_SETTLED);
         require!(failure_eligible(&task), ERR_INVALID_STATE);
         let pending = self

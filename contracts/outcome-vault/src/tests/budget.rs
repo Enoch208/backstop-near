@@ -92,3 +92,63 @@ fn payee_list_must_be_exact() {
     }
     assert_eq!(h.task("task-1"), before);
 }
+
+#[test]
+fn a_guarantee_deposit_cannot_be_reused_by_another_task() {
+    let mut h = Harness::new();
+    h.fund_demo("funded", milli(250));
+    h.create_task("unbonded", milli(400));
+    h.act(&coordinator(), 0);
+    expect_error(ERR_BUDGET_EXCEEDED, || {
+        h.vault.register_assignment(
+            "unbonded".to_string(),
+            1,
+            agent("a"),
+            hash(1),
+            U128(milli(401)),
+            payees(&[(agent("a"), milli(401))]),
+        )
+    });
+    assert_eq!(h.task("funded").bond_available, milli(250));
+    assert_eq!(h.task("unbonded").bond_available, 0);
+    h.assert_invariants("funded");
+    h.assert_invariants("unbonded");
+}
+
+#[test]
+fn funding_and_control_roles_cannot_collect_worker_pay() {
+    let mut h = Harness::new();
+    h.fund_demo("task-1", milli(250));
+    let before = h.ledger("task-1");
+    for conflicted in [
+        customer(),
+        guarantor(),
+        verifier(),
+        coordinator(),
+        vault_account(),
+    ] {
+        h.act(&coordinator(), 0);
+        expect_error(crate::ERR_CONFLICTED_PAYEE, || {
+            h.vault.register_assignment(
+                "task-1".to_string(),
+                1,
+                agent("a"),
+                hash(1),
+                U128(milli(100)),
+                payees(&[(agent("a"), milli(60)), (conflicted, milli(40))]),
+            )
+        });
+    }
+    h.act(&coordinator(), 0);
+    expect_error(crate::ERR_LEAD_NOT_PAYEE, || {
+        h.vault.register_assignment(
+            "task-1".to_string(),
+            1,
+            agent("a"),
+            hash(1),
+            U128(milli(100)),
+            payees(&[(agent("b"), milli(100))]),
+        )
+    });
+    assert_eq!(h.ledger("task-1"), before);
+}

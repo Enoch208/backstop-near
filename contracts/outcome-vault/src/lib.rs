@@ -83,7 +83,13 @@ impl OutcomeVault {
     #[private]
     #[init(ignore_state)]
     pub fn migrate() -> Self {
-        let old: VaultV1 = env::state_read().unwrap_or_else(|| env::panic_str(ERR_NOT_MIGRATABLE));
+        let bytes =
+            env::storage_read(b"STATE").unwrap_or_else(|| env::panic_str(ERR_NOT_MIGRATABLE));
+        if let Ok(current) = near_sdk::borsh::from_slice::<Self>(&bytes) {
+            return current;
+        }
+        let old = near_sdk::borsh::from_slice::<VaultV1>(&bytes)
+            .unwrap_or_else(|_| env::panic_str(ERR_NOT_MIGRATABLE));
         Self {
             owner: old.owner,
             coordinator: old.coordinator,

@@ -2,8 +2,8 @@ use near_sdk::json_types::U128;
 use near_sdk::{env, near, require, AccountId};
 
 use crate::errors::{
-    ERR_ATTEMPTS_EXHAUSTED, ERR_BUDGET_EXCEEDED, ERR_DEADLINE_PASSED, ERR_INVALID_STATE,
-    ERR_STALE_ATTEMPT, ERR_VERDICT_EXISTS,
+    ERR_ATTEMPTS_EXHAUSTED, ERR_BUDGET_EXCEEDED, ERR_CONFLICTED_PAYEE, ERR_DEADLINE_PASSED,
+    ERR_INVALID_STATE, ERR_LEAD_NOT_PAYEE, ERR_STALE_ATTEMPT, ERR_VERDICT_EXISTS,
 };
 use crate::events;
 use crate::hash::Hash32;
@@ -36,6 +36,18 @@ impl OutcomeVault {
         require!(attempt <= task.policy.max_attempts, ERR_ATTEMPTS_EXHAUSTED);
         require!(!task.deadline_passed(), ERR_DEADLINE_PASSED);
         let payees = validate_payees(payees, amount.0);
+        require!(
+            payees.iter().any(|(account, _)| *account == agent),
+            ERR_LEAD_NOT_PAYEE
+        );
+        require!(
+            payees.iter().all(|(account, _)| *account != task.owner
+                && task.guarantor.as_ref() != Some(account)
+                && *account != self.coordinator
+                && *account != self.verifier
+                && *account != env::current_account_id()),
+            ERR_CONFLICTED_PAYEE
+        );
         require!(
             amount.0 <= add(task.escrow_available, task.bond_headroom()),
             ERR_BUDGET_EXCEEDED
@@ -120,6 +132,7 @@ impl OutcomeVault {
         );
         require!(task.verdict.is_none(), ERR_VERDICT_EXISTS);
         require!(task.state == TaskState::Assigned, ERR_STALE_ATTEMPT);
+        require!(!task.deadline_passed(), ERR_DEADLINE_PASSED);
         let verdict = Verdict {
             attempt,
             outcome,

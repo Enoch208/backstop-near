@@ -119,3 +119,38 @@ fn unknown_transfer_cannot_be_retried() {
         h.vault.retry_failed_transfer("task-1:1:9".to_string())
     });
 }
+
+#[test]
+fn only_the_recipient_can_claim_after_automatic_retries() {
+    let mut h = Harness::new();
+    settle_primary(&mut h);
+    let payout = "task-1:1:0";
+    h.complete(payout, false);
+    h.act(&agent("a"), 0);
+    expect_error(crate::ERR_RETRIES_REMAIN, || {
+        h.vault.claim_failed_transfer(payout.to_string())
+    });
+    for _ in 0..MAX_TRANSFER_RETRIES {
+        h.retry(payout);
+        h.complete(payout, false);
+    }
+    h.act(&stranger(), 0);
+    expect_error(crate::ERR_NOT_TRANSFER_RECIPIENT, || {
+        h.vault.claim_failed_transfer(payout.to_string())
+    });
+    h.act(&agent("a"), 0);
+    h.vault.claim_failed_transfer(payout.to_string());
+    assert_eq!(scheduled_payments(), vec![(agent("a"), milli(300))]);
+    expect_error(ERR_TRANSFER_NOT_FAILED, || {
+        h.vault.claim_failed_transfer(payout.to_string())
+    });
+    h.deliver(payout, MAX_TRANSFER_RETRIES, true);
+    assert_eq!(h.transfer(payout).status, TransferStatus::Pending);
+    h.confirm_all("task-1");
+    assert_eq!(h.ledger("task-1").state, TaskState::Settled);
+    assert_eq!(h.confirmed_to("task-1", &agent("a")), milli(300));
+    h.act(&agent("a"), 0);
+    expect_error(ERR_TRANSFER_NOT_FAILED, || {
+        h.vault.claim_failed_transfer(payout.to_string())
+    });
+}

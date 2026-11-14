@@ -18,12 +18,28 @@ export type VaultRoles = {
   readonly verifier: string;
 };
 
+async function deployCode(contract: Account, wasm: Uint8Array): Promise<ChainCall> {
+  const call = readOutcome(
+    await contract.signAndSendTransaction({
+      receiverId: contract.accountId,
+      actions: [actions.deployContract(wasm)],
+      waitUntil: "FINAL",
+      throwOnFailure: false,
+    }),
+  );
+  if (!call.ok)
+    throw new Error(
+      `Vault code deployment failed (${call.txHash}): ${call.errorCode ?? "unknown"}`,
+    );
+  return call;
+}
+
 export async function deployVault(
   contract: Account,
   roles: VaultRoles,
   wasm: Uint8Array = readFileSync(vaultWasmPath),
 ): Promise<{ vault: Vault; deploy: ChainCall; init: ChainCall }> {
-  const deploy = readOutcome(await contract.deployContract(wasm));
+  const deploy = await deployCode(contract, wasm);
   const vault = { contractId: contract.accountId };
   const init = await callVault(vault, contract, "new", { ...roles });
   return { vault, deploy, init };
@@ -49,7 +65,7 @@ export async function upgradeVault(contract: Account, wasm: Uint8Array): Promise
       actions.deployContract(wasm),
       actions.functionCall("migrate", {}, teraToGas("100"), 0n),
     ],
-    waitUntil: "EXECUTED_OPTIMISTIC",
+    waitUntil: "FINAL",
     throwOnFailure: false,
   });
   return readOutcome(response);
@@ -69,8 +85,7 @@ export async function ensureVault(
       `${contract.accountId} runs other code (${codeHash}); upgrade it with pnpm vault:upgrade or use a fresh vault account`,
     );
   }
-  const deploy =
-    codeHash === emptyCodeHash ? readOutcome(await contract.deployContract(wasm)) : null;
+  if (codeHash === emptyCodeHash) return deployVault(contract, roles, wasm);
   const current = await getRoles(vault, contract).catch((error: unknown) => {
     if (error instanceof Error && /initiali[sz]ed/i.test(error.message)) return null;
     throw error;
@@ -81,7 +96,7 @@ export async function ensureVault(
       current.coordinator === roles.coordinator &&
       current.verifier === roles.verifier;
     if (!matches) throw new Error(`${contract.accountId} is initialized with other roles`);
-    return { vault, deploy, init: null };
+    return { vault, deploy: null, init: null };
   }
-  return { vault, deploy, init: await callVault(vault, contract, "new", { ...roles }) };
+  return { vault, deploy: null, init: await callVault(vault, contract, "new", { ...roles }) };
 }

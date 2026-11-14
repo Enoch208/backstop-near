@@ -197,3 +197,25 @@ fn migrate_keeps_every_task_and_adds_an_empty_registry() {
     assert_eq!(migrated.get_roles().verifier, verifier());
     assert!(migrated.get_tee_signer(SIGNER.to_string()).is_none());
 }
+
+#[test]
+fn a_second_upgrade_keeps_current_tasks_and_attestations() {
+    let mut h = Harness::new();
+    register(&mut h, MODEL);
+    assigned(&mut h);
+    h.act(&verifier(), 0);
+    accept(&mut h, receipt(TEXT, SIGNATURE));
+    let task = h.task("task-1");
+    let signer = h.vault.get_tee_signer(SIGNER.to_string());
+    let inference = h.vault.get_inference("task-1".to_string(), 1);
+    assert!(inference.is_some());
+    h.vault.tasks.flush();
+    h.vault.tee_signers.flush();
+    h.vault.inferences.flush();
+    env::state_write(&h.vault);
+    h.act(&vault_account(), 0);
+    let migrated = OutcomeVault::migrate();
+    assert_eq!(migrated.get_task("task-1".to_string()), Some(task));
+    assert_eq!(migrated.get_tee_signer(SIGNER.to_string()), signer);
+    assert_eq!(migrated.get_inference("task-1".to_string(), 1), inference);
+}

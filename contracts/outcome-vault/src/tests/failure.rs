@@ -153,3 +153,29 @@ fn open_recovery_after_deadline_is_terminal() {
     assert_eq!(event["data"][0]["reason"], "LEASE_EXPIRED");
     assert_eq!(event["data"][0]["epoch"], 1);
 }
+
+#[test]
+fn an_outside_keeper_can_exit_an_expired_assignment_without_the_coordinator() {
+    let mut h = Harness::new();
+    h.fund_demo("task-1", milli(250));
+    h.assign("task-1", 1, &[(agent("a"), milli(300))]);
+    h.now += 2 * HOUR_NS;
+    h.act(&verifier(), 0);
+    expect_error(ERR_DEADLINE_PASSED, || {
+        h.vault.record_verdict(
+            "task-1".to_string(),
+            1,
+            hash(10),
+            hash(11),
+            hash(12),
+            VerdictOutcome::Accept,
+        )
+    });
+    h.act(&stranger(), 0);
+    h.vault.finalize_failure("task-1".to_string());
+    h.confirm_all("task-1");
+    assert_eq!(h.ledger("task-1").state, TaskState::FailureSettled);
+    assert_eq!(h.confirmed_to("task-1", &customer()), milli(540));
+    assert_eq!(h.confirmed_to("task-1", &guarantor()), milli(150));
+    assert_eq!(h.confirmed_to("task-1", &stranger()), 0);
+}

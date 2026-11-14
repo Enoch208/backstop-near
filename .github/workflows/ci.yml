@@ -81,8 +81,24 @@ jobs:
         with:
           name: outcome-vault-wasm
           path: contracts/outcome-vault/target/wasm32-unknown-unknown/release/outcome_vault.wasm
-      - name: Match the published wasm hash
-        run: test "$(tail -n 1 vault-build.txt)" = "$(cat contracts/outcome-vault/outcome_vault.wasm.sha256)"
+      - name: Preserve the candidate checksum beside the artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: outcome-vault-candidate-checksum
+          path: vault-build.txt
+      - name: Reproduce the deployed build from its pinned source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 80a00f662737bb5fdd86f48b664d9448c90116d2
+          path: vault-release
+          sparse-checkout: |
+            contracts/outcome-vault
+            scripts/build-vault.sh
+          sparse-checkout-cone-mode: false
+      - name: Match the published deployment hash
+        run: |
+          sh vault-release/scripts/build-vault.sh > vault-release-build.txt
+          test "$(tail -n 1 vault-release-build.txt)" = "$(cat contracts/outcome-vault/outcome_vault.wasm.sha256)"
       - name: Set up Node 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:

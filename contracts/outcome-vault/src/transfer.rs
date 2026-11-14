@@ -1,7 +1,10 @@
 use near_sdk::serde_with::DisplayFromStr;
 use near_sdk::{env, near, require, AccountId, Gas, NearToken, Promise, PromiseError};
 
-use crate::errors::{ERR_RETRY_LIMIT, ERR_TRANSFER_NOT_FAILED, ERR_UNEXPECTED_CALLBACK};
+use crate::errors::{
+    ERR_NOT_TRANSFER_RECIPIENT, ERR_RETRIES_REMAIN, ERR_RETRY_LIMIT, ERR_TRANSFER_NOT_FAILED,
+    ERR_UNEXPECTED_CALLBACK,
+};
 use crate::events;
 use crate::model::{Pool, TransferStatus};
 use crate::task::Task;
@@ -82,22 +85,43 @@ impl OutcomeVault {
     }
 
     pub fn retry_failed_transfer(&mut self, transfer_id: String) {
-        let mut transfer = self.load_transfer(&transfer_id);
+        let transfer = self.load_transfer(&transfer_id);
         require!(
             transfer.status == TransferStatus::Failed,
             ERR_TRANSFER_NOT_FAILED
         );
         require!(transfer.retries < MAX_TRANSFER_RETRIES, ERR_RETRY_LIMIT);
-        transfer.retries += 1;
+        self.reschedule(transfer);
+    }
+
+    pub fn claim_failed_transfer(&mut self, transfer_id: String) {
+        let transfer = self.load_transfer(&transfer_id);
+        require!(
+            env::predecessor_account_id() == transfer.recipient,
+            ERR_NOT_TRANSFER_RECIPIENT
+        );
+        require!(
+            transfer.status == TransferStatus::Failed,
+            ERR_TRANSFER_NOT_FAILED
+        );
+        require!(transfer.retries >= MAX_TRANSFER_RETRIES, ERR_RETRIES_REMAIN);
+        self.reschedule(transfer);
+    }
+}
+
+impl OutcomeVault {
+    fn reschedule(&mut self, mut transfer: Transfer) {
+        transfer.retries = transfer
+            .retries
+            .checked_add(1)
+            .unwrap_or_else(|| env::panic_str(ERR_RETRY_LIMIT));
         transfer.status = TransferStatus::Pending;
         let task = self.load_task(&transfer.task_id);
         let task = self.commit(task, vec![transfer.clone()]);
         events::transfer_scheduled(&task, &transfer);
         Self::dispatch(&transfer);
     }
-}
 
-impl OutcomeVault {
     pub(crate) fn dispatch(transfer: &Transfer) {
         Promise::new(transfer.recipient.clone())
             .transfer(NearToken::from_yoctonear(transfer.amount))
