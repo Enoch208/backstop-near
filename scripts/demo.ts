@@ -1,10 +1,13 @@
-import { principals } from "@backstop/agents";
+import { existsSync } from "node:fs";
+import { modelFromEnv, principals } from "@backstop/agents";
 import { createRuntime, startApi, supervise } from "@backstop/api";
 import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { formatNear, near, toYocto } from "@backstop/shared";
 import { apiClient } from "@backstop/workers";
 import { z } from "zod";
 
+if (existsSync(".env")) process.loadEnvFile(".env");
+const model = modelFromEnv(process.env);
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const startedAt = Date.now();
 const stamp = () => `+${((Date.now() - startedAt) / 1_000).toFixed(1).padStart(5, " ")}s`;
@@ -19,7 +22,11 @@ const coordinator = apiClient(api.url, principals.coordinator);
 const taskId = `checkout-live-${String(startedAt % 100_000)}`;
 
 out(`Backstop live demo: ${taskId} on ${api.url}`);
-out("Mode: FIXTURE vault (no NEAR moves) and scripted patches; real HTTP, real signed requests,");
+out(
+  model === null
+    ? "Mode: FIXTURE vault (no NEAR moves) and scripted patches; real HTTP, real signed requests,"
+    : `Mode: FIXTURE vault (no NEAR moves) and LIVE AI patches from ${model.model}; real HTTP, signed requests,`,
+);
 out(
   "real worker processes, a real SIGKILL, the real verifier sandbox, challenge search and ledger.",
 );

@@ -1,7 +1,10 @@
+import { existsSync } from "node:fs";
 import { z } from "zod";
 import { createRuntime } from "./runtime.js";
 import { startApi } from "./server.js";
 import { supervise } from "./supervisor.js";
+
+if (existsSync(".env")) process.loadEnvFile(".env");
 
 const env = z
   .object({
