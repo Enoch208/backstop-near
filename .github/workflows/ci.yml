@@ -89,7 +89,7 @@ jobs:
       - name: Reproduce the deployed build from its pinned source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 80a00f662737bb5fdd86f48b664d9448c90116d2
+          ref: 4e553a88bf1038fc3db6f5ca4e479697330dacd1
           path: vault-release
           sparse-checkout: |
             contracts/outcome-vault

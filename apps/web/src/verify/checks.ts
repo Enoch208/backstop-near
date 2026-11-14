@@ -176,7 +176,8 @@ export async function runChecks(tamper: Tamper, onCheck: (check: Check) => void)
     link: enclaveKey.explorer,
   });
 
-  const replayRun = record.runs.at(-1)?.taskId ?? liveRun.taskId;
+  const replayRun =
+    record.runs.findLast((run) => run.kind === "live swarm")?.taskId ?? liveRun.taskId;
   const recorded = await recordedReceipt(replayRun);
   if (recorded !== null) {
     const text =

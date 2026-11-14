@@ -16,5 +16,11 @@
     "network": "testnet",
     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
     "recordedAt": "2026-11-14T18:17:17.143Z"
+  },
+  {
+    "taskId": "two-bidders-testnet-1794682474",
+    "network": "testnet",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "recordedAt": "2026-11-14T18:54:35.551Z"
   }
 ]

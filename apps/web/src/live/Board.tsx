@@ -1,7 +1,7 @@
 import { Kpi } from "../app/ui.js";
 import { nearAmount } from "../data/near.js";
 import type { AgentLine, ChainSteps, FeedEvent, Snapshot, Worker } from "./api.js";
-import { AgentLogs, Feed } from "./Feed.js";
+import { AgentLogs, Feed, RecoveryBids } from "./Feed.js";
 import { Agents, Chain, Evidence, Payouts } from "./Panels.js";
 
 export type BoardData = {
@@ -66,6 +66,7 @@ export function Board({ data }: { readonly data: BoardData }) {
           <AgentLogs lines={data.lines} />
         </div>
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-5 lg:gap-6 xl:col-span-4">
+          <RecoveryBids events={data.events} />
           <Agents workers={data.workers} excluded={task?.excludedAgents ?? []} />
           <Evidence snapshot={data.snapshot} />
           <Chain chain={data.chain} />

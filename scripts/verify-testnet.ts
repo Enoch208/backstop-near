@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 import {
   testnetProofProvider,
   testnetRecordSchema,
@@ -16,6 +17,15 @@ const record = testnetRecordSchema.parse(JSON.parse(read("../deployments/testnet
 const provider = testnetProofProvider(process.env.BACKSTOP_TESTNET_RPC);
 const root = record.contractId.slice(record.contractId.indexOf(".") + 1);
 const findings: Finding[] = [];
+const { values } = parseArgs({ options: { run: { type: "string", multiple: true } } });
+const runs =
+  values.run === undefined
+    ? record.runs
+    : values.run.map((taskId) => {
+        const run = record.runs.find((entry) => entry.taskId === taskId);
+        if (run === undefined) throw new Error(`Unknown recorded task ${taskId}`);
+        return run;
+      });
 
 out(`Verifying the public testnet record of ${record.contractId} against NEAR testnet`);
 const published = baseEncode(
@@ -27,7 +37,7 @@ findings.push({
   subject: "code",
   detail: `deployed code ${deployed} ${deployed === published ? "is" : "is not"} the published reproducible build ${published}`,
 });
-for (const upgrade of record.upgrades) {
+for (const upgrade of values.run === undefined ? record.upgrades : record.upgrades.slice(-1)) {
   const step = {
     label: "upgrade",
     txHash: upgrade.txHash,
@@ -38,6 +48,7 @@ for (const upgrade of record.upgrades) {
 }
 const lastIndex = new Map(record.teeSigners.map((entry, index) => [entry.signingAddress, index]));
 for (const [index, signer] of record.teeSigners.entries()) {
+  if (values.run !== undefined && lastIndex.get(signer.signingAddress) !== index) continue;
   const step = {
     label: "tee",
     txHash: signer.txHash,
@@ -60,7 +71,7 @@ for (const restriction of record.keyRestrictions) {
     await verifyRestriction(provider, record.contractId, restriction.account, restriction.role),
   );
 }
-for (const run of record.runs) {
+for (const run of runs) {
   for (const step of run.steps) findings.push(await verifyStep(provider, step, root));
   findings.push(await verifyLedger(provider, record.contractId, run.taskId));
 }

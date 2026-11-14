@@ -1,5 +1,5 @@
 import { near } from "@backstop/shared";
-import { Account } from "near-api-js";
+import { Account, JsonRpcProvider } from "near-api-js";
 import { getRoles } from "./vault.js";
 import { ensureSubAccounts } from "./accounts.js";
 import { ensureVault } from "./deploy.js";
@@ -146,11 +146,13 @@ export function chainOptionsFromEnv(
 }
 
 export async function connectTestnetVault(account: string, rpc: string): Promise<ChainParties> {
+  if (!account.endsWith(".testnet")) throw new Error("A named testnet root account is required");
+  const provider = new JsonRpcProvider({ url: rpc });
   const connect = (role: string) => {
     const id = `${role}.${account}`;
     const key = loadKey("testnet", id);
     if (key === null) throw new Error(`NEAR credentials are required for ${id}`);
-    return new Account(id, rpc, key);
+    return new Account(id, provider, key);
   };
   const vault = { contractId: `vault.${account}` };
   const customer = connect("customer");

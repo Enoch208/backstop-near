@@ -1,4 +1,6 @@
 import { Empty, Panel, textTones, type Tone } from "../app/ui.js";
+import { nearAmount } from "../data/near.js";
+import { z } from "zod";
 import type { AgentLine, FeedEvent } from "./api.js";
 import { useStickToBottom } from "./stick.js";
 
@@ -19,6 +21,41 @@ const lineTone = (line: string): Tone => {
 };
 
 const scroller = "scroll-thin h-[340px] overflow-y-auto px-6 pb-5 sm:h-[380px]";
+
+const submittedBid = z.object({
+  bid: z.object({ amountYocto: z.string().regex(/^\d+$/), epoch: z.number() }),
+  bidHash: z.string(),
+});
+
+export function RecoveryBids({ events }: { readonly events: readonly FeedEvent[] }) {
+  const bids = events.flatMap(({ actor, body }) => {
+    if (body.type !== "bid_submitted") return [];
+    const signed = submittedBid.safeParse(body.bid);
+    return !signed.success || signed.data.bid.epoch === 0 ? [] : [{ actor, ...signed.data }];
+  });
+  const latest = bids.at(-1)?.bid.epoch;
+  if (latest === undefined) return null;
+  const award = events.find(
+    ({ body }) => body.type === "recovery_awarded" && body.epoch === latest,
+  );
+  return (
+    <Panel title="Recovery bids" meta={`round ${String(latest)}`}>
+      <ul className="divide-y divide-ink/[0.05] text-[13px]">
+        {bids
+          .filter(({ bid }) => bid.epoch === latest)
+          .map(({ actor, bid, bidHash }) => (
+            <li key={bidHash} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span className="font-mono">{actor}</span>
+              <span className="tabular-nums">
+              {nearAmount(bid.amountYocto, 24).replace(/\.?0+$/, "")} NEAR
+                {award?.body.winner === bidHash && <span className="ml-2 text-ink/55">Won</span>}
+              </span>
+            </li>
+          ))}
+      </ul>
+    </Panel>
+  );
+}
 
 export function Feed({ events }: { readonly events: readonly FeedEvent[] }) {
   const shown = events.filter((event) => event.body.type !== "heartbeat_recorded");

@@ -72,9 +72,9 @@ await step(
   "Attack: the coordinator assigns more than escrow plus liability",
   registerAssignment(vault, coordinator, taskId, {
     attempt: 1,
-    agent: guarantor.accountId,
+    agent: setup.parties.payoutAccount("gamma"),
     bidHash: zero,
-    payees: [{ account: guarantor.accountId, amount: near("1") }],
+    payees: [{ account: setup.parties.payoutAccount("gamma"), amount: near("1") }],
   }),
   true,
 );
