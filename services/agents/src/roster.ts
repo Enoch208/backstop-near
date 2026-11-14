@@ -1,4 +1,5 @@
-import { signingKeyFromSeed, type AgentRole, type SigningKey } from "@backstop/shared";
+import { near, signingKeyFromSeed, type AgentRole, type SigningKey } from "@backstop/shared";
+import type { PricingProfile } from "./pricing.js";
 
 export type FixtureAgent = {
   readonly agentId: string;
@@ -25,6 +26,39 @@ export const roster = {
 } as const;
 
 export type RosterName = keyof typeof roster;
+
+export const pricingProfiles: Readonly<Record<string, PricingProfile>> = {
+  beta: {
+    floorPerUnitYocto: near("0.10"),
+    riskAppetiteBps: 20_000,
+    capacityUnits: 3,
+    msPerUnit: 20_000,
+  },
+  gamma: {
+    floorPerUnitYocto: near("0.16"),
+    riskAppetiteBps: 15_000,
+    capacityUnits: 6,
+    msPerUnit: 30_000,
+  },
+  delta: {
+    floorPerUnitYocto: near("0.08"),
+    riskAppetiteBps: 15_000,
+    capacityUnits: 6,
+    msPerUnit: 30_000,
+  },
+  epsilon: {
+    floorPerUnitYocto: near("0.30"),
+    riskAppetiteBps: 5_000,
+    capacityUnits: 6,
+    msPerUnit: 15_000,
+  },
+};
+
+export function pricingProfile(agentId: string): PricingProfile {
+  const profile = pricingProfiles[agentId];
+  if (profile === undefined) throw new RangeError(`No pricing profile for ${agentId}`);
+  return profile;
+}
 
 export const publicKeys: Readonly<Record<string, string>> = Object.fromEntries(
   Object.values(roster).map((member) => [member.agentId, member.key.publicKey]),
