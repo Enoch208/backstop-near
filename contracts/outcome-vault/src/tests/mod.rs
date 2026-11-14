@@ -6,6 +6,7 @@ mod finalize;
 mod fixtures;
 mod funding;
 mod harness;
+mod inference;
 mod randomized;
 mod roles;
 mod simulation;

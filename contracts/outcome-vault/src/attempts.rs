@@ -7,6 +7,7 @@ use crate::errors::{
 };
 use crate::events;
 use crate::hash::Hash32;
+use crate::inference::InferenceReceipt;
 use crate::math::add;
 use crate::model::{Assignment, TaskState, Verdict, VerdictOutcome};
 use crate::validation::{validate_failure_code, validate_payees};
@@ -78,6 +79,39 @@ impl OutcomeVault {
         evidence_hash: Hash32,
         outcome: VerdictOutcome,
     ) {
+        let hashes = [artifact_hash, suite_hash, evidence_hash];
+        self.apply_verdict(task_id, attempt, hashes, outcome, None);
+    }
+
+    pub fn record_attested_verdict(
+        &mut self,
+        task_id: String,
+        attempt: u32,
+        artifact_hash: Hash32,
+        suite_hash: Hash32,
+        evidence_hash: Hash32,
+        inference: InferenceReceipt,
+    ) {
+        let hashes = [artifact_hash, suite_hash, evidence_hash];
+        self.apply_verdict(
+            task_id,
+            attempt,
+            hashes,
+            VerdictOutcome::Accept,
+            Some(&inference),
+        );
+    }
+}
+
+impl OutcomeVault {
+    fn apply_verdict(
+        &mut self,
+        task_id: String,
+        attempt: u32,
+        [artifact_hash, suite_hash, evidence_hash]: [Hash32; 3],
+        outcome: VerdictOutcome,
+        inference: Option<&InferenceReceipt>,
+    ) {
         self.require_verifier();
         let mut task = self.load_task(&task_id);
         require!(
@@ -101,8 +135,13 @@ impl OutcomeVault {
             VerdictOutcome::Reject => TaskState::RecoveryOpen,
         };
         task.verdict = Some(verdict.clone());
+        let attested = inference
+            .map(|receipt| self.attest_inference(&task_id, attempt, artifact_hash, receipt));
         let task = self.commit(task, Vec::new());
         events::verdict_recorded(&task, &verdict);
+        if let Some(attested) = &attested {
+            events::inference_attested(attested);
+        }
         if outcome == VerdictOutcome::Reject {
             events::attempt_closed(&task, REJECTED_VERDICT_REASON);
         }

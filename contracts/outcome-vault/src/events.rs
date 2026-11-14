@@ -2,6 +2,7 @@ use near_sdk::json_types::U128;
 use near_sdk::serde_json::{json, Value};
 use near_sdk::{env, AccountId};
 
+use crate::inference::{Inference, TeeSigner};
 use crate::model::{Assignment, TaskState, Verdict};
 use crate::roles::Roles;
 use crate::task::Task;
@@ -156,4 +157,23 @@ pub fn task_settled(task: &Task) {
             "state_version": task.state_version,
         }),
     );
+}
+
+pub fn tee_signer_registered(address: &str, signer: &TeeSigner) {
+    emit(
+        "tee_signer_registered",
+        json!({
+            "address": address,
+            "model": signer.model,
+            "attestation_hash": signer.attestation_hash,
+        }),
+    );
+}
+
+pub fn tee_signer_revoked(address: &str) {
+    emit("tee_signer_revoked", json!({ "address": address }));
+}
+
+pub fn inference_attested(inference: &Inference) {
+    emit("inference_attested", json!(inference));
 }

@@ -3,6 +3,7 @@ mod errors;
 mod events;
 mod funding;
 mod hash;
+mod inference;
 mod ledger;
 mod math;
 mod model;
@@ -22,6 +23,7 @@ use near_sdk::{env, near, require, AccountId, BorshStorageKey, PanicOnDefault};
 
 pub use crate::errors::*;
 pub use crate::hash::Hash32;
+pub use crate::inference::{Inference, InferenceReceipt, TeeSigner};
 pub use crate::ledger::{LedgerView, RecipientTotal};
 pub use crate::model::{
     Assignment, Pool, TaskPolicy, TaskState, TransferStatus, Verdict, VerdictOutcome,
@@ -35,11 +37,24 @@ pub use crate::transfer::{Transfer, MAX_TRANSFER_RETRIES};
 enum StorageKey {
     Tasks,
     Transfers,
+    TeeSigners,
+    Inferences,
 }
 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct OutcomeVault {
+    owner: AccountId,
+    coordinator: AccountId,
+    verifier: AccountId,
+    tasks: LookupMap<String, Task>,
+    transfers: LookupMap<String, Transfer>,
+    tee_signers: LookupMap<String, TeeSigner>,
+    inferences: LookupMap<String, Inference>,
+}
+
+#[near(serializers = [borsh])]
+struct VaultV1 {
     owner: AccountId,
     coordinator: AccountId,
     verifier: AccountId,
@@ -58,9 +73,26 @@ impl OutcomeVault {
             verifier,
             tasks: LookupMap::new(StorageKey::Tasks),
             transfers: LookupMap::new(StorageKey::Transfers),
+            tee_signers: LookupMap::new(StorageKey::TeeSigners),
+            inferences: LookupMap::new(StorageKey::Inferences),
         };
         events::roles_updated(&vault.roles());
         vault
+    }
+
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        let old: VaultV1 = env::state_read().unwrap_or_else(|| env::panic_str(ERR_NOT_MIGRATABLE));
+        Self {
+            owner: old.owner,
+            coordinator: old.coordinator,
+            verifier: old.verifier,
+            tasks: old.tasks,
+            transfers: old.transfers,
+            tee_signers: LookupMap::new(StorageKey::TeeSigners),
+            inferences: LookupMap::new(StorageKey::Inferences),
+        }
     }
 }
 
