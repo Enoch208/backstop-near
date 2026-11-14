@@ -4,7 +4,7 @@ import { fromHex32, parseEventLog, readOutcome, toHex32 } from "../src/index.js"
 
 const response = (status: unknown, logs: string[]) => ({
   status,
-  transaction: { hash: "tx-hash" },
+  transaction: { hash: "tx-hash", signer_id: "coordinator.testnet" },
   transaction_outcome: { outcome: { logs: [] } },
   receipts_outcome: [
     { id: "receipt", outcome: { logs, executor_id: "vault.testnet", status: {} } },

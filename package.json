@@ -24,7 +24,8 @@
     "mcp": "tsx apps/mcp/src/main.ts",
     "market": "tsx scripts/market.ts",
     "chain:account": "tsx scripts/testnet-account.ts",
-    "vault:build": "sh scripts/build-vault.sh"
+    "vault:build": "sh scripts/build-vault.sh",
+    "verify:testnet": "tsx scripts/verify-testnet.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",

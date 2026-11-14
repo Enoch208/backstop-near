@@ -35,6 +35,7 @@ export function appendTestnetRun(
     steps: run.steps.map((step) => ({
       label: step.label,
       txHash: step.call.txHash,
+      signer: step.call.signer,
       outcome: step.call.ok ? "success" : `refused ${step.call.errorCode ?? ""}`.trim(),
       explorer: explorerTx(step.call.txHash),
     })),
