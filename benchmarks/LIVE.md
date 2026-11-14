@@ -4,12 +4,12 @@ The evaluation measures correct delivery of the same JavaScript repair task unde
 
 ```sh
 pnpm benchmark:live --verify-corpus
-pnpm benchmark:live --verify-run benchmarks/live-pilot.json
+pnpm benchmark:live --verify-run benchmarks/market-results.json
 pnpm benchmark:live --pilot --out /tmp/backstop-live-pilot.json
 pnpm benchmark:live --repeats 3 --out /tmp/backstop-live-results.json
 ```
 
-The corpus and run verification commands require no credentials. The run check confirms complete pairings and reruns accepted artifacts against both sets of cases. Live runs use `BACKSTOP_AI_API_KEY` and honor `BACKSTOP_AI_MODEL` and `BACKSTOP_AI_BASE_URL`. The full matrix uses eight hand-authored tasks, four conditions and three schedulers. It attempts up to 288 model calls per repeat. The pilot uses the first two tasks and attempts up to 72 calls. A provider may charge for requests that fail. Keep the output path distinct from any earlier record you want to preserve. The runner updates the file after each trial and includes the expected and completed trial counts.
+The corpus and run verification commands require no credentials. The run check confirms complete pairings and reruns accepted artifacts against both sets of cases. Live runs use `BACKSTOP_AI_API_KEY` and honor `BACKSTOP_AI_MODEL` and `BACKSTOP_AI_BASE_URL`. The current full matrix uses eight hand-authored tasks, five conditions and three schedulers. It attempts up to 360 model calls per repeat. The pilot uses the first two tasks and attempts up to 90 calls. A provider may charge for requests that fail. Keep the output path distinct from any earlier record you want to preserve. The runner updates the file after each trial and includes the expected and completed trial counts.
 
 Each task specifies a single JavaScript function and ships with a faulty starting implementation. The corpus contains payout splitting, time interval calculations, stock allocation, discounts, route matching, analytical bucketing, CSV parsing and event reconciliation. The test runner derives expected outputs from a reference implementation and first checks that implementation against hand-calculated anchors. It verifies each broken starter and the incorrect candidate before making model calls. The corpus digest identifies the exact cases and reference implementations. These are deliberately small benchmark tasks. Their overlap with any provider's training data is unknown.
 
@@ -27,6 +27,7 @@ All three get at most three model requests, at most 8,192 serialized prompt byte
 | `transient-tool`   | The result is lost after inference. The model charge is counted and the scheduler can retry.                                                                |
 | `worker-death`     | The candidate remains in the checkpoint, then the worker disappears before submission. A replacement or restarted single agent can build on that candidate. |
 | `incorrect-output` | The candidate is replaced with a task-specific bug that passes the public examples. Verification or the independent audit detects the mismatch.             |
+| `constrained-recovery` | After the primary loses its result, its group becomes unavailable. Both specialist schedulers see the same seeded group outage and quotes. |
 
 Trials are paired by task, condition and repeat. The seed shuffles the paired blocks and mode order within each block. Provider outputs can still vary between runs. Acceptance uses the public cases and a separate hidden set. Final correctness requires acceptance and passing a third audit set. The model receives the public cases and notice of a private-test failure, while the private inputs stay in the harness. The verifier and audit both run the user function in the same isolated JavaScript runner.
 
@@ -49,3 +50,15 @@ The full run on 14 November 2026 used the same model, with one repeat for each o
 | Backstop recovery market |      30 |                  1 |          1 |                     1,147 |
 
 The market had one more correct outcome than persistent retries, and tied fixed specialists on every paired correctness result. The exploratory task-level interval for the difference against retries was 0 to 9.375 percentage points. The matched modes also accepted the same discount-task mutant, which the separate audit caught. This shows where to improve acceptance coverage and does not establish a reliability advantage over fixed scheduling. All [raw trial results](live-results.json), including the incorrect acceptances and unsuccessful cases, are available. Verify with `pnpm benchmark:live --verify-run benchmarks/live-results.json`.
+
+## Recorded comparison with constrained recovery
+
+The 120-trial follow-up used the same model over eight tasks. It moved the known discount rounding counterexample into the acceptance gate and added a fresh discount case to the audit. Recovery quotes and group availability were shared by fixed and market schedulers. Fixed selected the first eligible specialist in its sequence. The market selected the lowest eligible signed offer. The group outage and quotes were simulated, and inference ran through one live provider.
+
+| Mode | Correct | Incorrect accepted | Unresolved | Tokens per correct repair | p95 seconds | Simulated customer NEAR per correct repair before compensation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Persistent single agent | 37/40 | 0 | 3 | 1,249 | 10.30 | 0.4065 |
+| Fixed specialists | 37/40 | 0 | 3 | 1,177 | 10.83 | 0.2537 |
+| Backstop recovery market | 38/40 | 0 | 2 | 1,146 | 13.68 | 0.2571 |
+
+Under the constrained condition, the market delivered 8/8 correct repairs and both baselines delivered 7/8. Across all 40 paired cases, the market won one and lost zero against fixed specialists. Its estimated improvement was 2.5 percentage points, with an exploratory task-cluster interval of 0 to 7.5 points. The market's p95 time and simulated customer cost per correct repair were higher than fixed specialists'. The small, single-model sample leaves the general reliability difference unresolved. The offline verifier checked all 120 trials and reran the 112 delivered artifacts. [Raw results and artifacts](market-results.json)
