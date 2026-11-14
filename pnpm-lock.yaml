@@ -201,6 +201,9 @@ importers:
       '@backstop/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@backstop/verifier':
+        specifier: workspace:*
+        version: link:../verifier
       tsx:
         specifier: 4.23.15
         version: 4.23.15

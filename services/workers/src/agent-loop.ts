@@ -4,11 +4,12 @@ import {
   fixtureBids,
   primaryBid,
   searchCounterexample,
-  workFor,
   type FixtureAgent,
+  type ModelConfig,
 } from "@backstop/agents";
 import { checkoutSuite } from "@backstop/fixture-checkout";
 import {
+  canonicalJson,
   formatNear,
   fromYocto,
   leadAgent,
@@ -17,6 +18,7 @@ import {
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
+import { produce } from "./produce.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -35,9 +37,11 @@ export function agentLoop(
   taskId: string,
   log: Log,
   onDone: () => void,
+  model: ModelConfig | null = null,
 ) {
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
+  const history: string[] = [];
 
   const snapshot = async (): Promise<Snapshot> =>
     snapshotSchema.parse((await client.get(base)).body).task;
@@ -89,7 +93,6 @@ export function agentLoop(
       return;
     }
     const task = await snapshot();
-    const { plan, artifact } = workFor(agent.agentId);
     log(`claimed attempt ${String(task.attempt)} with fencing token ${String(token)}`);
     const beat = setInterval(
       () => {
@@ -98,21 +101,27 @@ export function agentLoop(
       Math.floor(task.manifest.policy.leaseMs / 3),
     );
     const step = Math.floor(task.manifest.policy.leaseMs / 4);
+    const inherited = task.checkpoints.at(-1)?.checkpoint.validatedSubtasks ?? [];
+    const product = await produce(agent, model, {
+      objective: task.manifest.objective,
+      inherited,
+      history,
+    });
     await wait(step);
-    const parent = task.checkpoints.at(-1)?.hash ?? null;
+    const parent = (await snapshot()).checkpoints.at(-1)?.hash ?? null;
     const checkpoint = {
       taskId,
       attempt: task.attempt,
       stateVersion: task.version,
-      contentHash: artifact.artifactHash,
-      artifactUri: `fixture://checkout/candidates/${artifact.name}.js`,
-      validatedSubtasks: [...plan.validatedSubtasks],
+      contentHash: product.artifactHash,
+      artifactUri: product.uri,
+      validatedSubtasks: [...product.validatedSubtasks],
       provenanceEventIds: [`${taskId}#${String(task.version)}`],
       parentCheckpointHash: parent,
     };
     await client.post(`${base}/checkpoints`, { fencingToken: token, checkpoint });
-    log(`checkpointed ${plan.validatedSubtasks.join(", ")}`);
-    if (!plan.completes) {
+    log(`checkpointed ${product.validatedSubtasks.join(", ") || "no validated subtasks"}`);
+    if (!product.completes) {
       log("still working; heartbeats continue until the process ends");
       return;
     }
@@ -120,11 +129,11 @@ export function agentLoop(
     const latest = (await snapshot()).checkpoints.at(-1)?.hash ?? null;
     const reply = await client.post(`${base}/artifacts`, {
       fencingToken: token,
-      source: artifact.source,
+      source: product.source,
       checkpointHash: latest,
     });
     clearInterval(beat);
-    log(`submitted ${artifact.name} (HTTP ${String(reply.status)})`);
+    log(`submitted ${product.label} (HTTP ${String(reply.status)})`);
   };
 
   const challenge = async (attempt: number, artifactHash: Digest) => {
@@ -170,6 +179,16 @@ export function agentLoop(
       body.type === "verification_recorded" && body.evidence.body.verdict === "ACCEPT";
     if (accepted && agent.role === "challenger") {
       run(challenge(body.evidence.body.attempt, body.evidence.body.artifactHash));
+    }
+    if (body.type === "attempt_failed")
+      history.push(`attempt ${String(body.attempt)} failed: ${body.reason}`);
+    if (body.type === "attempt_rejected") {
+      const ruling = body.ruling;
+      history.push(
+        ruling === null
+          ? `attempt ${String(body.attempt)} was rejected by the verifier`
+          : `a challenger showed attempt ${String(body.attempt)} returned ${canonicalJson(ruling.actual)} where the specification requires ${canonicalJson(ruling.expected)}`,
+      );
     }
     if (body.type === "task_settled") onDone();
   };

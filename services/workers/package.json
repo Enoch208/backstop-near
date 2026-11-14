@@ -12,6 +12,7 @@
     "@backstop/agents": "workspace:*",
     "@backstop/fixture-checkout": "workspace:*",
     "@backstop/shared": "workspace:*",
+    "@backstop/verifier": "workspace:*",
     "tsx": "4.23.15",
     "zod": "4.6.7"
   }

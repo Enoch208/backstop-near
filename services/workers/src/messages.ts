@@ -25,6 +25,13 @@ export const workerEventSchema = z.object({
       evidence: evidenceBundleSchema,
       challengeDeadlineMs: z.int().nullable(),
     }),
+    z.object({ type: z.literal("attempt_failed"), attempt: z.int(), reason: z.string() }),
+    z.object({
+      type: z.literal("attempt_rejected"),
+      attempt: z.int(),
+      reason: z.string(),
+      ruling: z.object({ expected: z.json(), actual: z.json() }).nullable(),
+    }),
     z.object({ type: z.literal("task_settled") }),
   ]),
 });

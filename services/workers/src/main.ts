@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { asPrincipal, roster, type RosterName } from "@backstop/agents";
+import { asPrincipal, modelFromEnv, roster, type RosterName } from "@backstop/agents";
 import { agentLoop } from "./agent-loop.js";
 import { apiClient } from "./client.js";
 
@@ -23,12 +23,20 @@ const agent = roster[name];
 const log = (line: string) =>
   process.stdout.write(`[${agent.agentId} pid ${String(process.pid)}] ${line}\n`);
 const client = apiClient(api, asPrincipal(agent));
-const onEvent = agentLoop(agent, client, taskId, log, () => {
-  log("task settled; exiting");
-  process.exit(0);
-});
+const model = modelFromEnv(process.env);
+const onEvent = agentLoop(
+  agent,
+  client,
+  taskId,
+  log,
+  () => {
+    log("task settled; exiting");
+    process.exit(0);
+  },
+  model,
+);
 
-log(`started for ${taskId}`);
+log(`started for ${taskId}${model === null ? "" : ` with live AI (${model.model})`}`);
 client.follow(taskId, onEvent).then(
   () => {
     log("event stream closed");
