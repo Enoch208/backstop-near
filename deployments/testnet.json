@@ -169,6 +169,188 @@
         "signal": "SIGKILL"
       },
       "ledgerState": "SETTLED"
+    },
+    {
+      "at": "2026-11-14T12:35:37.321Z",
+      "kind": "live swarm",
+      "taskId": "checkout-live-92747",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "DJXr2viwaavmhcVnLCuUBtpRNsxTRopv1twB7VpapYgt",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/DJXr2viwaavmhcVnLCuUBtpRNsxTRopv1twB7VpapYgt"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "9LLbPWUeC7D9Jm1o9TL4kYCSddwUFayijBDeg37Ja3DP",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/9LLbPWUeC7D9Jm1o9TL4kYCSddwUFayijBDeg37Ja3DP"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "HVEW8BuVormsytNM9tJMPFdPKrwLQJqEXCSAUPFHw5NV",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/HVEW8BuVormsytNM9tJMPFdPKrwLQJqEXCSAUPFHw5NV"
+        },
+        {
+          "label": "Coordinator commits attempt 1 to alpha",
+          "txHash": "heFx414LVYXqeFWABVmJ3WGMWLbpP7hXjuc8xZQqUJS",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/heFx414LVYXqeFWABVmJ3WGMWLbpP7hXjuc8xZQqUJS"
+        },
+        {
+          "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+          "txHash": "GvHiWet2wpzZwjr2W4v4UvpHP5XiRzUagYDhH7W7tTyY",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/GvHiWet2wpzZwjr2W4v4UvpHP5XiRzUagYDhH7W7tTyY"
+        },
+        {
+          "label": "Coordinator commits attempt 2 to beta",
+          "txHash": "DR8jUsMjnfuhPPz246UzTYPCid3Zq3ZW3JdCECEkMPJq",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/DR8jUsMjnfuhPPz246UzTYPCid3Zq3ZW3JdCECEkMPJq"
+        },
+        {
+          "label": "Verifier records REJECT for attempt 2",
+          "txHash": "89ajYC3sV3odc8rFHvKTK1b4GzUsuethT79AMQRHWW4V",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/89ajYC3sV3odc8rFHvKTK1b4GzUsuethT79AMQRHWW4V"
+        },
+        {
+          "label": "Coordinator commits attempt 3 to gamma",
+          "txHash": "EB7ngs5nrGS7g1P4ReCUBm8rkm85JTLyknwLm7BXo3X3",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/EB7ngs5nrGS7g1P4ReCUBm8rkm85JTLyknwLm7BXo3X3"
+        },
+        {
+          "label": "Verifier records ACCEPT for attempt 3",
+          "txHash": "DGMSRA1njaqoosvm4EbZHUbZnByRhSk1eHK1vocicGA1",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/DGMSRA1njaqoosvm4EbZHUbZnByRhSk1eHK1vocicGA1"
+        },
+        {
+          "label": "Coordinator finalizes the success settlement",
+          "txHash": "2gvvBsd6e6fknpRZBvD1ufd7zmPUTxRUe2V8NEMKVS59",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/2gvvBsd6e6fknpRZBvD1ufd7zmPUTxRUe2V8NEMKVS59"
+        },
+        {
+          "label": "A repeated settlement is refused",
+          "txHash": "6ZUX3R9yyxGKvoW8MWJ48s96tUWXzjSVN6j79XRJHFBi",
+          "outcome": "refused ERR_ALREADY_SETTLED",
+          "explorer": "https://testnet.nearblocks.io/txns/6ZUX3R9yyxGKvoW8MWJ48s96tUWXzjSVN6j79XRJHFBi"
+        }
+      ],
+      "primaryExit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "ledgerState": "SETTLED",
+      "intentQuotes": []
+    },
+    {
+      "at": "2026-11-14T12:36:57.858Z",
+      "kind": "live swarm",
+      "taskId": "checkout-live-69690",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "5xx7TEeKk2ry9bqicHyFVCfudzVShwBgToZq6bKpyYBv",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/5xx7TEeKk2ry9bqicHyFVCfudzVShwBgToZq6bKpyYBv"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "A1c7VE8XvMrzdotQrY6yQ2xQoRgMGewrWwdb75EroSVD",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/A1c7VE8XvMrzdotQrY6yQ2xQoRgMGewrWwdb75EroSVD"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "3m6A5ioztLyVH5e4nhvURoP6E6CZfMKeyVrsVE5Zg6wx",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/3m6A5ioztLyVH5e4nhvURoP6E6CZfMKeyVrsVE5Zg6wx"
+        },
+        {
+          "label": "Coordinator commits attempt 1 to alpha",
+          "txHash": "6eK322mv62mZhuQ8ZhBfxtboVqX73hVp9ZGu8c9Le4Xf",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/6eK322mv62mZhuQ8ZhBfxtboVqX73hVp9ZGu8c9Le4Xf"
+        },
+        {
+          "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+          "txHash": "71XNVeXp4AU9BtrPj7jbLsAjJt7xT4FMiT5ZXdGfySj8",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/71XNVeXp4AU9BtrPj7jbLsAjJt7xT4FMiT5ZXdGfySj8"
+        },
+        {
+          "label": "Coordinator commits attempt 2 to beta",
+          "txHash": "6MDd873LishTfJBkwz1ygrLgmSYTymrUSGxRGyLoqEWW",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/6MDd873LishTfJBkwz1ygrLgmSYTymrUSGxRGyLoqEWW"
+        },
+        {
+          "label": "Verifier records REJECT for attempt 2",
+          "txHash": "BSNEcuHfxrjYuN1L8LBrE4VPjSYg5PboaEm1Mzq9Pypp",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/BSNEcuHfxrjYuN1L8LBrE4VPjSYg5PboaEm1Mzq9Pypp"
+        },
+        {
+          "label": "Coordinator commits attempt 3 to gamma",
+          "txHash": "H8UWWgyBAb53BhPQmTmCD38BiyiuQBLUtinufhNU7143",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/H8UWWgyBAb53BhPQmTmCD38BiyiuQBLUtinufhNU7143"
+        },
+        {
+          "label": "Verifier records ACCEPT for attempt 3",
+          "txHash": "FrNCGTCyCDnZLuegKE8Uv8yt2cm3T8TfxD8PgtGyk8iZ",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/FrNCGTCyCDnZLuegKE8Uv8yt2cm3T8TfxD8PgtGyk8iZ"
+        },
+        {
+          "label": "Coordinator finalizes the success settlement",
+          "txHash": "2vDxabn6Fiqn2VhCpcB7jQvBCo1tG5wBCF6S8bkYbjG1",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/2vDxabn6Fiqn2VhCpcB7jQvBCo1tG5wBCF6S8bkYbjG1"
+        },
+        {
+          "label": "A repeated settlement is refused",
+          "txHash": "HUqsGDeWMVGwmtKNzBeaQYRHv8tCoHuqXwxow9WoRECm",
+          "outcome": "refused ERR_ALREADY_SETTLED",
+          "explorer": "https://testnet.nearblocks.io/txns/HUqsGDeWMVGwmtKNzBeaQYRHv8tCoHuqXwxow9WoRECm"
+        }
+      ],
+      "primaryExit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "ledgerState": "SETTLED",
+      "intentQuotes": [
+        {
+          "transferId": "checkout-live-69690:3:1",
+          "agentId": "delta",
+          "payoutYocto": "120000000000000000000000",
+          "wants": "USDC on Base",
+          "recipient": "0x6cf8227bbe2ef5f0b7bfd9aa62c3fd3da19d4d22",
+          "quote": {
+            "quote": {
+              "amountIn": "120000000000000000000000",
+              "amountInFormatted": "0.12",
+              "amountOut": "396993",
+              "amountOutFormatted": "0.396993",
+              "amountOutUsd": "0.396835393779",
+              "minAmountOut": "393023",
+              "timeEstimate": 14
+            },
+            "signature": "ed25519:2TVMAznKsnberX72cFUYGVmwu4gCd95VwNnvZnPRiTUDjV94HYfAv115kJZShNgVpLFvFciDKsF6hz9vPCxjNps9",
+            "timestamp": "2026-11-14T12:36:52.026Z",
+            "correlationId": "58bbcd1b-f43e-4554-99bf-ce8e510ff0a1"
+          },
+          "error": null,
+          "quotedAtMs": 1794659815148
+        }
+      ]
     }
   ]
 }
