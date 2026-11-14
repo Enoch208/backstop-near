@@ -4,25 +4,25 @@ const attacks = [
   {
     code: "STALE_LEASE",
     title: "A killed worker comes back",
-    body: "Its late heartbeat, checkpoint or result carries an old fencing token, and the orchestrator refuses all three.",
+    body: "Its late writes carry an old fencing token and are refused.",
     by: "Fenced leases",
   },
   {
     code: "ERR_ALREADY_SETTLED",
     title: "Someone settles twice",
-    body: "Each task holds one settlement key and every transfer a deterministic id, so a second settlement fails on chain.",
+    body: "One settlement key per task. The second attempt fails on chain.",
     by: "The vault contract",
   },
   {
     code: "ERR_UNKNOWN_TEE_SIGNER",
     title: "An agent forges an AI receipt",
-    body: "A signature from any key the vault has not registered for that model is refused, and so is a genuine reply swapped for other code.",
+    body: "Unregistered keys and swapped code are both refused.",
     by: "ecrecover in the vault",
   },
   {
     code: "MethodNameMismatch",
     title: "The coordinator's key leaks",
-    body: "Role keys are function-call keys for their own vault methods. They cannot move NEAR or call anything else.",
+    body: "Role keys can call their own vault methods and nothing else.",
     by: "NEAR access keys",
   },
 ];

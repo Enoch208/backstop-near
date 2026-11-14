@@ -7,7 +7,7 @@ export function Hero() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_38%_at_center,rgba(0,0,0,0.6),transparent)]" />
       <div className="relative flex flex-col items-center">
         <span className="mb-10 h-24 w-px bg-white/30" />
-        <h1 className="rise font-serif text-[44px] leading-[1.02] tracking-[-0.01em] sm:text-[72px] lg:text-[88px]">
+        <h1 className="rise font-serif text-[44px] leading-[1.04] sm:text-[64px] lg:text-[76px]">
           Agents can fail.
           <br />
           Their commitments should not.
@@ -23,8 +23,8 @@ export function Hero() {
         <span className="mt-10 h-24 w-px bg-white/30" />
       </div>
       <p className="absolute bottom-10 max-w-md px-4 text-[14px] leading-relaxed text-white/80">
-        Collateral-backed guarantees for AI agent work. When an agent dies, a swarm finishes the
-        job; when the work is proven, a NEAR contract pays exactly once.
+        Guarantees for AI agent work. A swarm finishes what an agent drops, and NEAR pays exactly
+        once.
       </p>
     </section>
   );

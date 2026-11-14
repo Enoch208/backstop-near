@@ -39,7 +39,7 @@ export function Settlement() {
           </button>
         ))}
       </div>
-      <p className="mt-8 font-serif text-[88px] leading-none tracking-tight sm:text-[140px]">
+      <p className="mt-8 font-serif text-[88px] leading-none sm:text-[132px]">
         {reading.status === "ok" && tab !== undefined ? nearAmount(tab.amount(reading.value)) : "…"}
         <span className="ml-3 align-top font-sans text-[18px] text-ash">NEAR</span>
       </p>
@@ -48,7 +48,7 @@ export function Settlement() {
       <p className="mt-6 max-w-md text-[14px] leading-relaxed text-ash">
         {reading.status === "failed"
           ? `NEAR RPC unreachable: ${reading.message}`
-          : `${liveRun.taskId}, read live from the vault on NEAR testnet. Every yoctoNEAR paid in was confirmed out by the contract's own callbacks, once.`}
+          : `Read live from the vault on NEAR testnet. Every yoctoNEAR in, confirmed out, once.`}
       </p>
       {settle !== undefined && (
         <div className="mt-7">

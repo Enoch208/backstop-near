@@ -5,15 +5,15 @@ import { AppShot } from "./AppShot.js";
 const folds = [
   {
     title: "A dead agent loses its lease",
-    body: "Every worker holds a fenced lease and must keep beating. The judge sends a real SIGKILL; the heartbeats stop, the lease lapses, and any late write from the dead process is refused with STALE_LEASE.",
+    body: "Its heartbeats stop, its lease lapses, and anything it sends late is refused.",
   },
   {
     title: "The market re-auctions the work",
-    body: "Other agents bid on their own to finish from the last checkpoint. The cheapest eligible bid within escrow plus the guarantor's liability wins; anyone who already failed this task is excluded.",
+    body: "Other agents bid to finish from the last checkpoint. The cheapest eligible bid wins.",
   },
   {
     title: "Coalitions form by consent",
-    body: "A lead can propose a team with explicit payout shares, but the bid enters the auction only after every member co-signs its own seat with its own key.",
+    body: "Teams bid with explicit shares. Every member co-signs its own seat.",
   },
 ];
 
@@ -31,8 +31,8 @@ export function Recover() {
       </div>
       <div className="max-w-md">
         <p className="text-[13px] text-ash">Recover</p>
-        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight">
-          Kill the agent. The swarm finishes the job, and nobody tells it to.
+        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight text-balance">
+          Kill the agent. The swarm finishes the job.
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">
           <Pill to="/live">Watch it live</Pill>

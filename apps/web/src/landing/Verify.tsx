@@ -6,15 +6,15 @@ import { enclaveKey, liveRun, repository } from "../data/record.js";
 const folds = [
   {
     title: "Held-out checks and a paid challenger",
-    body: "The verifier runs the patch on public and held-out cases in a sandbox and signs the evidence. During the challenge window a challenger is paid to find any input where the patch disagrees with the reference; one reproducible counterexample rejects it.",
+    body: "Hidden tests run in a sandbox, and a challenger is paid to break the patch.",
   },
   {
     title: "The model's words, signed in an enclave",
-    body: "Live patches come from DeepSeek V4.1 Flash inside NEAR AI's TEE. Its key was checked against Intel's TDX quote, a fresh nonce and NVIDIA's GPU attestation before the vault owner registered it.",
+    body: "Live patches come from a model in NEAR AI's TEE, signed by an attested key.",
   },
   {
     title: "The vault checks the signature itself",
-    body: "record_attested_verdict recovers the signer with ecrecover from the receipt and refuses any key it has not registered for that model. An agent cannot pass off its own code as the model's.",
+    body: "The contract recovers the signer on chain and refuses any unregistered key.",
   },
 ];
 
@@ -65,8 +65,8 @@ export function Verify() {
     >
       <div className="max-w-md lg:order-1">
         <p className="text-[13px] text-ash">Verify</p>
-        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight">
-          Nothing is paid until the verifier, the enclave and the vault agree.
+        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight text-balance">
+          Paid only when the verifier, the enclave and the vault agree.
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">
           <Pill to={enclaveKey.explorer}>See the enclave key on NEAR</Pill>
