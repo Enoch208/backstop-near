@@ -3,7 +3,7 @@ import { runIsolated } from "@backstop/verifier";
 import type { TaskDefinition, Value } from "./tasks.js";
 
 function makeCases(task: TaskDefinition, name: string, inputs: readonly Value[]): SuiteCase[] {
-  const results = runIsolated(task.reference, task.entry, inputs);
+  const results = runIsolated(task.reference, task.entry, inputs, 5_000);
   return inputs.map((input, index) => {
     const result = results[index];
     if (result?.ok !== true)

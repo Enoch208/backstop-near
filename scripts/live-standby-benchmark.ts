@@ -1,13 +1,16 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { join } from "node:path";
 import { modelFromEnv } from "@backstop/agents";
 import { digestOf, seededRandom } from "@backstop/shared";
 import { blindTasks } from "./benchmark/blind-tasks.js";
 import { prepare } from "./benchmark/evaluate.js";
+import { loadExternalTasks } from "./benchmark/external-tasks.js";
 import { limits, type Inference } from "./benchmark/inference.js";
 import { benchmarkFaults, createBenchLane } from "./benchmark/live-pair.js";
+import { operatorSpecs } from "./benchmark/operator-process.js";
 import { verifyStandbyRun } from "./benchmark/verify-standby.js";
+import { z } from "zod";
 
 const { values } = parseArgs({
   options: {
@@ -17,10 +20,15 @@ const { values } = parseArgs({
     lanes: { type: "string", default: "4" },
     repeats: { type: "string", default: "2" },
     pilot: { type: "boolean", default: false },
+    external: { type: "boolean", default: false },
+    "resume-from": { type: "string" },
   },
 });
 if (values.verify !== undefined) {
-  const result = verifyStandbyRun(values.verify);
+  const result = verifyStandbyRun(
+    values.verify,
+    values.external ? await loadExternalTasks() : blindTasks,
+  );
   process.stdout.write(`${JSON.stringify(result)}\n`);
   process.exit(0);
 }
@@ -56,7 +64,8 @@ if (
 )
   throw new Error("Configure two distinct inference providers");
 
-const tasks = blindTasks.map(prepare);
+const definitions = values.external ? await loadExternalTasks() : blindTasks;
+const tasks = definitions.map(prepare);
 const seed = 560_831;
 const random = seededRandom(seed);
 const blocks = (values.pilot ? tasks.slice(0, 1) : tasks)
@@ -80,7 +89,13 @@ const trials: Trial[] = [];
 const metadata = {
   startedAt,
   seed,
-  corpusHash: digestOf(blindTasks),
+  corpusHash: digestOf(definitions),
+  repeats,
+  pilot: values.pilot,
+  ...(values.external && {
+    fixedPolicy: "ascending quoted price in each tier",
+    quotes: operatorSpecs,
+  }),
   expectedTrials,
   limits,
   budgetNear: { escrow: "0.40", premium: "0.04", bond: "0.25", capacity: "0.65" },
@@ -96,15 +111,72 @@ const metadata = {
     "Paired live-inference repairs, pinned held-out acceptance and independent audit tests. HTTP coordinator, persisted events, real worker processes, fixture vault transfers. Fixed specialists and Backstop use the same roster, caps, timing and standby commitments on every pair.",
 };
 const save = () => {
+  const rows = [...prior, ...trials];
   writeFileSync(
     values.out ?? "",
-    JSON.stringify({ ...metadata, completedTrials: trials.length, trials }, null, 2) + "\n",
+    JSON.stringify({ ...metadata, completedTrials: rows.length, trials: rows }, null, 2) + "\n",
   );
 };
+const prior: unknown[] = [];
+const completedBlocks = new Set<string>();
+const blockId = (task: string, fault: string, repeat: number) =>
+  `${task}/${fault}/${String(repeat)}`;
+if (values["resume-from"] !== undefined) {
+  const previous = z
+    .object({
+      corpusHash: z.string(),
+      seed: z.int(),
+      expectedTrials: z.int(),
+      fixedPolicy: z.literal("ascending quoted price in each tier").optional(),
+      startedAt: z.iso.datetime(),
+      trials: z.array(
+        z
+          .object({
+            task: z.string(),
+            fault: z.enum(benchmarkFaults),
+            repeat: z.int(),
+            mode: z.enum(["market", "fixed"]),
+          })
+          .passthrough(),
+      ),
+    })
+    .parse(JSON.parse(readFileSync(values["resume-from"], "utf8")));
+  if (
+    previous.corpusHash !== metadata.corpusHash ||
+    previous.seed !== seed ||
+    previous.expectedTrials !== expectedTrials ||
+    previous.fixedPolicy !== metadata.fixedPolicy
+  )
+    throw new Error("Resume requires the same corpus, seed, run size, and fixed policy");
+  Object.assign(metadata, { resumedFromStartedAt: previous.startedAt, lanes: laneCount });
+  const grouped = new Map<string, typeof previous.trials>();
+  for (const row of previous.trials) {
+    const key = blockId(row.task, row.fault, row.repeat);
+    const group = grouped.get(key) ?? [];
+    group.push(row);
+    grouped.set(key, group);
+  }
+  for (const [key, rows] of grouped) {
+    if (rows.length !== 2 || rows[0]?.mode === rows[1]?.mode) continue;
+    completedBlocks.add(key);
+    prior.push(...rows);
+  }
+  process.stdout.write(
+    `Preserved ${String(prior.length)} rows in complete pairs from the preceding run.\n`,
+  );
+}
+const pending = blocks.filter(
+  ({ task, fault, repeat }) => !completedBlocks.has(blockId(task.id, fault, repeat)),
+);
 save();
 const lanes = await Promise.allSettled(
-  Array.from({ length: Math.min(laneCount, blocks.length) }, (_, index) =>
-    createBenchLane(join(values.state ?? "", `lane-${String(index)}.sqlite`), primary, secondary),
+  Array.from({ length: Math.min(laneCount, pending.length) }, (_, index) =>
+    createBenchLane(
+      join(values.state ?? "", `lane-${String(index)}.sqlite`),
+      primary,
+      secondary,
+      values.external,
+    ),
   ),
 );
 try {
@@ -118,7 +190,7 @@ try {
         : [
             (async () => {
               const lane = result.value;
-              for (let block = blocks[cursor++]; block !== undefined; block = blocks[cursor++]) {
+              for (let block = pending[cursor++]; block !== undefined; block = pending[cursor++]) {
                 let shared: Promise<Inference> | undefined;
                 const getInitial = (taskId: string) => (shared ??= lane.generate(taskId));
                 const modes = block.marketFirst
@@ -135,7 +207,7 @@ try {
                   trials.push(row);
                   save();
                   process.stdout.write(
-                    `${String(trials.length)}/${String(expectedTrials)} ${row.taskId} ${row.correct ? "correct" : row.accepted ? "false accept" : "no delivery"}\n`,
+                    `${String(prior.length + trials.length)}/${String(expectedTrials)} ${row.taskId} ${row.correct ? "correct" : row.accepted ? "false accept" : "no delivery"}\n`,
                   );
                 }
               }

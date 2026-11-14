@@ -5,6 +5,7 @@ import {
   digestOf,
   digestSchema,
   digestText,
+  formatNear,
   fromYocto,
   leadAgent,
   near,
@@ -13,10 +14,10 @@ import {
   yoctoSchema,
 } from "@backstop/shared";
 import { z } from "zod";
-import { blindTasks } from "./blind-tasks.js";
 import { check, prepare } from "./evaluate.js";
 import { limits } from "./inference.js";
 import { benchmarkFaults } from "./live-pair.js";
+import type { TaskDefinition } from "./tasks.js";
 
 const events = z.discriminatedUnion("type", [
   z.object({ type: z.literal("standby_reserved"), bid: signedBidSchema }),
@@ -27,7 +28,7 @@ const events = z.discriminatedUnion("type", [
   z.object({ type: z.literal("attempt_rejected") }),
   z.object({
     type: z.literal("checkpoint_recorded"),
-    checkpoint: z.object({ contentHash: digestSchema }),
+    checkpoint: z.object({ contentHash: digestSchema, attempt: z.int() }),
   }),
   z.object({ type: z.literal("settlement_started") }),
   z.object({ type: z.literal("task_settled"), kind: z.enum(["success", "failure"]) }),
@@ -37,9 +38,11 @@ const trial = z.object({
   taskId: z.string(),
   fault: z.enum(benchmarkFaults),
   mode: z.enum(["fixed", "market"]),
+  fixedOrder: z.array(z.string()).optional(),
   repeat: z.int().positive(),
   accepted: z.boolean(),
   correct: z.boolean(),
+  elapsedMs: z.int().nonnegative(),
   sharedPrimaryHash: digestSchema.nullable(),
   deliveredSource: z.string().nullable(),
   attempts: z
@@ -61,30 +64,91 @@ const reportSchema = z.object({
   corpusHash: digestSchema,
   expectedTrials: z.int(),
   completedTrials: z.int(),
+  pilot: z.boolean().optional(),
+  repeats: z.int().positive().optional(),
+  fixedPolicy: z.literal("ascending quoted price in each tier").optional(),
+  quotes: z.array(z.object({ id: z.string(), price: z.string(), standby: z.boolean() })).optional(),
   trials: z.array(trial),
 });
 
-export function verifyStandbyRun(path: string) {
+function summarize(rows: readonly z.infer<typeof trial>[]) {
+  const correct = rows.filter((row) => row.correct).length;
+  const costs = rows.flatMap(({ transfers }) =>
+    transfers.filter(({ purpose }) =>
+      ["payout", "premium_earned", "compensation"].includes(purpose),
+    ),
+  );
+  const total = costs.reduce((sum, { amountYocto }) => sum + fromYocto(amountYocto), 0n);
+  const bond = costs
+    .filter(({ pool }) => pool === "bond")
+    .reduce((sum, { amountYocto }) => sum + fromYocto(amountYocto), 0n);
+  const p95 = rows.map(({ elapsedMs }) => elapsedMs).sort((a, b) => a - b)[
+    Math.ceil(rows.length * 0.95) - 1
+  ];
+  return {
+    trials: rows.length,
+    correct,
+    falseAccepts: rows.filter((row) => row.accepted && !row.correct).length,
+    p95Ms: p95 ?? null,
+    totalSettlementNear: formatNear(total),
+    settlementNearPerCorrect: correct > 0 ? formatNear(total / BigInt(correct)) : null,
+    bondConsumedNear: formatNear(bond),
+  };
+}
+
+export function verifyStandbyRun(path: string, definitions: readonly TaskDefinition[]) {
   const report = reportSchema.parse(JSON.parse(readFileSync(path, "utf8")));
-  assert.equal(report.corpusHash, digestOf(blindTasks));
+  assert.equal(report.corpusHash, digestOf(definitions));
   assert.equal(report.completedTrials, report.expectedTrials);
   assert.equal(report.trials.length, report.expectedTrials);
-  const pairs = new Map<string, { hash: string; mode: string }>();
-  const tasks = new Map(blindTasks.map((task) => [task.id, prepare(task)]));
+  const pairs = new Map<
+    string,
+    { hash: string; mode: string; correct: boolean; assignments: string[] }
+  >();
+  const selected = report.pilot ? definitions.slice(0, 1) : definitions;
+  const tasks = new Map(selected.map((task) => [task.id, prepare(task)]));
+  if (report.repeats !== undefined)
+    assert.equal(
+      report.expectedTrials,
+      selected.length * benchmarkFaults.length * report.repeats * 2,
+    );
+  const quotes = new Map(report.quotes?.map(({ id, price }) => [id, near(price)]));
+  const fixedOrder = (report.quotes ?? [])
+    .filter(({ id }) => id !== "blind-primary")
+    .sort((a, b) => {
+      const byTier = Number(a.standby) - Number(b.standby);
+      if (byTier !== 0) return byTier;
+      const left = near(a.price);
+      const right = near(b.price);
+      return left < right ? -1 : left > right ? 1 : a.id.localeCompare(b.id);
+    })
+    .map(({ id }) => id);
   const seen = new Set<string>();
   let deliveries = 0;
   let standby = 0;
+  let matchingAssignments = 0;
+  let matchingFirstRecovery = 0;
+  let marketWins = 0;
+  let fixedWins = 0;
   for (const row of report.trials) {
     const task = tasks.get(row.task);
     assert(task !== undefined);
+    assert.equal(row.taskId, `${row.task}-${row.fault}-${String(row.repeat)}-${row.mode}`);
+    if (report.repeats !== undefined) assert(row.repeat <= report.repeats);
+    if (report.fixedPolicy !== undefined && row.mode === "fixed")
+      assert.deepEqual(row.fixedOrder, fixedOrder);
     assert(!seen.has(row.taskId));
     seen.add(row.taskId);
     const commits = new Map<string, { index: number; signer: string }>();
     const ready = new Set<string>();
     const checkpoints = [];
+    let primaryCheckpoint = null;
     const assigned = [];
     for (const [index, { body }] of row.events.entries()) {
-      if (body.type === "checkpoint_recorded") checkpoints.push(body.checkpoint.contentHash);
+      if (body.type === "checkpoint_recorded") {
+        checkpoints.push(body.checkpoint.contentHash);
+        if (body.checkpoint.attempt === 1) primaryCheckpoint = body.checkpoint.contentHash;
+      }
       if (body.type === "standby_reserved" || body.type === "attempt_assigned") {
         const signed = body.bid;
         assert.equal(signed.bid.taskId, row.taskId);
@@ -95,6 +159,8 @@ export function verifyStandbyRun(path: string) {
           commits.set(signed.bidHash, { index, signer: signed.signature.publicKey });
         } else {
           assigned.push(signed);
+          if (report.fixedPolicy !== undefined && signed.bid.epoch > 0)
+            assert.equal(fromYocto(signed.bid.amountYocto), quotes.get(leadAgent(signed.bid)));
           if (signed.bid.purpose === "standby") {
             assert(ready.has(signed.bidHash));
             const activation = row.events[index - 1]?.body;
@@ -115,12 +181,20 @@ export function verifyStandbyRun(path: string) {
     const primaryIndex = row.events.findIndex(({ body }) => body.type === "attempt_assigned");
     assert([...commits.values()].every(({ index }) => index < primaryIndex));
     const pairKey = `${row.task}/${row.fault}/${String(row.repeat)}`;
-    const hash = digestOf([row.sharedPrimaryHash, checkpoints[0] ?? null]);
+    const hash = digestOf([row.sharedPrimaryHash, primaryCheckpoint]);
+    const assignments = assigned.map(({ bid }) => leadAgent(bid));
     const pair = pairs.get(pairKey);
-    if (pair === undefined) pairs.set(pairKey, { hash, mode: row.mode });
+    if (pair === undefined)
+      pairs.set(pairKey, { hash, mode: row.mode, correct: row.correct, assignments });
     else {
       assert.equal(hash, pair.hash);
       assert.notEqual(row.mode, pair.mode);
+      if (JSON.stringify(assignments) === JSON.stringify(pair.assignments)) matchingAssignments++;
+      if (assignments[1] === pair.assignments[1]) matchingFirstRecovery++;
+      if (pair.correct !== row.correct) {
+        if (row.correct ? row.mode === "market" : pair.mode === "market") marketWins++;
+        else fixedWins++;
+      }
     }
     if (row.fault === "primary-provider-outage")
       assert(assigned.slice(1).every((bid) => bid.bid.purpose === "standby"));
@@ -152,5 +226,32 @@ export function verifyStandbyRun(path: string) {
     }
   }
   assert.equal(report.trials.length, pairs.size * 2);
-  return { trials: report.trials.length, pairs: pairs.size, deliveries, standby };
+  const byMode = Object.fromEntries(
+    (["market", "fixed"] as const).map((mode) => {
+      const rows = report.trials.filter((row) => row.mode === mode);
+      return [
+        mode,
+        {
+          overall: summarize(rows),
+          byFault: Object.fromEntries(
+            benchmarkFaults.map((fault) => [
+              fault,
+              summarize(rows.filter((row) => row.fault === fault)),
+            ]),
+          ),
+        },
+      ];
+    }),
+  );
+  return {
+    trials: report.trials.length,
+    pairs: pairs.size,
+    deliveries,
+    standby,
+    matchingAssignments,
+    matchingFirstRecovery,
+    marketWins,
+    fixedWins,
+    byMode,
+  };
 }

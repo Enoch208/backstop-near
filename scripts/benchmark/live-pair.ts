@@ -39,6 +39,7 @@ export async function createBenchLane(
   statePath: string,
   primary: ModelConfig,
   secondary: ModelConfig,
+  priceAwareFixed = false,
 ) {
   const runtime = createRuntime(Date.now, false, statePath);
   const api = await startApi(runtime, "127.0.0.1", 0, 30);
@@ -78,7 +79,15 @@ export async function createBenchLane(
   ) {
     const taskId = `${task.id}-${fault}-${String(repeat)}-${mode}`;
     const base = `/api/tasks/${taskId}`;
-    const fixedOrder = [...bids, ...standby].map(({ id }) => id);
+    const fixedRoster = [...bids, ...standby];
+    if (priceAwareFixed) {
+      fixedRoster.sort((left, right) => {
+        const a = near(left.price);
+        const b = near(right.price);
+        return a < b ? -1 : a > b ? 1 : left.id.localeCompare(right.id);
+      });
+    }
+    const fixedOrder = fixedRoster.map(({ id }) => id);
     const repairTask = repairTaskSchema.parse({
       objective: task.objective,
       rules: task.rules,
@@ -226,6 +235,7 @@ export async function createBenchLane(
       taskId,
       task: task.id,
       mode,
+      ...(mode === "fixed" && { fixedOrder }),
       fault,
       repeat,
       correct,

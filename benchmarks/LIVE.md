@@ -125,3 +125,29 @@ The market tied fixed specialists on correct delivery. Settlement cost was 20% l
 pnpm benchmark:standby --verify benchmarks/live-standby.json
 pnpm benchmark:standby --lanes 6 --repeats 2 --out /tmp/backstop-standby.json --state /tmp/backstop-standby-state
 ```
+
+## Outside tasks and a quote-aware fixed order
+
+The external suite adapts ten JavaScript problems from [HumanEval-X](https://github.com/zai-org/CodeGeeX/tree/2838420b7b4492cf3d16bce5320e26e65960c9e2/codegeex/benchmark/humaneval-x/js) and draws its cases from [HumanEval+ v0.1.10](https://github.com/evalplus/humanevalplus_release/releases/tag/v0.1.10). The harness pins both downloads by SHA-256. Each task gets a deliberately broken starter, two public examples, 12 hidden acceptance cases, and 48 separate audit cases. The public datasets may have appeared in model training. The run withheld the acceptance suite, audit cases and reference implementation from the workers.
+
+For the nested bracket problem, the JavaScript reference follows the stated subsequence rule. The EvalPlus Python reference differs on two of the selected inputs. A separate check verified that all 62 selected cases match the subsequence rule by testing whether a split leaves at least two opening brackets on its left and two closing brackets on its right. The other nine JavaScript references agreed with the EvalPlus Python references on every selected case.
+
+Both arms get the same operator quotes and eligibility rules. Fixed specialists lock in ascending price within each tier before primary assignment. Ordinary workers quote 0.28 and 0.44 NEAR. Standby workers quote 0.52 and 0.58 NEAR. Backstop runs its normal auction. Under this quote schedule both policies prefer the same eligible worker. Each pair shares primary inference and inherits the same initial checkpoint. Recovery inference runs separately. This run uses the preceding benchmark's budget, providers, inference limits, four fault conditions, and fixture vault. All workers are team-controlled processes.
+
+The adapter puts the original positional arguments inside one JSON array. For HumanEval/119, that means the two strings are inside the array's first element. Several generated patches treated the outer array as the pair of strings even after a rejected attempt. This is a failure of the tested repair flow on the adapter's input shape and does not establish difficulty on the unadapted upstream benchmark.
+
+The run on 14 November 2026 completed 80 pairs. The original eight-lane run supplied 74 completed pairs. Six incomplete pairs ran at three lanes after stale leases and claims halted several lanes. Both arms of each recovered pair used the same concurrency and task policy. The latency figures reflect the combined run on shared hardware.
+
+| Scope | Scheduler | Correct | False accepts | p95 seconds | Settlement cost per correct result | Total bond consumed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| All trials | Backstop | 66/80 | 2 | 30.60 | 0.430 NEAR | 4.24 NEAR |
+| All trials | Fixed specialists | 68/80 | 2 | 44.98 | 0.425 NEAR | 4.06 NEAR |
+| Primary provider outage | Backstop | 18/20 | 1 | 28.67 | 0.564 NEAR | 2.55 NEAR |
+| Primary provider outage | Fixed specialists | 19/20 | 1 | 21.21 | 0.554 NEAR | 2.52 NEAR |
+
+Backstop alone succeeded in one pair, and fixed specialists alone succeeded in three. All 63 pairs that reached recovery in both arms selected the same first recovery worker. The 2.5 percentage point delivery deficit describes this run. With a static quote schedule that leads both policies to the same choices, independent recovery inference and run timing can change outcomes without a scheduling advantage. Settlement cost includes consumed bonds and excludes provider bills, gas, and standby retainers. [Raw results](external-standby.json)
+
+```sh
+pnpm benchmark:standby --external --verify benchmarks/external-standby.json
+pnpm benchmark:standby --external --lanes 8 --repeats 2 --out /tmp/backstop-external.json --state /tmp/backstop-external-state
+```
