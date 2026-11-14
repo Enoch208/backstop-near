@@ -1,16 +1,60 @@
 import { describe, expect, it } from "vitest";
 import { fixtureBids, roster, type FixtureAgent, type ModelConfig } from "@backstop/agents";
-import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
-import type { Json } from "@backstop/shared";
+import {
+  candidate,
+  checkoutManifest,
+  liveTiming,
+  type CandidateName,
+} from "@backstop/fixture-checkout";
+import { checkpointHash, near, toYocto, type FailureReason, type Json } from "@backstop/shared";
 import { agentLoop } from "../src/agent-loop.js";
 import type { ApiClient } from "../src/client.js";
 
 const taskId = "checkout-loop";
 
-function fakeClient(excludedAgents: string[] = []) {
+type FakeMarket = {
+  readonly excludedAgents?: string[];
+  readonly failures?: FailureReason[];
+  readonly checkpoint?: CandidateName;
+  readonly served?: string;
+};
+
+function fakeClient(market: FakeMarket = {}) {
   const posts: { path: string; body: Json }[] = [];
   const leased = { events: [{ body: { type: "lease_granted", lease: { fencingToken: 2 } } }] };
   const manifest = checkoutManifest({ taskId, createdAtMs: 0, maxAttempts: 3, timing: liveTiming });
+  const resumed = market.checkpoint === undefined ? null : candidate(market.checkpoint);
+  const checkpoint =
+    resumed === null
+      ? null
+      : {
+          taskId,
+          attempt: 1,
+          stateVersion: 7,
+          contentHash: resumed.artifactHash,
+          artifactUri: `fixture://checkout/candidates/${resumed.name}.js`,
+          validatedSubtasks: ["discount-before-tax"],
+          provenanceEventIds: [`${taskId}#7`],
+          parentCheckpointHash: null,
+        };
+  const task = {
+    state: "RECOVERY_OPEN",
+    version: 9,
+    attempt: 1,
+    manifest: { ...manifest, deadlineMs: Date.now() + 30 * 60_000 },
+    excludedAgents: market.excludedAgents ?? [],
+    checkpoints: checkpoint === null ? [] : [{ checkpoint, hash: checkpointHash(checkpoint) }],
+    failures: (market.failures ?? []).map((reason, index) => ({ attempt: index + 1, reason })),
+    ledger: {
+      available: {
+        escrow: toYocto(near("0.40")),
+        premium: toYocto(near("0.04")),
+        bond: toYocto(near("0.25")),
+      },
+      maxBondLiability: toYocto(near("0.25")),
+      bondConsumed: "0",
+    },
+  };
   const client: ApiClient = {
     post: (path, body) => {
       posts.push({ path, body });
@@ -19,19 +63,13 @@ function fakeClient(excludedAgents: string[] = []) {
         body: path.endsWith("/claim") ? leased : { events: [] },
       });
     },
-    get: () =>
+    get: (path) =>
       Promise.resolve({
         status: 200,
-        body: {
-          task: {
-            state: "RECOVERY_OPEN",
-            version: 9,
-            attempt: 1,
-            manifest,
-            excludedAgents,
-            checkpoints: [],
-          },
-        },
+        body:
+          path.includes("/artifacts/") && resumed !== null
+            ? { artifactHash: resumed.artifactHash, source: market.served ?? resumed.source }
+            : { task },
       }),
     follow: () => Promise.resolve(),
   };
@@ -40,8 +78,8 @@ function fakeClient(excludedAgents: string[] = []) {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
-function loopFor(agent: FixtureAgent, excluded: string[] = [], model: ModelConfig | null = null) {
-  const fake = fakeClient(excluded);
+function loopFor(agent: FixtureAgent, market: FakeMarket = {}, model: ModelConfig | null = null) {
+  const fake = fakeClient(market);
   const lines: string[] = [];
   const onEvent = agentLoop(
     agent,
@@ -59,7 +97,7 @@ const event = (version: number, body: Record<string, unknown>) => ({ taskId, ver
 describe("the agent loop", () => {
   it("lets its lease lapse instead of holding it when the model call fails", async () => {
     const unreachable = { baseUrl: "http://127.0.0.1:9", apiKey: "test", model: "test/model" };
-    const beta = loopFor(roster.beta, [], unreachable);
+    const beta = loopFor(roster.beta, {}, unreachable);
     beta.onEvent(
       event(17, {
         type: "attempt_assigned",
@@ -86,7 +124,10 @@ describe("the agent loop", () => {
   });
 
   it("bids once per recovery epoch, even when the event is delivered twice", async () => {
-    const gamma = loopFor(roster.gamma);
+    const gamma = loopFor(roster.gamma, {
+      checkpoint: "alpha-partial",
+      failures: ["LEASE_EXPIRED"],
+    });
     gamma.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
     gamma.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
     await settle();
@@ -96,8 +137,78 @@ describe("the agent loop", () => {
     });
   });
 
+  it("prices its bid from the checkpoint it would resume and logs why", async () => {
+    const market: FakeMarket = { checkpoint: "alpha-partial", failures: ["LEASE_EXPIRED"] };
+    const beta = loopFor(roster.beta, market);
+    const gamma = loopFor(roster.gamma, market);
+    beta.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
+    gamma.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
+    await settle();
+    expect(beta.posts[0]?.body).toMatchObject({
+      bid: { bid: { amountYocto: toYocto(near("0.25")), estimatedDurationMs: 40_000 } },
+    });
+    expect(gamma.posts[0]?.body).toMatchObject({
+      bid: {
+        bid: {
+          amountYocto: toYocto(near("0.60")),
+          members: [
+            { agentId: "gamma", shareYocto: toYocto(near("0.40")) },
+            { agentId: "delta", shareYocto: toYocto(near("0.20")) },
+          ],
+        },
+      },
+    });
+    expect(beta.lines).toEqual([
+      "pricing: epoch 1: 1 failed attempt so far (LEASE_EXPIRED +25%), risk loading 25%",
+      "pricing: latest checkpoint fails 1 of 4 public cases: 2 units of work (one per failing case, one to re-check the hidden rules)",
+      "pricing: beta (repairer): floor 0.1 NEAR/unit × 2 = 0.2 NEAR, +25% = 0.25 NEAR",
+      "pricing: bids 0.25 NEAR of the 0.65 NEAR left in escrow plus liability",
+      "bid 0.25 NEAR for epoch 1 (HTTP 200)",
+    ]);
+  });
+
+  it("declines to bid, and posts nothing, when the risk is above its appetite", async () => {
+    const epsilon = loopFor(roster.epsilon, {
+      checkpoint: "beta-boundary",
+      failures: ["LEASE_EXPIRED", "CHALLENGE_UPHELD"],
+    });
+    epsilon.onEvent(event(20, { type: "recovery_opened", epoch: 2 }));
+    await settle();
+    expect(epsilon.posts).toEqual([]);
+    expect(epsilon.lines.at(-1)).toBe(
+      "pricing: declines: 125% risk is above epsilon's 50% appetite",
+    );
+  });
+
+  it("prices the original source when the checkpoint it fetched was altered", async () => {
+    const beta = loopFor(roster.beta, {
+      checkpoint: "alpha-partial",
+      served: candidate("original").source.replace("checkoutTotal", "checkoutTotal "),
+      failures: ["LEASE_EXPIRED"],
+    });
+    beta.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
+    await settle();
+    expect(beta.lines[0]).toMatch(/is unavailable or altered; starting fresh$/);
+    expect(beta.lines).toContain(
+      "pricing: latest checkpoint fails 2 of 4 public cases: 3 units of work (one per failing case, one to re-check the hidden rules)",
+    );
+    expect(beta.posts[0]?.body).toMatchObject({
+      bid: { bid: { amountYocto: toYocto(near("0.375")) } },
+    });
+  });
+
+  it("declines when the whole job from the original source costs more than is left", async () => {
+    const gamma = loopFor(roster.gamma);
+    gamma.onEvent(event(10, { type: "recovery_opened", epoch: 1 }));
+    await settle();
+    expect(gamma.posts).toEqual([]);
+    expect(gamma.lines.at(-1)).toBe(
+      "pricing: declines: its floor of 0.72 NEAR is above the 0.65 NEAR left in escrow plus liability",
+    );
+  });
+
   it("stays out of a market that has excluded it", async () => {
-    const beta = loopFor(roster.beta, ["beta"]);
+    const beta = loopFor(roster.beta, { excludedAgents: ["beta"] });
     beta.onEvent(event(22, { type: "recovery_opened", epoch: 2 }));
     await settle();
     expect(beta.posts).toEqual([]);

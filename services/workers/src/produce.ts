@@ -24,7 +24,7 @@ export type WorkContext = {
   readonly resume: Resume | null;
 };
 
-function publicFailures(source: string): { passed: string[]; failures: string[] } {
+export function publicFailures(source: string): { passed: string[]; failures: string[] } {
   const cases = publicView(checkoutSuite).cases;
   const results = runInSandbox(
     source,

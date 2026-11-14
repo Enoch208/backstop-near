@@ -1,25 +1,28 @@
 import {
   decideToJoin,
   endorsement,
-  fixtureBids,
+  priceRecovery,
+  pricedBid,
   primaryBid,
+  recoveryTeam,
   searchCounterexample,
   type FixtureAgent,
   type ModelConfig,
 } from "@backstop/agents";
-import { checkoutSuite } from "@backstop/fixture-checkout";
+import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
 import {
   canonicalJson,
   digestText,
   formatNear,
   fromYocto,
   leadAgent,
+  minYocto,
   pendingEndorsers,
   type Digest,
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
-import { produce, type Resume } from "./produce.js";
+import { produce, publicFailures, type Resume } from "./produce.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -54,15 +57,34 @@ export function agentLoop(
   };
 
   const bidRecovery = async (epoch: number) => {
+    const offer = recoveryTeam(agent.agentId);
+    if (offer === null) return;
     const task = await snapshot();
-    const [mine] = fixtureBids({
-      taskId,
+    const failed = offer.team.find((member) => task.excludedAgents.includes(member.agent.agentId));
+    if (failed !== undefined) {
+      log(`sits out epoch ${String(epoch)}: ${failed.agent.agentId} already failed this task`);
+      return;
+    }
+    const resume = await resumeFrom(task);
+    const check = publicFailures(resume?.source ?? candidate("original").source);
+    const { ledger } = task;
+    const liability = fromYocto(ledger.maxBondLiability) - fromYocto(ledger.bondConsumed);
+    const quote = priceRecovery(offer.team, {
+      budgetYocto:
+        fromYocto(ledger.available.escrow) + minYocto(liability, fromYocto(ledger.available.bond)),
       epoch,
-      nowMs: Date.now(),
-      bidWindowMs: task.manifest.policy.bidWindowMs,
-      excludedAgents: task.excludedAgents,
-    }).filter((signed) => leadAgent(signed.bid) === agent.agentId);
-    if (mine === undefined) return;
+      failures: task.failures.map((failure) => failure.reason),
+      failingCases: check.failures.length,
+      publicCases: check.passed.length + check.failures.length,
+      msLeft: task.manifest.deadlineMs - Date.now(),
+    });
+    for (const line of quote.reasoning) log(`pricing: ${line}`);
+    if (quote.kind === "decline") return;
+    const mine = pricedBid(
+      { taskId, epoch, nowMs: Date.now(), bidWindowMs: task.manifest.policy.bidWindowMs },
+      offer.plan,
+      quote,
+    );
     const reply = await client.post(`${base}/bids`, { bid: mine });
     const kind = pendingEndorsers(mine).length > 0 ? "proposed a coalition at" : "bid";
     log(
