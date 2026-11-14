@@ -12,6 +12,7 @@ import {
 import {
   arenaCase,
   baseline,
+  retryBaseline,
   runArenaCase,
   runEpisode,
   type Episode,
@@ -61,16 +62,23 @@ export function offlineClaims(): Claim[] {
     return {
       backstop: runArenaCase(setup, "backstop"),
       single: runArenaCase(baseline(setup), "single"),
+      retries: runArenaCase(retryBaseline(setup), "retries"),
     };
   });
-  const count = (side: "backstop" | "single", outcome: string) =>
+  const count = (side: "backstop" | "single" | "retries", outcome: string) =>
     rows.filter((row) => row[side].outcome === outcome).length;
-  const arenaClean = rows.every(
-    (row) =>
-      row.backstop.violations.length === 0 &&
-      row.single.violations.length === 0 &&
-      row.backstop.replayMatches,
+  const results = rows.flatMap((row) => [row.backstop, row.single, row.retries]);
+  const violations = results.reduce((total, result) => total + result.violations.length, 0);
+  const mismatches = results.filter((result) => !result.replayMatches).length;
+  const ahead = (["single", "retries"] as const).every(
+    (side) =>
+      count("backstop", "delivered-correct") > count(side, "delivered-correct") &&
+      count("backstop", "delivered-wrong") < count(side, "delivered-wrong"),
   );
+  const tallies = (outcome: string) =>
+    (["backstop", "single", "retries"] as const)
+      .map((side) => String(count(side, outcome)))
+      .join(" / ");
   return [
     {
       claim: "A killed primary is recovered by the swarm and the task settles",
@@ -111,9 +119,9 @@ export function offlineClaims(): Claim[] {
     },
     {
       claim:
-        "Across 32 seeded fault cases Backstop never breaks the ledger and beats a single agent",
-      ok: arenaClean && count("backstop", "delivered-wrong") <= count("single", "delivered-wrong"),
-      evidence: `wrong deliveries ${String(count("backstop", "delivered-wrong"))} vs ${String(count("single", "delivered-wrong"))}, correct ${String(count("backstop", "delivered-correct"))} vs ${String(count("single", "delivered-correct"))}, 0 violations`,
+        "Across 32 seeded fault cases Backstop never breaks the ledger and delivers more correct and fewer wrong patches than a single agent, with or without retries",
+      ok: violations === 0 && mismatches === 0 && ahead,
+      evidence: `correct ${tallies("delivered-correct")}, wrong ${tallies("delivered-wrong")} (Backstop / single / retries), ${String(violations)} violations, ${String(mismatches)} replay mismatches`,
     },
     forgedReceiptClaim(),
     {

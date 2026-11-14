@@ -67,7 +67,13 @@ export function keep(driver: Driver, note: string): void {
   }
 }
 
-export function claimAndCheckpoint(driver: Driver, agent: FixtureAgent): number {
+export type Work = ReturnType<typeof workFor>;
+
+export function claimAndCheckpoint(
+  driver: Driver,
+  agent: FixtureAgent,
+  work: Work = workFor(agent.agentId),
+): number {
   run(
     driver,
     agent.agentId,
@@ -76,7 +82,7 @@ export function claimAndCheckpoint(driver: Driver, agent: FixtureAgent): number 
   );
   const current = record(driver);
   const token = current.fencingToken;
-  const { plan, artifact } = workFor(agent.agentId);
+  const { plan, artifact } = work;
   const checkpoint = {
     taskId: driver.taskId,
     attempt: current.attempt,
@@ -103,8 +109,13 @@ export function claimAndCheckpoint(driver: Driver, agent: FixtureAgent): number 
   return token;
 }
 
-export function submit(driver: Driver, agent: FixtureAgent, token: number): void {
-  const { artifact } = workFor(agent.agentId);
+export function submit(
+  driver: Driver,
+  agent: FixtureAgent,
+  token: number,
+  work: Work = workFor(agent.agentId),
+): void {
+  const { artifact } = work;
   advance(driver, 5_000);
   run(
     driver,
