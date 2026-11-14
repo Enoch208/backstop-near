@@ -73,6 +73,7 @@ export async function runTrial(
     readonly secondary: ModelConfig | null;
     readonly initial: (request: () => Promise<Inference>) => Promise<Inference>;
     readonly standbyAndFeedback?: boolean;
+    readonly freshRetest?: boolean;
   },
 ) {
   const began = performance.now();
@@ -83,6 +84,9 @@ export async function runTrial(
   const excluded: string[] = [];
   const history: string[] = [];
   const improved = matched?.standbyAndFeedback === true;
+  const recoveryExample = improved
+    ? publicRecoveryExample(task.id, matched.freshRetest === true)
+    : undefined;
   const taskId = `bench-${task.id}-${fault}-${String(repeat)}`;
   const standby =
     improved && matched?.secondary !== null && mode !== "single"
@@ -146,7 +150,7 @@ export async function runTrial(
       });
       break;
     }
-    const publicExample = improved && rejects > 0 ? publicRecoveryExample(task.id) : undefined;
+    const publicExample = rejects > 0 ? recoveryExample : undefined;
     const expected =
       publicExample === undefined
         ? undefined
@@ -245,7 +249,7 @@ export async function runTrial(
     if (accepted) break;
     history.push(
       result === "verifier-rejected"
-        ? improved && publicRecoveryExample(task.id) !== undefined
+        ? recoveryExample !== undefined
           ? "The verifier rejected the patch. Check the provided public boundary example and handle the entire class of cases it represents."
           : "The independent verifier found a mismatch on undisclosed cases. Reconsider all edge cases against the specification."
         : result,

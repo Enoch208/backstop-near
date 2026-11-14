@@ -1,3 +1,4 @@
+import { withFreshRegressionProbe } from "./held-out.js";
 import type { TaskDefinition } from "./tasks.js";
 
 export const freshTasks: readonly TaskDefinition[] = [
@@ -261,3 +262,5 @@ export const freshTasks: readonly TaskDefinition[] = [
     ],
   },
 ];
+
+export const freshRetestTasks = freshTasks.map(withFreshRegressionProbe);

@@ -1,14 +1,13 @@
 import type { TaskDefinition } from "./tasks.js";
 
-const regressionInputs: Readonly<
+type RegressionInputs = Readonly<
   Record<
     string,
-    {
-      probe: TaskDefinition["audit"][number];
-      example: TaskDefinition["audit"][number];
-    }
+    { probe: TaskDefinition["audit"][number]; example: TaskDefinition["audit"][number] }
   >
-> = {
+>;
+
+const regressionInputs: RegressionInputs = {
   "quota-rebalance": {
     probe: { units: 7, caps: [0, 0, 0], start: 2 },
     example: { units: 5, caps: [0, 0, 0, 0], start: 1 },
@@ -20,6 +19,44 @@ const regressionInputs: Readonly<
   "alert-episode": {
     probe: { samples: [6, 7, 2, 5, 5], high: 5, low: 2 },
     example: { samples: [8, 8, 3, 9, 9], high: 8, low: 3 },
+  },
+};
+
+const freshRegressionInputs: RegressionInputs = {
+  "incremental-points": {
+    probe: {
+      opening: 3,
+      changes: [
+        ["__proto__", 0, -2],
+        ["constructor", 1, 7],
+        ["__proto__", 1, -1],
+      ],
+    },
+    example: {
+      opening: 10,
+      changes: [
+        ["hasOwnProperty", 0, -4],
+        ["hasOwnProperty", 1, 3],
+      ],
+    },
+  },
+  "meter-pauses": {
+    probe: {
+      sessions: [
+        [1, 3],
+        [1, 3],
+      ],
+      pauses: [[1, 2]],
+      free: 1,
+    },
+    example: {
+      sessions: [
+        [2, 5],
+        [2, 5],
+      ],
+      pauses: [],
+      free: 3,
+    },
   },
 };
 
@@ -373,13 +410,21 @@ export const heldOutTasks: readonly TaskDefinition[] = [
   },
 ];
 
-export const recoveryRetestTasks = heldOutTasks.map((task): TaskDefinition => {
-  const regression = regressionInputs[task.id];
+function withRegressionProbe(task: TaskDefinition, inputs: RegressionInputs): TaskDefinition {
+  const regression = inputs[task.id];
   return regression === undefined
     ? task
     : { ...task, acceptance: [...task.acceptance, regression.probe] };
-});
+}
 
-export function publicRecoveryExample(taskId: string) {
-  return regressionInputs[taskId]?.example;
+export const recoveryRetestTasks = heldOutTasks.map((task) =>
+  withRegressionProbe(task, regressionInputs),
+);
+
+export function withFreshRegressionProbe(task: TaskDefinition) {
+  return withRegressionProbe(task, freshRegressionInputs);
+}
+
+export function publicRecoveryExample(taskId: string, freshRetest: boolean) {
+  return (freshRetest ? freshRegressionInputs : regressionInputs)[taskId]?.example;
 }

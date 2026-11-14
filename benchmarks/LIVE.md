@@ -96,9 +96,12 @@ The retest reused the eight earlier tasks and seed 738291. It added separate acc
 
 Backstop recovered all five of its earlier misses in the retest. Its remaining failure used all three calls on the alert task after injected tool loss. On the fresh tasks the two specialist schedulers each won two pairs and lost two. The Backstop audit caught two patches that mishandled object property names as IDs and one that applied an allowance incorrectly when sessions repeated. These results leave the overall reliability advantage unresolved. Both runs used eight concurrent blocks, the same two providers, and live generation that can vary between runs. [Regression results](recovery-retest.json) · [Fresh results](fresh-recovery.json)
 
+The fresh retest adds acceptance probes for IDs that collide with JavaScript object properties and for duplicate sessions whose individual billable time is zero. On an offline replay of the 110 recorded deliveries, the revised gate rejected all four known incorrect deliveries across the three schedulers and preserved all 106 correct deliveries. A live retest would measure whether the additional recovery attempts produce correct replacements within the same budget.
+
 ```sh
 pnpm benchmark:live --verify-run benchmarks/recovery-retest.json
 pnpm benchmark:live --verify-run benchmarks/fresh-recovery.json
 pnpm benchmark:live --recovery-retest --repeats 2 --concurrency 8 --seed 738291 --out /tmp/backstop-recovery-retest.json
 pnpm benchmark:live --fresh --repeats 2 --concurrency 8 --seed 511723 --out /tmp/backstop-fresh-recovery.json
+pnpm benchmark:live --fresh-retest --repeats 2 --concurrency 8 --seed 511723 --out /tmp/backstop-fresh-retest.json
 ```

@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { modelFromEnv } from "@backstop/agents";
 import { digestOf, seededRandom } from "@backstop/shared";
 import { prepare } from "./benchmark/evaluate.js";
-import { freshTasks } from "./benchmark/fresh-tasks.js";
+import { freshRetestTasks, freshTasks } from "./benchmark/fresh-tasks.js";
 import { heldOutTasks, recoveryRetestTasks } from "./benchmark/held-out.js";
 import { limits, type Inference } from "./benchmark/inference.js";
 import { results } from "./benchmark/report.js";
@@ -21,6 +21,7 @@ const { values } = parseArgs({
     "held-out": { type: "boolean", default: false },
     "recovery-retest": { type: "boolean", default: false },
     fresh: { type: "boolean", default: false },
+    "fresh-retest": { type: "boolean", default: false },
     concurrency: { type: "string", default: "1" },
     repeats: { type: "string", default: "1" },
     seed: { type: "string", default: "20261114" },
@@ -37,20 +38,28 @@ const numeric = (raw: string, name: string, minimum: number, maximum: number): n
   return value;
 };
 
-const improved = values["recovery-retest"] || values.fresh;
+const improved = values["recovery-retest"] || values.fresh || values["fresh-retest"];
 const matched = values["held-out"] || improved;
-const definitions = values.fresh
-  ? freshTasks
-  : values["recovery-retest"]
-    ? recoveryRetestTasks
-    : values["held-out"]
-      ? heldOutTasks
-      : recoveryTasks;
+const definitions = values["fresh-retest"]
+  ? freshRetestTasks
+  : values.fresh
+    ? freshTasks
+    : values["recovery-retest"]
+      ? recoveryRetestTasks
+      : values["held-out"]
+        ? heldOutTasks
+        : recoveryTasks;
 const prepared = definitions.map(prepare);
 const corpusHash = digestOf(definitions);
 if (values["verify-run"] !== undefined) {
   const { trials, deliveries } = verifyRun(values["verify-run"], [
     { tasks: freshTasks.map(prepare), hash: digestOf(freshTasks), faults, matched: true },
+    {
+      tasks: freshRetestTasks.map(prepare),
+      hash: digestOf(freshRetestTasks),
+      faults,
+      matched: true,
+    },
     { tasks: heldOutTasks.map(prepare), hash: digestOf(heldOutTasks), faults, matched: true },
     {
       tasks: recoveryRetestTasks.map(prepare),
@@ -101,17 +110,19 @@ if (values["verify-run"] !== undefined) {
   const random = seededRandom(seed);
   const output =
     values.out ??
-    (values.fresh
-      ? "benchmarks/fresh-recovery.json"
-      : values["recovery-retest"]
-        ? "benchmarks/recovery-retest.json"
-        : values["held-out"]
-          ? values.pilot
-            ? "benchmarks/held-out-pilot.json"
-            : "benchmarks/held-out-results.json"
-          : values.pilot
-            ? "benchmarks/market-pilot.json"
-            : "benchmarks/market-results.json");
+    (values["fresh-retest"]
+      ? "benchmarks/fresh-retest.json"
+      : values.fresh
+        ? "benchmarks/fresh-recovery.json"
+        : values["recovery-retest"]
+          ? "benchmarks/recovery-retest.json"
+          : values["held-out"]
+            ? values.pilot
+              ? "benchmarks/held-out-pilot.json"
+              : "benchmarks/held-out-results.json"
+            : values.pilot
+              ? "benchmarks/market-pilot.json"
+              : "benchmarks/market-results.json");
   const trials: Trial[] = [];
   const blocks = selected
     .flatMap((task) =>
@@ -177,7 +188,14 @@ if (values["verify-run"] !== undefined) {
         block.fault,
         block.repeat,
         seed,
-        matched ? { secondary, initial, standbyAndFeedback: improved } : undefined,
+        matched
+          ? {
+              secondary,
+              initial,
+              standbyAndFeedback: improved,
+              freshRetest: values["fresh-retest"],
+            }
+          : undefined,
       );
       trials.push(trial);
       save();
