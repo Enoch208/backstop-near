@@ -18,7 +18,7 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm install && pnpm episode recovery`                                                                       | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`             | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
 | `pnpm demo`                                                                                                   | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`         | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
-| `pnpm test`                                                                                                   | `90 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `pnpm test`                                                                                                   | `96 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
 | `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox` | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED` | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
 | `pnpm arena`                                                                                                  | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                 | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
 | `(cd contracts/outcome-vault && cargo test)`                                                                  | `37 passed`                                                                                                                                       | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
@@ -94,6 +94,15 @@ This starts a local NEAR node (neard 2.14 sandbox), creates the customer, guaran
 `pnpm chain testnet` does the same on NEAR testnet. Set `BACKSTOP_TESTNET_ACCOUNT` to a funded testnet account you control, with its key in `~/.near-credentials/testnet/<account>.json` or in `BACKSTOP_TESTNET_PRIVATE_KEY`. It creates the vault and party sub-accounts it needs (about 7 NEAR in total, mostly the contract's storage), keeps their keys alongside, deploys only if needed, and records every transaction with its explorer link in `deployments/testnet.json`.
 
 Fixture agents are named `<agent>.fixture.testnet`, which exist on no chain, so each winning bid is re-issued with the agent's real payout account and signed by the same agent key; the run reports both bid hashes.
+
+### Live AI mode
+
+```bash
+cp .env.example .env   # then set BACKSTOP_AI_API_KEY
+pnpm demo
+```
+
+With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, `BACKSTOP_AI_MODEL` to choose the model. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. This path is tested against a stand-in model server; a recorded run against a live model will be added here with its results.
 
 ### Two more fixture scenarios
 
@@ -197,15 +206,15 @@ The auction rejects expired bids, bids over the remaining budget, and any bid co
 
 ## What is real and what is a fixture
 
-| Piece                                                                                 | In the fixture episode                                                     |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                       |
-| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                       |
-| Agent "work"                                                                          | scripted: each agent submits a pre-written candidate patch                 |
-| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                       |
-| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                           |
-| Vault and transfers                                                                   | simulated in TypeScript with the same rules as the contract; no NEAR moves |
-| NEAR contract                                                                         | real; `pnpm chain` runs it on a local NEAR node or on testnet              |
+| Piece                                                                                 | In the fixture episode                                                                                        |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                                                          |
+| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                                                          |
+| Agent "work"                                                                          | scripted candidate patches by default; with `BACKSTOP_AI_API_KEY`, repair agents get their patch from a model |
+| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                                                          |
+| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                                                              |
+| Vault and transfers                                                                   | simulated in TypeScript with the same rules as the contract; no NEAR moves                                    |
+| NEAR contract                                                                         | real; `pnpm chain` runs it on a local NEAR node or on testnet                                                 |
 
 ## Testing and verification
 
@@ -256,7 +265,7 @@ TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curv
 
 ## Status and limitations
 
-This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface, the API driving the contract directly (today the chain run replays a finished episode), and live AI agents through NEAR AI Cloud. The API keeps its state in memory; a restart replays nothing yet.
+This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface, the API driving the contract directly (today the chain run replays a finished episode), and a recorded live-model run. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
 
