@@ -15,6 +15,18 @@ export const checkResultSchema = z.strictObject({
 });
 export type CheckResult = z.infer<typeof checkResultSchema>;
 
+export const attestedInferenceSchema = z.strictObject({
+  provider: z.literal("near-ai-cloud"),
+  model: z.string().min(1).max(128),
+  chatId: z.string().min(1).max(256),
+  signingAddress: z.string().regex(/^0x[0-9a-f]{40}$/),
+  requestHash: digestSchema,
+  responseHash: digestSchema,
+  signedText: z.string().min(1).max(512),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/),
+});
+export type AttestedInference = z.infer<typeof attestedInferenceSchema>;
+
 export const evidenceBodySchema = z.strictObject({
   version: z.literal("backstop-evidence-1"),
   taskId: taskIdSchema,
@@ -28,6 +40,7 @@ export const evidenceBodySchema = z.strictObject({
   totals: z.strictObject({ passed: z.int().min(0), failed: z.int().min(0) }),
   verdict: z.enum(verdicts),
   verifierAccount: nearAccountSchema,
+  inference: attestedInferenceSchema.optional(),
 });
 export type EvidenceBody = z.infer<typeof evidenceBodySchema>;
 

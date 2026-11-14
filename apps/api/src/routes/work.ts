@@ -1,6 +1,9 @@
+import { extractSource } from "@backstop/agents";
 import { checkpointSchema, digestSchema, digestText } from "@backstop/shared";
+import { checkReceipt, inferenceReceiptSchema, type InferenceReceipt } from "@backstop/tee";
 import { z } from "zod";
 import { signedWrite } from "../auth.js";
+import { failure, type ApiError } from "../http.js";
 import { execute, type Runtime } from "../runtime.js";
 import { fromOutcome, parseBody, refuse } from "./outcome.js";
 
@@ -12,6 +15,7 @@ const artifactBody = z.strictObject({
   fencingToken: token,
   source: z.string().min(1).max(64_000),
   checkpointHash: digestSchema.nullable(),
+  inference: inferenceReceiptSchema.optional(),
 });
 
 export function claim(runtime: Runtime, request: Request, taskId: string): Promise<Response> {
@@ -59,6 +63,18 @@ export function checkpoint(runtime: Runtime, request: Request, taskId: string): 
   });
 }
 
+function attest(runtime: Runtime, receipt: InferenceReceipt, source: string): ApiError | null {
+  const check = checkReceipt(receipt, runtime.teeSigners);
+  if (!check.ok) return failure("POLICY_VIOLATION", `Inference receipt refused: ${check.reason}`);
+  if (extractSource(check.content) !== source)
+    return failure(
+      "POLICY_VIOLATION",
+      "Inference receipt refused: the signed reply holds other code",
+    );
+  runtime.inferences.set(digestText(source), check.inference);
+  return null;
+}
+
 export function submitArtifact(
   runtime: Runtime,
   request: Request,
@@ -68,6 +84,11 @@ export function submitArtifact(
     const parsed = parseBody(artifactBody, body);
     if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
     const artifactHash = digestText(parsed.value.source);
+    const receipt = parsed.value.inference;
+    if (receipt !== undefined) {
+      const refusal = attest(runtime, receipt, parsed.value.source);
+      if (refusal !== null) return refuse(runtime, taskId, refusal);
+    }
     runtime.artifacts.set(artifactHash, parsed.value.source);
     return fromOutcome(
       runtime,

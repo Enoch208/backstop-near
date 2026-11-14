@@ -1,6 +1,7 @@
 import type { JsonRpcProvider } from "near-api-js";
 import { z } from "zod";
 import { readOutcome } from "./outcome.js";
+import { teeSignerSchema } from "./tee.js";
 import { ledgerViewSchema } from "./wire.js";
 
 const stepSchema = z.object({
@@ -10,9 +11,19 @@ const stepSchema = z.object({
   signer: z.string().optional(),
 });
 
+const upgradeSchema = z.object({ txHash: z.string(), from: z.string(), to: z.string() });
+const signerRecordSchema = z.object({
+  txHash: z.string(),
+  model: z.string(),
+  signingAddress: z.string(),
+  attestationHash: z.string(),
+});
+
 export const testnetRecordSchema = z.object({
   contractId: z.string(),
   deployTx: z.string().nullable(),
+  upgrades: z.array(upgradeSchema).default([]),
+  teeSigners: z.array(signerRecordSchema).default([]),
   runs: z.array(z.object({ taskId: z.string(), steps: z.array(stepSchema) })),
 });
 export type TestnetRecord = z.infer<typeof testnetRecordSchema>;
@@ -65,5 +76,26 @@ export async function verifyLedger(
     ok: settled && balanced && clear,
     subject: taskId,
     detail: `${ledger.state}, in ${ledger.total_inflow}, confirmed out ${ledger.confirmed_outflow}, pending ${ledger.pending_outflow}, failed ${ledger.failed_outflow}`,
+  };
+}
+
+export async function verifyTeeSigner(
+  provider: JsonRpcProvider,
+  contractId: string,
+  recorded: z.infer<typeof signerRecordSchema>,
+  latest: boolean,
+): Promise<Finding> {
+  const raw = await provider.callFunction({
+    contractId,
+    method: "get_tee_signer",
+    args: { address: recorded.signingAddress },
+  });
+  const onChain = teeSignerSchema.nullable().parse(raw ?? null);
+  const hash = recorded.attestationHash.replace(/^sha256:/, "");
+  const matches = onChain?.model === recorded.model && onChain.attestation_hash === hash;
+  return {
+    ok: latest ? matches : onChain?.model === recorded.model,
+    subject: recorded.signingAddress,
+    detail: `${recorded.signingAddress} is registered on chain for ${recorded.model}${latest ? ` with attestation ${hash.slice(0, 12)}...` : ""}${onChain === null ? " (MISSING)" : ""}`,
   };
 }

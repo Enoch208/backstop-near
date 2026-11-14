@@ -16,7 +16,36 @@ export type RecordedRun = {
   readonly extra: Record<string, unknown>;
 };
 
-const documentSchema = z.object({ runs: z.array(z.unknown()), deployTx: z.string().nullable() });
+const documentSchema = z.object({
+  contractId: z.string().optional(),
+  deployTx: z.string().nullable(),
+  upgrades: z.array(z.unknown()).default([]),
+  teeSigners: z.array(z.unknown()).default([]),
+  runs: z.array(z.unknown()),
+});
+type Document = z.infer<typeof documentSchema>;
+
+function load(path: string): Document {
+  const previous = documentSchema.safeParse(
+    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
+  );
+  return previous.success
+    ? previous.data
+    : { deployTx: null, upgrades: [], teeSigners: [], runs: [] };
+}
+
+function save(path: string, contractId: string, document: Document): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const ordered = {
+    network: "testnet",
+    contractId,
+    deployTx: document.deployTx,
+    upgrades: document.upgrades,
+    teeSigners: document.teeSigners,
+    runs: document.runs,
+  };
+  writeFileSync(path, `${JSON.stringify(ordered, null, 2)}\n`);
+}
 
 export function appendTestnetRun(
   contractId: string,
@@ -24,10 +53,7 @@ export function appendTestnetRun(
   run: RecordedRun,
   path = testnetRecord,
 ): void {
-  mkdirSync(dirname(path), { recursive: true });
-  const previous = documentSchema.safeParse(
-    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
-  );
+  const document = load(path);
   const entry = {
     at: new Date().toISOString(),
     kind: run.kind,
@@ -41,11 +67,24 @@ export function appendTestnetRun(
     })),
     ...run.extra,
   };
-  const document = {
-    network: "testnet",
-    contractId,
-    deployTx: deployTx ?? (previous.success ? previous.data.deployTx : null),
-    runs: [...(previous.success ? previous.data.runs : []), entry],
+  save(path, contractId, {
+    ...document,
+    deployTx: deployTx ?? document.deployTx,
+    runs: [...document.runs, entry],
+  });
+}
+
+export function appendTestnetEntry(
+  contractId: string,
+  list: "upgrades" | "teeSigners",
+  entry: { readonly txHash: string } & Record<string, unknown>,
+  path = testnetRecord,
+): void {
+  const document = load(path);
+  const recorded = {
+    at: new Date().toISOString(),
+    ...entry,
+    explorer: explorerTx(entry.txHash),
   };
-  writeFileSync(path, `${JSON.stringify(document, null, 2)}\n`);
+  save(path, contractId, { ...document, [list]: [...document[list], recorded] });
 }

@@ -1,5 +1,5 @@
 import { identities, roster } from "@backstop/agents";
-import type { Digest, Outcome } from "@backstop/shared";
+import type { AttestedInference, Digest, Outcome } from "@backstop/shared";
 import { react } from "./automations.js";
 import type { ChainBridge } from "./chain.js";
 import type { IntentsConfig, PayoutQuote } from "./payouts.js";
@@ -41,6 +41,8 @@ export type Runtime = {
   registry: Registry;
   readonly identities: Map<string, Identity>;
   readonly artifacts: Map<Digest, string>;
+  readonly teeSigners: Map<string, string>;
+  readonly inferences: Map<Digest, AttestedInference>;
   readonly replies: Map<string, { status: number; body: string }>;
   readonly inflight: Map<string, Promise<{ status: number; body: string }>>;
   readonly listeners: Set<(event: TaskEvent) => void>;
@@ -68,6 +70,8 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
       ]),
     ),
     artifacts: new Map(),
+    teeSigners: new Map(),
+    inferences: new Map(),
     replies: new Map(),
     inflight: new Map(),
     listeners: new Set(),

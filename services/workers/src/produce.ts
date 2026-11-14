@@ -1,6 +1,7 @@
 import { proposeRepair, workFor, type FixtureAgent, type ModelConfig } from "@backstop/agents";
 import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
 import { canonicalJson, digestText, publicView, type Digest } from "@backstop/shared";
+import type { InferenceReceipt } from "@backstop/tee";
 import { runInSandbox } from "@backstop/verifier";
 
 export type Product = {
@@ -10,6 +11,8 @@ export type Product = {
   readonly uri: string;
   readonly validatedSubtasks: readonly string[];
   readonly completes: boolean;
+  readonly inference: InferenceReceipt | null;
+  readonly unsigned: string | null;
 };
 
 export type WorkContext = {
@@ -57,6 +60,8 @@ export async function produce(
       uri: `fixture://checkout/candidates/${artifact.name}.js`,
       validatedSubtasks: plan.validatedSubtasks,
       completes: plan.completes,
+      inference: null,
+      unsigned: null,
     };
   }
   const brief = {
@@ -66,17 +71,20 @@ export async function produce(
     validatedSubtasks: context.inherited,
   };
   let history = [...context.history];
-  let source = await proposeRepair(model, { ...brief, failureHistory: history });
-  let check = publicFailures(source);
+  let repair = await proposeRepair(model, { ...brief, failureHistory: history });
+  let check = publicFailures(repair.source);
   if (check.failures.length > 0) {
     history = [...history, `your own public test run failed: ${check.failures.join("; ")}`];
-    source = await proposeRepair(model, { ...brief, failureHistory: history });
-    check = publicFailures(source);
+    repair = await proposeRepair(model, { ...brief, failureHistory: history });
+    check = publicFailures(repair.source);
   }
+  const signed = repair.receipt === null ? "unsigned" : "TEE-signed";
   return {
-    label: `a live patch from ${model.model} passing ${String(check.passed.length)} public cases`,
-    source,
-    artifactHash: digestText(source),
+    label: `a ${signed} live patch from ${model.model} passing ${String(check.passed.length)} public cases`,
+    source: repair.source,
+    inference: repair.receipt,
+    unsigned: repair.unsigned,
+    artifactHash: digestText(repair.source),
     uri: `live-ai://${model.model}`,
     validatedSubtasks: check.passed.map((id) => `public:${id}`),
     completes: true,

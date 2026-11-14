@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { modelFromEnv, principals } from "@backstop/agents";
-import { chainBridge, createRuntime, startApi, supervise } from "@backstop/api";
+import { chainBridge, createRuntime, startApi, supervise, trustAttestedModel } from "@backstop/api";
 import {
   appendTestnetRun,
   chainOptionsFromEnv,
@@ -8,10 +8,13 @@ import {
   finalizeSuccess,
   oneClickQuoter,
   getLedger,
+  registerTeeSigner,
   setUpChain,
+  toHex32,
 } from "@backstop/near";
 import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { formatNear, near, toYocto } from "@backstop/shared";
+import type { Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
 import { z } from "zod";
 
@@ -42,6 +45,24 @@ if (chain !== null) {
     );
   });
 }
+const registerSigners = async (attestation: Attestation, modelName: string) => {
+  if (chain === null) return;
+  for (const signer of attestation.signers) {
+    const call = await registerTeeSigner(
+      chain.parties.vault,
+      chain.contract,
+      signer,
+      modelName,
+      toHex32(attestation.attestationHash),
+    );
+    const outcome = call.ok ? "ok" : `refused ${call.errorCode ?? ""}`;
+    out(
+      `${stamp()} [near] Owner registers the attested key ${signer}: ${outcome} ${link(call.txHash)}`,
+    );
+  }
+};
+if (model !== null)
+  await registerSigners(await trustAttestedModel(runtime, model.model, out), model.model);
 const api = await startApi(runtime, "127.0.0.1", Number(process.env.PORT ?? "8840"));
 runtime.workers = supervise(runtime, api.url, (line) => out(`${stamp()}   ${line}`));
 

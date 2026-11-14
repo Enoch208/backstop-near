@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-import { baseEncode, type Account } from "near-api-js";
+import { actions, baseEncode, teraToGas, type Account } from "near-api-js";
 import { readOutcome, type ChainCall } from "./outcome.js";
 import { callVault, getRoles, type Vault } from "./vault.js";
 
@@ -31,6 +31,30 @@ export async function deployVault(
 
 const emptyCodeHash = "11111111111111111111111111111111";
 
+export const codeHashOf = (wasm: Uint8Array): string =>
+  baseEncode(createHash("sha256").update(wasm).digest());
+
+export const publishedHashPath = fileURLToPath(
+  new URL("../../../contracts/outcome-vault/outcome_vault.wasm.sha256", import.meta.url),
+);
+
+export function publishedCodeHash(path = publishedHashPath): string {
+  return baseEncode(Buffer.from(readFileSync(path, "utf8").slice(0, 64), "hex"));
+}
+
+export async function upgradeVault(contract: Account, wasm: Uint8Array): Promise<ChainCall> {
+  const response = await contract.signAndSendTransaction({
+    receiverId: contract.accountId,
+    actions: [
+      actions.deployContract(wasm),
+      actions.functionCall("migrate", {}, teraToGas("100"), 0n),
+    ],
+    waitUntil: "EXECUTED_OPTIMISTIC",
+    throwOnFailure: false,
+  });
+  return readOutcome(response);
+}
+
 export async function ensureVault(
   contract: Account,
   roles: VaultRoles,
@@ -38,10 +62,11 @@ export async function ensureVault(
 ): Promise<{ vault: Vault; deploy: ChainCall | null; init: ChainCall | null }> {
   const vault = { contractId: contract.accountId };
   const { codeHash } = await contract.getState();
-  const localHash = baseEncode(createHash("sha256").update(wasm).digest());
-  if (codeHash !== emptyCodeHash && codeHash !== localHash) {
+  const localHash = codeHashOf(wasm);
+  const known = codeHash === localHash || codeHash === publishedCodeHash();
+  if (codeHash !== emptyCodeHash && !known) {
     throw new Error(
-      `${contract.accountId} runs other code (${codeHash}); deploy to a fresh vault account`,
+      `${contract.accountId} runs other code (${codeHash}); upgrade it with pnpm vault:upgrade or use a fresh vault account`,
     );
   }
   const deploy =

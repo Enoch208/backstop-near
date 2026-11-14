@@ -1,4 +1,5 @@
 import {
+  type AttestedInference,
   canonicalJson,
   evidenceHash,
   signValue,
@@ -24,6 +25,7 @@ export type VerificationRequest = {
   readonly runnerId: string;
   readonly verifierAccount: string;
   readonly signer: SigningKey;
+  readonly inference?: AttestedInference | null;
 };
 
 const clip = (text: string) => (text.length > 240 ? `${text.slice(0, 237)}...` : text);
@@ -60,6 +62,9 @@ export function verifyArtifact(request: VerificationRequest): EvidenceBundle {
     totals: { passed, failed: checks.length - passed },
     verdict: passed === checks.length ? "ACCEPT" : "REJECT",
     verifierAccount: request.verifierAccount,
+    ...(request.inference === undefined || request.inference === null
+      ? {}
+      : { inference: request.inference }),
   };
   const hash = evidenceHash(body);
   return { body, evidenceHash: hash, signature: signValue({ evidenceHash: hash }, request.signer) };

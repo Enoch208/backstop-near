@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
+import { modelFromEnv } from "@backstop/agents";
 import { z } from "zod";
 import { createRuntime } from "./runtime.js";
 import { startApi } from "./server.js";
 import { supervise } from "./supervisor.js";
+import { trustAttestedModel } from "./tee.js";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 
@@ -15,6 +17,9 @@ const env = z
   .parse(process.env);
 
 const runtime = createRuntime(Date.now, env.BACKSTOP_DEMO === "1");
+const model = modelFromEnv(process.env);
+if (model !== null)
+  await trustAttestedModel(runtime, model.model, (line) => process.stdout.write(`${line}\n`));
 const api = await startApi(runtime, env.HOST, env.PORT);
 if (runtime.demo) {
   runtime.workers = supervise(runtime, api.url, (line) => process.stdout.write(`${line}\n`));

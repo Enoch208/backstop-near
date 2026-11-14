@@ -4,6 +4,7 @@ import {
   testnetRecordSchema,
   verifyLedger,
   verifyStep,
+  verifyTeeSigner,
   type Finding,
 } from "@backstop/near";
 import { baseEncode, JsonRpcProvider } from "near-api-js";
@@ -27,6 +28,27 @@ findings.push({
   subject: "code",
   detail: `deployed code ${deployed} ${deployed === published ? "is" : "is not"} the published reproducible build ${published}`,
 });
+for (const upgrade of record.upgrades) {
+  const step = {
+    label: "upgrade",
+    txHash: upgrade.txHash,
+    outcome: "success",
+    signer: record.contractId,
+  };
+  findings.push(await verifyStep(provider, step, root));
+}
+const lastIndex = new Map(record.teeSigners.map((entry, index) => [entry.signingAddress, index]));
+for (const [index, signer] of record.teeSigners.entries()) {
+  const step = {
+    label: "tee",
+    txHash: signer.txHash,
+    outcome: "success",
+    signer: record.contractId,
+  };
+  findings.push(await verifyStep(provider, step, root));
+  const latest = lastIndex.get(signer.signingAddress) === index;
+  findings.push(await verifyTeeSigner(provider, record.contractId, signer, latest));
+}
 for (const run of record.runs) {
   for (const step of run.steps) findings.push(await verifyStep(provider, step, root));
   findings.push(await verifyLedger(provider, record.contractId, run.taskId));

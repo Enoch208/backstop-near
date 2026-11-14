@@ -24,6 +24,7 @@ function verifySubmission(runtime: Runtime, record: TaskRecord): void {
     runnerId: record.manifest.suite.runnerId,
     verifierAccount: fixtureAccounts.verifier,
     signer: roster.verifier.key,
+    inference: runtime.inferences.get(candidate.artifactHash) ?? null,
   });
   execute(runtime, record.taskId, "verifier", { kind: "recordVerification", evidence });
 }

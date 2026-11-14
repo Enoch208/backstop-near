@@ -25,7 +25,9 @@
     "market": "tsx scripts/market.ts",
     "chain:account": "tsx scripts/testnet-account.ts",
     "vault:build": "sh scripts/build-vault.sh",
-    "verify:testnet": "tsx scripts/verify-testnet.ts"
+    "verify:testnet": "tsx scripts/verify-testnet.ts",
+    "vault:upgrade": "tsx scripts/upgrade-vault.ts",
+    "tee": "tsx scripts/tee.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
@@ -50,5 +52,8 @@
     "typescript-eslint": "8.72.1",
     "vitest": "5.1.0",
     "zod": "4.6.7"
+  },
+  "dependencies": {
+    "@backstop/tee": "workspace:*"
   }
 }

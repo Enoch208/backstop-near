@@ -1,5 +1,5 @@
 import { canonicalJson, publicView, type TestSuite } from "@backstop/shared";
-import { complete, type ChatMessage, type ModelConfig } from "./model.js";
+import { complete, type ChatMessage, type Completion, type ModelConfig } from "./model.js";
 
 export type RepairBrief = {
   readonly objective: string;
@@ -47,8 +47,11 @@ export function extractSource(reply: string): string | null {
   return source.length > 0 && source.length <= 64_000 ? `${source}\n` : null;
 }
 
-export async function proposeRepair(config: ModelConfig, brief: RepairBrief): Promise<string> {
-  const source = extractSource(await complete(config, repairPrompt(brief)));
+export type Repair = Omit<Completion, "content"> & { readonly source: string };
+
+export async function proposeRepair(config: ModelConfig, brief: RepairBrief): Promise<Repair> {
+  const { content, receipt, unsigned } = await complete(config, repairPrompt(brief));
+  const source = extractSource(content);
   if (source === null) throw new Error("The model reply held no code block");
-  return source;
+  return { source, receipt, unsigned };
 }

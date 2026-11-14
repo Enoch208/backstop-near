@@ -127,10 +127,12 @@ export function agentLoop(
     }
     await wait(step);
     const latest = (await snapshot()).checkpoints.at(-1)?.hash ?? null;
+    if (product.unsigned !== null) log(product.unsigned);
     const reply = await client.post(`${base}/artifacts`, {
       fencingToken: token,
       source: product.source,
       checkpointHash: latest,
+      ...(product.inference === null ? {} : { inference: product.inference }),
     });
     clearInterval(beat);
     log(`submitted ${product.label} (HTTP ${String(reply.status)})`);

@@ -1,0 +1,18 @@
+{
+  "name": "@backstop/tee",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/shared": "workspace:*",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@phala/dcap-qvl-node": "0.3.3",
+    "zod": "4.6.7"
+  }
+}

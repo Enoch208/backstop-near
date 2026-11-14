@@ -22,6 +22,7 @@ import {
   retryFailedTransfer,
   type Vault,
 } from "./vault.js";
+import { recordAttestedVerdict } from "./tee.js";
 import { toHex32 } from "./wire.js";
 
 export type ChainParties = {
@@ -216,14 +217,30 @@ export function chainMirror(parties: ChainParties, options: MirrorOptions): Chai
         const rejected = body.type === "attempt_rejected";
         const evidenceHash =
           rejected && body.ruling !== null ? digestOf(body.ruling) : bundle.evidenceHash;
+        const verdict = {
+          attempt: body.attempt,
+          artifactHash: toHex32(bundle.body.artifactHash),
+          suiteHash: toHex32(record.manifest.suite.suiteHash),
+          evidenceHash: toHex32(evidenceHash),
+        };
+        const inference = rejected ? undefined : bundle.body.inference;
+        if (inference !== undefined) {
+          return [
+            await step(
+              `Verifier records ACCEPT for attempt ${String(body.attempt)}; the vault checks the TEE signature of ${inference.model}`,
+              recordAttestedVerdict(parties.vault, parties.verifier, taskId, {
+                ...verdict,
+                signedText: inference.signedText,
+                signature: inference.signature,
+              }),
+            ),
+          ];
+        }
         return [
           await step(
             `Verifier records ${rejected ? "REJECT" : "ACCEPT"} for attempt ${String(body.attempt)}`,
             recordVerdict(parties.vault, parties.verifier, taskId, {
-              attempt: body.attempt,
-              artifactHash: toHex32(bundle.body.artifactHash),
-              suiteHash: toHex32(record.manifest.suite.suiteHash),
-              evidenceHash: toHex32(evidenceHash),
+              ...verdict,
               outcome: rejected ? "REJECT" : "ACCEPT",
             }),
           ),
