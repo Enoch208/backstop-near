@@ -14,18 +14,20 @@ Built for the NEAR Hackathon 2026 · AI Swarms track · every line written durin
 
 Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the first three rows.
 
-| Do                                                                                                                   | See                                                                                                                                                                                    | What it proves                                                                                                                                                                                                         |
-| -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install && pnpm episode recovery`                                                                              | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`                                                  | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
-| `pnpm demo`                                                                                                          | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`                                              | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
-| `pnpm demo --intents`                                                                                                | after settlement, `[intents] delta's 0.12 NEAR payout -> … USDC on Base … (dry quote, signed …)`                                                                                       | Intent-based settlement: a payee's NEAR payout quoted by NEAR Intents into the asset and chain it asked for (needs network; nothing is swapped)                                                                        |
-| `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm demo --chain sandbox` | the live run with `[near] …: ok` lines for every deposit, commitment and verdict, `task_settled` recorded by `near-indexer`, and `settle again on NEAR -> refused ERR_ALREADY_SETTLED` | The live swarm settling on a real NEAR node as it happens: money moves only when the contract says so                                                                                                                  |
-| `pnpm test`                                                                                                          | `103 passed`                                                                                                                                                                           | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
-| `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox`        | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED`                                      | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
-| Open the testnet links in [Live on NEAR testnet](#live-on-near-testnet)                                              | eleven transactions on `vault.backstop-6501bb.testnet`; the settlement shows four transfer receipts and `task_settled`; the repeat shows `ERR_ALREADY_SETTLED`                         | The same economics enforced by the deployed contract on NEAR testnet, with real NEAR moving between sub-accounts                                                                                                       |
-| `pnpm arena`                                                                                                         | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                                                      | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
-| `pnpm market`, then connect an agent to `pnpm mcp`                                                                   | a task whose patch passed all 8 checks, held open for challenges; your agent's counterexample comes back `attempt_rejected`                                                            | The challenger market is open: any outside agent (Claude Code, Cursor) can join over MCP with its own key, and the verifier re-runs its challenge before anything changes                                              |
-| `(cd contracts/outcome-vault && cargo test)`                                                                         | `37 passed`                                                                                                                                                                            | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
+| Do                                                                      | See                                                                                                                                                                                    | What it proves                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install && pnpm episode recovery`                                 | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`                                                  | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
+| `pnpm demo`                                                             | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`                                              | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
+| `pnpm demo --intents`                                                   | after settlement, `[intents] delta's 0.12 NEAR payout -> … USDC on Base … (dry quote, signed …)`                                                                                       | Intent-based settlement: a payee's NEAR payout quoted by NEAR Intents into the asset and chain it asked for (needs network; nothing is swapped)                                                                        |
+| `pnpm vault:build && pnpm demo --chain sandbox`                         | the live run with `[near] …: ok` lines for every deposit, commitment and verdict, `task_settled` recorded by `near-indexer`, and `settle again on NEAR -> refused ERR_ALREADY_SETTLED` | The live swarm settling on a real NEAR node as it happens: money moves only when the contract says so                                                                                                                  |
+| `pnpm test`                                                             | `117 passed`                                                                                                                                                                           | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `pnpm vault:build && pnpm chain sandbox`                                | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED`                                      | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
+| `pnpm tee attest`                                                       | five `ok` lines per enclave instance (nonce, key, Intel `tdx` `UpToDate`, `binding`, NVIDIA `gpu`), then `Attested signing key(s) for deepseek-ai/DeepSeek-V4.1-Flash-1017: 0xfe00…`   | NEAR AI Cloud's enclave key verified from scratch with a fresh nonce: no API key, and no trust in NEAR AI's word (needs network)                                                                                       |
+| `pnpm verify:testnet`                                                   | `52 of 52 checks passed`                                                                                                                                                               | Every testnet claim in this README re-checked against the chain, including that the deployed code is the published reproducible build (needs network; CI reruns it daily)                                              |
+| Open the testnet links in [Live on NEAR testnet](#live-on-near-testnet) | eleven transactions on `vault.backstop-6501bb.testnet`; the settlement shows four transfer receipts and `task_settled`; the repeat shows `ERR_ALREADY_SETTLED`                         | The same economics enforced by the deployed contract on NEAR testnet, with real NEAR moving between sub-accounts                                                                                                       |
+| `pnpm arena`                                                            | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                                                      | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
+| `pnpm market`, then connect an agent to `pnpm mcp`                      | a task whose patch passed all 8 checks, held open for challenges; your agent's counterexample comes back `attempt_rejected`                                                            | The challenger market is open: any outside agent (Claude Code, Cursor) can join over MCP with its own key, and the verifier re-runs its challenge before anything changes                                              |
+| `(cd contracts/outcome-vault && cargo test)`                            | `45 passed`                                                                                                                                                                            | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
 
 ## Live on NEAR testnet
 
@@ -71,6 +73,8 @@ After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.39699
 ## Contents
 
 - [Live on NEAR testnet](#live-on-near-testnet)
+- [TEE-verified AI](#tee-verified-ai)
+- [Verify every claim](#verify-every-claim)
 - [Why Backstop](#why-backstop)
 - [Try it in 60 seconds](#try-it-in-60-seconds)
 - [How it works](#how-it-works)
@@ -85,6 +89,34 @@ After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.39699
 - [Tech stack](#tech-stack)
 - [Status and limitations](#status-and-limitations)
 - [License](#license)
+
+## TEE-verified AI
+
+A live agent's patch is worth paying for only if the model really wrote it and nobody edited it on the way. Live AI mode runs a model that NEAR AI Cloud serves inside a trusted execution environment (Intel TDX with NVIDIA confidential-computing GPUs), and Backstop refuses to count an AI patch whose provenance it cannot check, in the API and again in the vault contract.
+
+1. **Attest the enclave independently.** `pnpm tee attest` asks NEAR AI Cloud for the model's attestation with a fresh random nonce and checks it without an API key and without taking NEAR AI's word for anything. Intel DCAP verifies the TDX quote against Intel's collateral (TCB `UpToDate`). The quote's report data must commit to the signing address and our nonce, and the published public key must hash to that address. NVIDIA's attestation service must pass the GPUs, with its ES384 token verified against NVIDIA's published keys and carrying our nonce. A key that fails any check is not trusted.
+2. **Register the key on the vault.** The vault owner registers an attested key for exactly one model, with the attestation's digest. On testnet, `0xfe0071895500a9755c18044948ab4f4e1a7f337e` is registered for `deepseek-ai/DeepSeek-V4.1-Flash-1017` in [2ydXyZh4Tv…](https://testnet.nearblocks.io/txns/2ydXyZh4TvNUogitknatatAyqtiYGiyALKgESQCkAdS4) (14 Nov 2026, both enclave instances attested).
+3. **Carry the receipt with the patch.** The worker keeps the exact request and reply bytes and fetches NEAR AI's signature over `model:sha256(request):sha256(reply)`. The API accepts the patch only if that signature recovers to an attested key, both hashes match, and the signed reply contains exactly the submitted code; anything else is HTTP 422.
+4. **Check it again on chain.** The verifier signs the receipt into its evidence, and the ACCEPT reaches the vault as `record_attested_verdict`. The contract recovers the signer with `ecrecover` from the EIP-191 digest, refuses any key it has not registered for that model (`ERR_UNKNOWN_TEE_SIGNER`, `ERR_INFERENCE_MODEL`), and stores the request and reply hashes beside the verdict.
+
+What is live and what is not: the attestation and the on-chain key registration above are real and repeatable. A live-model run needs a NEAR AI Cloud API key, which this repository does not hold, so the receipt path is exercised with a simulated enclave key: against the real contract on a local NEAR node (`pnpm test:chain`), in the contract's unit tests (the TypeScript signer and the contract's `ecrecover` agree on one vector), and through the API's refusals. The attestation code is also tested offline against a recorded real report, quote, Intel collateral and NVIDIA token. NEAR AI's Anthropic models run outside its TEE (its attestation endpoint says so), which is why live mode defaults to DeepSeek V4.1 Flash. The attestation proves that a genuine, current Intel TDX machine with attested NVIDIA GPUs holds the key for that model name; it does not compare the enclave's image measurement against a reproducible build of NEAR AI's serving stack.
+
+## Verify every claim
+
+```bash
+pnpm verify:testnet
+```
+
+This re-reads every transaction in `deployments/testnet.json` from NEAR testnet and checks its recorded outcome and signer. It checks that each task's on-chain ledger is settled, with inflow equal to confirmed outflow and nothing pending or failed; that the registered enclave key carries the recorded attestation digest; and that the code on the vault is the published build. It passes 52 of 52 checks (14 Nov 2026), and a scheduled workflow reruns it daily and whenever the record changes.
+
+The contract builds reproducibly. `pnpm vault:build` remaps every machine-specific path, and on Linux x86-64 with Rust 1.94.1 the wasm's SHA-256 is the one in `contracts/outcome-vault/outcome_vault.wasm.sha256` (`47fb3f27…`). CI fails if its build drifts from that hash and publishes the wasm it built, and a clean container produces the same digest:
+
+```bash
+docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work rust:1.94.1 \
+  sh -c "rustup target add wasm32-unknown-unknown && sh scripts/build-vault.sh"
+```
+
+NEAR reports a contract's code hash as the base58 form of the same digest: `5qz9ivSg64LkdkoHoLRNZhMPPpcHHYNvvGNF9MgXvZAa` on `vault.backstop-6501bb.testnet`. That build went live as an in-place upgrade, deploy and state migration in one transaction ([Esf2QSVUeq…](https://testnet.nearblocks.io/txns/Esf2QSVUeqvW8dBJtWR9dZ1j5d3LDkjZdNWjrFLVjMbp)), and every task recorded before it still reads back settled.
 
 ## Why Backstop
 
@@ -133,7 +165,7 @@ The same story with real moving parts: the API starts in demo mode and spawns si
 ### On a real NEAR node
 
 ```bash
-(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release)
+pnpm vault:build
 pnpm chain sandbox
 ```
 
@@ -150,7 +182,7 @@ cp .env.example .env   # then set BACKSTOP_AI_API_KEY
 pnpm demo
 ```
 
-With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, `BACKSTOP_AI_MODEL` to choose the model. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. This path is tested against a stand-in model server; a recorded run against a live model will be added here with its results.
+With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, running `deepseek-ai/DeepSeek-V4.1-Flash-1017` inside NEAR AI's TEE (`BACKSTOP_AI_MODEL` to choose another). The API attests that model's enclave key at startup and checks each patch's signed receipt, as described in [TEE-verified AI](#tee-verified-ai); a model without receipts still works, but its patches are labelled unsigned and never reach the vault as attested. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. This path is tested against a stand-in model server that signs the way NEAR AI does; a recorded run against the live model will be added here with its results.
 
 ### Join over MCP
 
@@ -239,6 +271,9 @@ NEAR Intents has no testnet, so Backstop only requests dry-run quotes at mainnet
 | A payout before the challenge window closes                      | the state machine                                                                           | `INVALID_TRANSITION`                                                  |
 | Settling twice, on- or off-chain                                 | one settlement key per task                                                                 | `ALREADY_SETTLED`, `ERR_ALREADY_SETTLED`                              |
 | A payout beyond escrow plus the liability cap                    | ledger plan and contract budget                                                             | `LIABILITY_EXCEEDED`, `ERR_BUDGET_EXCEEDED`                           |
+| A patch passed off as AI output that no attested enclave signed  | receipt check in the API, `ecrecover` in the vault                                          | HTTP 422, `ERR_UNKNOWN_TEE_SIGNER`                                    |
+| A genuine model reply swapped for other code                     | the signed reply must contain exactly the submitted patch                                   | HTTP 422                                                              |
+| An attestation report naming a key its TDX quote does not bind   | report-data binding to the key and a fresh nonce                                            | the key is never trusted                                              |
 | Anyone but the verifier records a verdict on chain               | contract roles                                                                              | `ERR_NOT_VERIFIER`                                                    |
 | Anyone but the vault calls the transfer callback                 | `#[private]` callback                                                                       | refused on a local NEAR node                                          |
 | A tampered, stale or unknown-actor API request                   | signed envelopes, 5-minute freshness                                                        | HTTP 401 / 403                                                        |
@@ -290,15 +325,16 @@ The auction rejects expired bids, bids over the remaining budget, and any bid co
 
 ## What is real and what is a fixture
 
-| Piece                                                                                 | In the fixture episode                                                                                        |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                                                          |
-| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                                                          |
-| Agent "work"                                                                          | scripted candidate patches by default; with `BACKSTOP_AI_API_KEY`, repair agents get their patch from a model |
-| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                                                          |
-| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                                                              |
-| Vault and transfers                                                                   | simulated in `pnpm episode` and plain `pnpm demo`; real NEAR in `pnpm demo --chain` and `pnpm chain`          |
-| NEAR contract                                                                         | real; deployed on testnet (see above), and `pnpm chain` replays the episode on a local node or testnet        |
+| Piece                                                                                 | In the fixture episode                                                                                                             |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| State machine, leases, auction, challenge window, settlement plans, ledger invariants | real                                                                                                                               |
+| Artifact sandbox, test runs, evidence hashes, ed25519 signatures, challenger search   | real                                                                                                                               |
+| Agent "work"                                                                          | scripted candidate patches by default; with `BACKSTOP_AI_API_KEY`, repair agents get their patch from a model                      |
+| Model provenance                                                                      | enclave attestation is real (`pnpm tee attest`); receipts are checked in the API and on chain, so far with a simulated enclave key |
+| Agent processes, HTTP, SSE, signed requests, `SIGKILL` (`pnpm demo`)                  | real                                                                                                                               |
+| Clock                                                                                 | simulated in `pnpm episode`, real in `pnpm demo`                                                                                   |
+| Vault and transfers                                                                   | simulated in `pnpm episode` and plain `pnpm demo`; real NEAR in `pnpm demo --chain` and `pnpm chain`                               |
+| NEAR contract                                                                         | real; deployed on testnet (see above), and `pnpm chain` replays the episode on a local node or testnet                             |
 
 ## Testing and verification
 
@@ -318,6 +354,7 @@ The suites cover, among others:
 - the API refusing tampered, unknown-actor and stale requests, replaying a retried request instead of applying it twice, fencing a stale heartbeat, and keeping faults off outside demo mode;
 - a live run in which five real worker processes recover from a `SIGKILL` of the primary and settle exactly once;
 - on a local NEAR node (`pnpm test:chain`): the recovery episode settling through real promises and callbacks with exact balance changes, a second settlement refused, an outside call to the private transfer callback refused, and a verdict from anyone but the verifier refused;
+- the TEE path: a recorded real NEAR AI attestation verified offline (Intel quote, binding, nonce, NVIDIA token) and refused when the nonce, the claimed key, a quote byte or the NVIDIA signature changes; receipts refused for an edited byte, an unattested key, another model or a reply holding other code; on a local NEAR node, `record_attested_verdict` accepting the enclave key and refusing a laptop key;
 - in the contract, the same scenarios as unit tests plus a seeded randomized run of funding, assignments, verdicts, settlements, failed and replayed callbacks and retries, checking conservation after every step;
 - property tests (fast-check, fixed seeds) that drive random funding, settlement and callback storms through the ledger, and random claim, heartbeat, submit and expiry storms through the orchestrator, checking conservation, monotonic fencing tokens and replay at every step.
 
@@ -334,12 +371,16 @@ apps/api/                 signed HTTP API, live event stream, keeper, verifier s
 apps/mcp/                 MCP server: outside agents inspect tasks and challenge patches
 fixtures/checkout/        the broken checkout task, candidate patches, pinned suite and oracle
 contracts/outcome-vault/  the NEAR OutcomeVault contract (Rust, near-sdk)
-packages/near/            vault client, wire formats and events, deploy, local node, chain replay
+packages/near/            vault client, wire formats and events, deploy and upgrade, local node, chain replay
+packages/tee/             NEAR AI Cloud enclave attestation (Intel DCAP, NVIDIA NRAS) and signed receipts
 scripts/episode.ts        replays an episode from the command line
 scripts/demo.ts           the live swarm with a real kill
 scripts/chain.ts          the recovery episode as real transactions on a local node or testnet
 scripts/arena.ts          seeded fault-injection cases, Backstop versus a single agent
 scripts/market.ts         an open challenge window for outside agents
+scripts/tee.ts            attests a NEAR AI model's enclave key, or registers it on the testnet vault
+scripts/verify-testnet.ts re-checks every recorded testnet claim against the chain
+scripts/upgrade-vault.ts  deploys the published build in place, with state migration
 benchmarks/               the arena's raw per-case results
 ```
 
@@ -347,13 +388,15 @@ The core packages are pure TypeScript: no IO, no clock, no randomness except an 
 
 ## Tech stack
 
-TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curves, Vitest 5 with fast-check, ESLint 10 and Prettier 3. The contract is Rust 1.94 with `near-sdk` 5.29, built for `wasm32-unknown-unknown`.
+TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curves (ed25519, secp256k1, P-384), Phala's `dcap-qvl` for Intel TDX quotes, near-api-js 7, Vitest 5 with fast-check, ESLint 10 and Prettier 3. The contract is Rust 1.94 with `near-sdk` 5.29, built for `wasm32-unknown-unknown`.
 
 ## Status and limitations
 
 This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface and a recorded live-model run. In chain mode the demo operator holds the testnet keys of every party (customer, guarantor, coordinator, verifier, agents' payout accounts), which a production deployment would not. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
+
+- The vault account keeps its full-access key so the contract can be upgraded and enclave keys registered; until that key is removed its holder can change the code. Every upgrade is recorded, and `pnpm verify:testnet` checks the running code against the published build.
 
 - One authorized verifier key and one coordinator. The verifier's signature proves which key asserted an outcome, not that the outcome is universally true; the suite's author is trusted.
 - `node:vm` blocks the obvious escape hatches but is not a security boundary against hostile code; production verification needs a real container sandbox.
