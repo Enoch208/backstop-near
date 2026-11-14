@@ -47,7 +47,7 @@ export function RecoveryBids({ events }: { readonly events: readonly FeedEvent[]
             <li key={bidHash} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span className="font-mono">{actor}</span>
               <span className="tabular-nums">
-              {nearAmount(bid.amountYocto, 24).replace(/\.?0+$/, "")} NEAR
+                {nearAmount(bid.amountYocto, 24).replace(/\.?0+$/, "")} NEAR
                 {award?.body.winner === bidHash && <span className="ml-2 text-ink/55">Won</span>}
               </span>
             </li>
