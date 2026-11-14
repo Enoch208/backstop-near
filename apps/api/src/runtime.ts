@@ -1,4 +1,4 @@
-import { identities, roster, type Principal } from "@backstop/agents";
+import { identities, roster } from "@backstop/agents";
 import type { Digest, Outcome } from "@backstop/shared";
 import { react } from "./automations.js";
 import {
@@ -26,12 +26,18 @@ export type WorkerProcess = {
   readonly exit: { code: number | null; signal: string | null } | null;
 };
 
+export type Identity = {
+  readonly id: string;
+  readonly account: string;
+  readonly publicKey: string;
+};
+
 export type Runtime = {
   readonly mode: "fixture";
   readonly demo: boolean;
   readonly now: () => number;
-  readonly registry: Registry;
-  readonly identities: ReadonlyMap<string, Principal>;
+  registry: Registry;
+  readonly identities: Map<string, Identity>;
   readonly artifacts: Map<Digest, string>;
   readonly replies: Map<string, { status: number; body: string }>;
   readonly listeners: Set<(event: TaskEvent) => void>;
@@ -49,7 +55,12 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     demo,
     now,
     registry: { agentKeys, verifierPublicKey: roster.verifier.key.publicKey },
-    identities: new Map(identities.map((identity) => [identity.id, identity])),
+    identities: new Map(
+      identities.map((identity) => [
+        identity.id,
+        { id: identity.id, account: identity.account, publicKey: identity.key.publicKey },
+      ]),
+    ),
     artifacts: new Map(),
     replies: new Map(),
     listeners: new Set(),

@@ -266,7 +266,9 @@ describe("the Backstop API", () => {
   it("answers unknown routes, wrong methods and malformed JSON with the error envelope", async () => {
     const { runtime } = testRuntime();
     expect((await read(runtime, "/api/nope")).status).toBe(404);
-    expect((await handle(runtime, new Request(`${origin}/api/tasks`))).status).toBe(405);
+    expect(
+      (await handle(runtime, new Request(`${origin}/api/tasks`, { method: "DELETE" }))).status,
+    ).toBe(405);
     const malformed = new Request(`${origin}/api/tasks`, { method: "POST", body: "{not json" });
     expect((await handle(runtime, malformed)).status).toBe(400);
   });

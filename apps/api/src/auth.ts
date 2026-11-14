@@ -1,12 +1,11 @@
-import type { Principal } from "@backstop/agents";
 import { isAuthenticRequest, signedRequestSchema } from "@backstop/shared";
 import { errorResponse, failure, json, readJson, type ApiError } from "./http.js";
-import type { Runtime } from "./runtime.js";
+import type { Identity, Runtime } from "./runtime.js";
 
 export const requestFreshnessMs = 300_000;
 
 export type Authenticated = {
-  readonly actor: Principal;
+  readonly actor: Identity;
   readonly body: unknown;
   readonly key: string;
 };
@@ -23,7 +22,7 @@ export async function authenticate(
   if (actor === undefined)
     return { ok: false, error: failure("UNAUTHORIZED", `Unknown actor ${parsed.data.actor}`) };
   const scope = { method: request.method, path: new URL(request.url).pathname };
-  if (!isAuthenticRequest(parsed.data, scope, actor.key.publicKey)) {
+  if (!isAuthenticRequest(parsed.data, scope, actor.publicKey)) {
     return { ok: false, error: failure("BAD_SIGNATURE", "The request is not signed by its actor") };
   }
   if (Math.abs(runtime.now() - parsed.data.issuedAtMs) > requestFreshnessMs) {

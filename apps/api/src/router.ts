@@ -1,4 +1,5 @@
 import { errorResponse, type ApiError } from "./http.js";
+import { listTasks, register } from "./routes/agents.js";
 import { fault } from "./routes/demo.js";
 import { bid, createTask, endorse, fund } from "./routes/funding.js";
 import { events, getArtifact, getTask, health, workers } from "./routes/read.js";
@@ -30,6 +31,8 @@ const second = (params: readonly string[]) => params[1] ?? "";
 const routes: readonly Route[] = [
   route("GET", "/api/health", (runtime) => health(runtime)),
   route("GET", "/api/workers", (runtime) => workers(runtime)),
+  route("POST", "/api/agents", (runtime, request) => register(runtime, request)),
+  route("GET", "/api/tasks", (runtime) => listTasks(runtime)),
   route("POST", "/api/tasks", (runtime, request) => createTask(runtime, request)),
   route("GET", "/api/tasks/:task", (runtime, _request, params) => getTask(runtime, first(params))),
   route("GET", "/api/tasks/:task/events", (runtime, request, params) =>
