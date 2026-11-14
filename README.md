@@ -18,8 +18,9 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm install && pnpm episode recovery`                                                                              | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`                                                  | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
 | `pnpm demo`                                                                                                          | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`                                              | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
+| `pnpm demo --intents`                                                                                                | after settlement, `[intents] delta's 0.12 NEAR payout -> … USDC on Base … (dry quote, signed …)`                                                                                       | Intent-based settlement: a payee's NEAR payout quoted by NEAR Intents into the asset and chain it asked for (needs network; nothing is swapped)                                                                        |
 | `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm demo --chain sandbox` | the live run with `[near] …: ok` lines for every deposit, commitment and verdict, `task_settled` recorded by `near-indexer`, and `settle again on NEAR -> refused ERR_ALREADY_SETTLED` | The live swarm settling on a real NEAR node as it happens: money moves only when the contract says so                                                                                                                  |
-| `pnpm test`                                                                                                          | `99 passed`                                                                                                                                                                            | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `pnpm test`                                                                                                          | `103 passed`                                                                                                                                                                           | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
 | `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox`        | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED`                                      | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
 | Open the testnet links in [Live on NEAR testnet](#live-on-near-testnet)                                              | eleven transactions on `vault.backstop-6501bb.testnet`; the settlement shows four transfer receipts and `task_settled`; the repeat shows `ERR_ALREADY_SETTLED`                         | The same economics enforced by the deployed contract on NEAR testnet, with real NEAR moving between sub-accounts                                                                                                       |
 | `pnpm arena`                                                                                                         | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                                                      | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
@@ -49,21 +50,23 @@ The settlement transaction's receipts land at gamma (0.40 NEAR), delta (0.12), t
 
 ### The live swarm, settling on testnet
 
-`BACKSTOP_TESTNET_ACCOUNT=<your account> pnpm demo --chain testnet` runs the live swarm against the deployed vault: six agent processes over signed HTTP, a real `SIGKILL` of alpha, and every deposit, commitment, verdict and payout as a NEAR transaction while it happens. Deposits reach the contract before the task records them; the task settles only when the contract's own transfer callbacks are indexed back. Task `checkout-live-60082` (recorded 2026-11-14; alpha's process exited with `signal SIGKILL`):
+`BACKSTOP_TESTNET_ACCOUNT=<your account> pnpm demo --chain testnet --intents` runs the live swarm against the deployed vault: six agent processes over signed HTTP, a real `SIGKILL` of alpha, and every deposit, commitment, verdict and payout as a NEAR transaction while it happens. Deposits reach the contract before the task records them; the task settles only when the contract's own transfer callbacks are indexed back. Task `checkout-live-69690` (recorded 2026-11-14; alpha's process exited with `signal SIGKILL`):
 
 | Step                                                       | Result                      | Transaction                                                                                    |
 | ---------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------- |
-| Customer creates the task and escrows                      | success                     | [PWZp1udSHM…](https://testnet.nearblocks.io/txns/PWZp1udSHML4FxQewVjxYoSX6Qu8d8s9MSoQtFc5qhG)  |
-| Customer pays the premium                                  | success                     | [ChQQXEX86o…](https://testnet.nearblocks.io/txns/ChQQXEX86oSykMfoU7mHYc8zuZ72tHYkzA2QNDmq5pgC) |
-| Guarantor bonds the outcome                                | success                     | [3sfRuoB2F8…](https://testnet.nearblocks.io/txns/3sfRuoB2F8y3kS3RGc2c3CQauYPfVg79FNfwfQJb5oqJ) |
-| Coordinator commits attempt 1 to alpha                     | success                     | [3HYQRmVWWe…](https://testnet.nearblocks.io/txns/3HYQRmVWWeufLV84ZKbqqte3zmengmVUpYSvkJH1ig7m) |
-| Coordinator opens recovery after attempt 1 (LEASE_EXPIRED) | success                     | [8MFcRyjveR…](https://testnet.nearblocks.io/txns/8MFcRyjveRa2ii2GNbEmjDQmJkJYgtsbMok3Nq9uNk6c) |
-| Coordinator commits attempt 2 to beta                      | success                     | [Ajuo4C8XF2…](https://testnet.nearblocks.io/txns/Ajuo4C8XF2T1BMcDNTyPRMvNxd3My4F4JkcX76QCy5vv) |
-| Verifier records REJECT for attempt 2                      | success                     | [2fSSCkVN94…](https://testnet.nearblocks.io/txns/2fSSCkVN94NGhi56iJGxQmGzGo9stfV5xP8PRD2VL29Y) |
-| Coordinator commits attempt 3 to gamma                     | success                     | [3RtNxUf5w6…](https://testnet.nearblocks.io/txns/3RtNxUf5w6zuQDEb6xCvzAL5QihGGc3nCAwRK9Fys5Cj) |
-| Verifier records ACCEPT for attempt 3                      | success                     | [6zAVCk31ZL…](https://testnet.nearblocks.io/txns/6zAVCk31ZLCt3qecbUztBSQKHKcq7FLYK1mP6ZzCTAUA) |
-| Coordinator finalizes the success settlement               | success                     | [BmmxngC12Y…](https://testnet.nearblocks.io/txns/BmmxngC12YE7rLWGTbEVS1oPQpB5tWWCJYv4jL6GZyvd) |
-| A repeated settlement is refused                           | refused ERR_ALREADY_SETTLED | [G3dZHY4oXX…](https://testnet.nearblocks.io/txns/G3dZHY4oXXTw33WKHTxF8Un6J3LBVpCLzNy7U8ThMtLm) |
+| Customer creates the task and escrows                      | success                     | [5xx7TEeKk2…](https://testnet.nearblocks.io/txns/5xx7TEeKk2ry9bqicHyFVCfudzVShwBgToZq6bKpyYBv) |
+| Customer pays the premium                                  | success                     | [A1c7VE8XvM…](https://testnet.nearblocks.io/txns/A1c7VE8XvMrzdotQrY6yQ2xQoRgMGewrWwdb75EroSVD) |
+| Guarantor bonds the outcome                                | success                     | [3m6A5ioztL…](https://testnet.nearblocks.io/txns/3m6A5ioztLyVH5e4nhvURoP6E6CZfMKeyVrsVE5Zg6wx) |
+| Coordinator commits attempt 1 to alpha                     | success                     | [6eK322mv62…](https://testnet.nearblocks.io/txns/6eK322mv62mZhuQ8ZhBfxtboVqX73hVp9ZGu8c9Le4Xf) |
+| Coordinator opens recovery after attempt 1 (LEASE_EXPIRED) | success                     | [71XNVeXp4A…](https://testnet.nearblocks.io/txns/71XNVeXp4AU9BtrPj7jbLsAjJt7xT4FMiT5ZXdGfySj8) |
+| Coordinator commits attempt 2 to beta                      | success                     | [6MDd873Lis…](https://testnet.nearblocks.io/txns/6MDd873LishTfJBkwz1ygrLgmSYTymrUSGxRGyLoqEWW) |
+| Verifier records REJECT for attempt 2                      | success                     | [BSNEcuHfxr…](https://testnet.nearblocks.io/txns/BSNEcuHfxrjYuN1L8LBrE4VPjSYg5PboaEm1Mzq9Pypp) |
+| Coordinator commits attempt 3 to gamma                     | success                     | [H8UWWgyBAb…](https://testnet.nearblocks.io/txns/H8UWWgyBAb53BhPQmTmCD38BiyiuQBLUtinufhNU7143) |
+| Verifier records ACCEPT for attempt 3                      | success                     | [FrNCGTCyCD…](https://testnet.nearblocks.io/txns/FrNCGTCyCDnZLuegKE8Uv8yt2cm3T8TfxD8PgtGyk8iZ) |
+| Coordinator finalizes the success settlement               | success                     | [2vDxabn6Fi…](https://testnet.nearblocks.io/txns/2vDxabn6Fiqn2VhCpcB7jQvBCo1tG5wBCF6S8bkYbjG1) |
+| A repeated settlement is refused                           | refused ERR_ALREADY_SETTLED | [HUqsGDeWMV…](https://testnet.nearblocks.io/txns/HUqsGDeWMVGwmtKNzBeaQYRHv8tCoHuqXwxow9WoRECm) |
+
+After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.396993 USDC on Base in about 14 seconds (a dry-run quote signed by 1Click, recorded with the run in `deployments/testnet.json`).
 
 ## Contents
 
@@ -71,6 +74,7 @@ The settlement transaction's receipts land at gamma (0.40 NEAR), delta (0.12), t
 - [Why Backstop](#why-backstop)
 - [Try it in 60 seconds](#try-it-in-60-seconds)
 - [How it works](#how-it-works)
+- [Intent-based payouts](#intent-based-payouts)
 - [Attacks Backstop refuses](#attacks-backstop-refuses)
 - [Reliability arena](#reliability-arena)
 - [The economics](#the-economics)
@@ -215,6 +219,12 @@ flowchart LR
 | `POST /api/demo/faults`                                   | coordinator, demo mode only | `kill_worker`, `fail_next_transfer`, `repeat_settlement` |
 
 Run it on its own with `pnpm api` (port 8840), or with `BACKSTOP_DEMO=1 pnpm api` to have it spawn a worker swarm for every task it creates and accept faults.
+
+## Intent-based payouts
+
+A payee should be paid in what it actually uses. Each agent can state a payout preference; in the fixtures, delta asks for USDC on Base. When a task settles, the API asks [NEAR Intents](https://docs.near-intents.org) 1Click for a quote that turns that payee's exact NEAR payout, held in Intents, into its chosen asset on its chosen chain, with the vault as the refund account, and serves the signed quote at `GET /api/tasks/:id/payouts`. On mainnet the vault would move the payee's wNEAR into Intents and execute that quote, so a coalition can be paid across chains in one settlement.
+
+NEAR Intents has no testnet, so Backstop only requests dry-run quotes at mainnet prices: nothing is swapped, and delta's Base address is a fixture address with no known key. `pnpm demo --intents` prints each payee's route; the tests run against a recorded response and need no network.
 
 ## Attacks Backstop refuses
 
