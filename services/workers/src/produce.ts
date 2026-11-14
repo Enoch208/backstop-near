@@ -1,8 +1,14 @@
-import { proposeRepair, workFor, type FixtureAgent, type ModelConfig } from "@backstop/agents";
+import {
+  proposeRepair,
+  workFor,
+  type Diagnosis,
+  type FixtureAgent,
+  type ModelConfig,
+} from "@backstop/agents";
 import { candidate, checkoutRules, checkoutSuite } from "@backstop/fixture-checkout";
-import { canonicalJson, digestText, publicView, type Digest } from "@backstop/shared";
+import { canonicalJson, digestText, type Digest } from "@backstop/shared";
 import type { InferenceReceipt } from "@backstop/tee";
-import { runInSandbox } from "@backstop/verifier";
+import { publicRun } from "./diagnosis.js";
 
 export type Product = {
   readonly label: string;
@@ -22,30 +28,17 @@ export type WorkContext = {
   readonly inherited: readonly string[];
   readonly history: readonly string[];
   readonly resume: Resume | null;
+  readonly diagnosis: Diagnosis | null;
 };
 
 function publicFailures(source: string): { passed: string[]; failures: string[] } {
-  const cases = publicView(checkoutSuite).cases;
-  const results = runInSandbox(
-    source,
-    checkoutSuite.entry,
-    cases.map((testCase) => testCase.input),
-  );
-  const outcomes = cases.map((testCase, index) => {
-    const result = results[index];
-    const ok =
-      result?.ok === true && canonicalJson(result.value) === canonicalJson(testCase.expected);
-    const got =
-      result === undefined ? "nothing" : result.ok ? canonicalJson(result.value) : result.error;
-    return {
-      id: testCase.id,
-      ok,
-      detail: `${testCase.id} expected ${canonicalJson(testCase.expected)} but got ${got}`,
-    };
-  });
+  const run = publicRun(source);
   return {
-    passed: outcomes.filter((outcome) => outcome.ok).map((outcome) => outcome.id),
-    failures: outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.detail),
+    passed: run.passed,
+    failures: run.failing.map(
+      (failing) =>
+        `${failing.id} expected ${canonicalJson(failing.expected)} but got ${canonicalJson(failing.actual)}`,
+    ),
   };
 }
 
@@ -74,6 +67,7 @@ export async function produce(
     resumedFrom: context.resume?.hash ?? null,
     suite: checkoutSuite,
     validatedSubtasks: context.inherited,
+    diagnosis: context.diagnosis,
   };
   let history = [...context.history];
   let repair = await proposeRepair(model, { ...brief, failureHistory: history });

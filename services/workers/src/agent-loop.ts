@@ -4,10 +4,11 @@ import {
   fixtureBids,
   primaryBid,
   searchCounterexample,
+  type Diagnosis,
   type FixtureAgent,
   type ModelConfig,
 } from "@backstop/agents";
-import { checkoutSuite } from "@backstop/fixture-checkout";
+import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
 import {
   canonicalJson,
   digestText,
@@ -19,6 +20,7 @@ import {
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
+import { diagnose, fetchFinding, findingBoard } from "./diagnosis.js";
 import { produce, type Resume } from "./produce.js";
 import {
   artifactReplySchema,
@@ -43,6 +45,7 @@ export function agentLoop(
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
   const history: string[] = [];
+  const board = findingBoard();
 
   const snapshot = async (): Promise<Snapshot> =>
     snapshotSchema.parse((await client.get(base)).body).task;
@@ -98,7 +101,47 @@ export function agentLoop(
     return { source: fetched.data.source, hash: latest.contentHash };
   };
 
-  const work = async () => {
+  const diagnoseAttempt = async (attempt: number) => {
+    const original = candidate("original");
+    const code = (await resumeFrom(await snapshot())) ?? {
+      source: original.source,
+      hash: original.artifactHash,
+    };
+    const finding = diagnose(taskId, attempt, agent.agentId, code);
+    const reply = await client.post(`${base}/findings`, { attempt, finding });
+    const cases = finding.failingCases.map((failing) => failing.id).join(", ") || "none";
+    log(
+      `posted a finding on ${code.hash.slice(0, 19)}… for attempt ${String(attempt)}, failing cases: ${cases} (HTTP ${String(reply.status)})`,
+    );
+  };
+
+  const awaitDiagnosis = async (
+    attempt: number,
+    assigned: SignedBid,
+    leaseMs: number,
+  ): Promise<Diagnosis | null> => {
+    const partners = assigned.bid.members
+      .filter((member) => member.agentId !== agent.agentId && member.role === "diagnostician")
+      .map((member) => member.agentId);
+    if (partners.length === 0) return null;
+    const posted = await board.next(attempt, partners, Math.min(3_000, Math.floor(leaseMs / 2)));
+    if (posted === null) {
+      log(`no finding from ${partners.join(", ")} in time; repairing without one`);
+      return null;
+    }
+    const diagnosis = await fetchFinding(client, base, posted);
+    if (diagnosis === null) {
+      log(`${posted.agentId}'s finding is unavailable or altered; repairing without it`);
+      return null;
+    }
+    const cases = diagnosis.finding.failingCases.map((failing) => failing.id).join(", ");
+    log(
+      `consumed ${posted.agentId}'s finding ${posted.findingHash.slice(0, 19)}… (hash verified), failing cases: ${cases || "none"}`,
+    );
+    return diagnosis;
+  };
+
+  const work = async (assigned: SignedBid) => {
     const claim = leaseReplySchema.safeParse((await client.post(`${base}/claim`, {})).body);
     const token = claim.success
       ? claim.data.events.find((event) => event.body.lease)?.body.lease?.fencingToken
@@ -122,11 +165,13 @@ export function agentLoop(
       log(
         `resumed from checkpoint ${resume.hash.slice(0, 19)}… (hash verified), which passes ${inherited.join(", ") || "nothing yet"}`,
       );
+    const diagnosis = await awaitDiagnosis(task.attempt, assigned, task.manifest.policy.leaseMs);
     const product = await produce(agent, model, {
       objective: task.manifest.objective,
       inherited,
       history,
       resume,
+      diagnosis,
     }).catch((error: unknown) => {
       clearInterval(beat);
       log("stopped heartbeats so the lease expires and the work is re-auctioned");
@@ -205,7 +250,12 @@ export function agentLoop(
     if (body.type === "coalition_proposed" && pendingEndorsers(body.bid).includes(agent.agentId)) {
       run(join(body.bid));
     }
-    if (body.type === "attempt_assigned" && leadAgent(body.bid.bid) === agent.agentId) run(work());
+    if (body.type === "attempt_assigned") {
+      const seat = body.bid.bid.members.find((member) => member.agentId === agent.agentId);
+      if (leadAgent(body.bid.bid) === agent.agentId) run(work(body.bid));
+      else if (seat?.role === "diagnostician") run(diagnoseAttempt(body.attempt));
+    }
+    if (body.type === "finding_recorded") board.record(body);
     const accepted =
       body.type === "verification_recorded" && body.evidence.body.verdict === "ACCEPT";
     if (accepted && agent.role === "challenger") {

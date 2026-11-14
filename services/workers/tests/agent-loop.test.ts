@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { fixtureBids, roster, type FixtureAgent, type ModelConfig } from "@backstop/agents";
 import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
-import type { Json } from "@backstop/shared";
+import { findingHash, findingSchema, type Json } from "@backstop/shared";
+import { z } from "zod";
 import { agentLoop } from "../src/agent-loop.js";
 import type { ApiClient } from "../src/client.js";
 
 const taskId = "checkout-loop";
+const findingPostSchema = z.object({ attempt: z.int(), finding: findingSchema });
 
-function fakeClient(excludedAgents: string[] = []) {
+function fakeClient(excludedAgents: string[] = [], served: Record<string, unknown> = {}) {
   const posts: { path: string; body: Json }[] = [];
   const leased = { events: [{ body: { type: "lease_granted", lease: { fencingToken: 2 } } }] };
   const manifest = checkoutManifest({ taskId, createdAtMs: 0, maxAttempts: 3, timing: liveTiming });
@@ -19,14 +21,14 @@ function fakeClient(excludedAgents: string[] = []) {
         body: path.endsWith("/claim") ? leased : { events: [] },
       });
     },
-    get: () =>
+    get: (path) =>
       Promise.resolve({
         status: 200,
-        body: {
+        body: served[path] ?? {
           task: {
             state: "RECOVERY_OPEN",
             version: 9,
-            attempt: 1,
+            attempt: 2,
             manifest,
             excludedAgents,
             checkpoints: [],
@@ -40,8 +42,13 @@ function fakeClient(excludedAgents: string[] = []) {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
-function loopFor(agent: FixtureAgent, excluded: string[] = [], model: ModelConfig | null = null) {
-  const fake = fakeClient(excluded);
+function loopFor(
+  agent: FixtureAgent,
+  excluded: string[] = [],
+  model: ModelConfig | null = null,
+  served: Record<string, unknown> = {},
+) {
+  const fake = fakeClient(excluded, served);
   const lines: string[] = [];
   const onEvent = agentLoop(
     agent,
@@ -55,6 +62,22 @@ function loopFor(agent: FixtureAgent, excluded: string[] = [], model: ModelConfi
 }
 
 const event = (version: number, body: Record<string, unknown>) => ({ taskId, version, body });
+
+const until = async (check: () => boolean) => {
+  for (let tries = 0; tries < 100 && !check(); tries += 1) await settle();
+};
+
+const coalitionBid = () => {
+  const [, coalition] = fixtureBids({
+    taskId,
+    epoch: 1,
+    nowMs: 0,
+    bidWindowMs: 1_000,
+    excludedAgents: [],
+  });
+  if (coalition === undefined) throw new Error("expected the coalition bid");
+  return coalition;
+};
 
 describe("the agent loop", () => {
   it("lets its lease lapse instead of holding it when the model call fails", async () => {
@@ -149,5 +172,58 @@ describe("the agent loop", () => {
       alpha.onEvent({ nonsense: true });
       alpha.onEvent(event(3, { type: "funds_deposited" }));
     }).not.toThrow();
+  });
+
+  it("has a diagnostician seat post a finding on the code its lead will repair, without claiming", async () => {
+    const delta = loopFor(roster.delta);
+    delta.onEvent(
+      event(15, { type: "attempt_assigned", attempt: 2, epoch: 1, bid: coalitionBid() }),
+    );
+    await until(() => delta.posts.length > 0);
+    expect(delta.posts.map((post) => post.path)).toEqual([`/api/tasks/${taskId}/findings`]);
+    const posted = findingPostSchema.parse(delta.posts[0]?.body);
+    expect(posted.attempt).toBe(2);
+    expect(posted.finding.failingCases.map((failing) => failing.id)).toEqual(
+      expect.arrayContaining(["discount-before-tax", "half-cent-tax-rounds-up"]),
+    );
+  });
+
+  it("has the lead wait for its partner's finding, check its hash and repair with it", async () => {
+    const finding = { failingCases: [], notes: "4 of 4 public cases pass" };
+    const hash = findingHash(finding);
+    const gamma = loopFor(roster.gamma, [], null, {
+      [`/api/tasks/${taskId}/findings/${hash}`]: { findingHash: hash, finding },
+    });
+    gamma.onEvent(
+      event(15, { type: "attempt_assigned", attempt: 2, epoch: 1, bid: coalitionBid() }),
+    );
+    gamma.onEvent(
+      event(16, { type: "finding_recorded", attempt: 2, agentId: "delta", findingHash: hash }),
+    );
+    await until(() => gamma.lines.some((line) => line.startsWith("consumed")));
+    expect(gamma.lines).toContain(
+      `consumed delta's finding ${hash.slice(0, 19)}… (hash verified), failing cases: none`,
+    );
+  });
+
+  it("has the lead repair alone when the posted finding was altered", async () => {
+    const finding = { failingCases: [], notes: "the honest note" };
+    const hash = findingHash(finding);
+    const gamma = loopFor(roster.gamma, [], null, {
+      [`/api/tasks/${taskId}/findings/${hash}`]: {
+        findingHash: hash,
+        finding: { ...finding, notes: "a swapped note" },
+      },
+    });
+    gamma.onEvent(
+      event(15, { type: "attempt_assigned", attempt: 2, epoch: 1, bid: coalitionBid() }),
+    );
+    gamma.onEvent(
+      event(16, { type: "finding_recorded", attempt: 2, agentId: "delta", findingHash: hash }),
+    );
+    await until(() => gamma.lines.some((line) => line.includes("altered")));
+    expect(gamma.lines).toContain(
+      "delta's finding is unavailable or altered; repairing without it",
+    );
   });
 });

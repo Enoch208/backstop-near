@@ -2,6 +2,7 @@ import {
   checkpointSchema,
   digestSchema,
   evidenceBundleSchema,
+  findingSchema,
   signedBidSchema,
   taskManifestSchema,
 } from "@backstop/shared";
@@ -24,6 +25,12 @@ export const workerEventSchema = z.object({
       type: z.literal("verification_recorded"),
       evidence: evidenceBundleSchema,
       challengeDeadlineMs: z.int().nullable(),
+    }),
+    z.object({
+      type: z.literal("finding_recorded"),
+      attempt: z.int(),
+      agentId: z.string(),
+      findingHash: digestSchema,
     }),
     z.object({ type: z.literal("attempt_failed"), attempt: z.int(), reason: z.string() }),
     z.object({
@@ -58,3 +65,5 @@ export const leaseReplySchema = z.object({
 });
 
 export const artifactReplySchema = z.object({ source: z.string() });
+
+export const findingReplySchema = z.object({ finding: findingSchema });
