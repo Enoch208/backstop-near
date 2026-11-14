@@ -29,6 +29,7 @@ import type { ApiClient } from "./client.js";
 import { diagnose, fetchFinding, findingBoard, probeRepair } from "./diagnosis.js";
 import { produce, publicFailures, type Resume } from "./produce.js";
 import { reserveStandby, type StandbyTerms } from "./standby.js";
+import { rebuildInstruction, repairFeedback } from "./recovery-feedback.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -51,6 +52,7 @@ export function agentLoop(
   externalProfile?: PricingProfile,
   currency = "NEAR",
   standby?: StandbyTerms,
+  strategy?: StandbyTerms["strategy"],
 ) {
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
@@ -120,6 +122,7 @@ export function agentLoop(
         ? offer.plan
         : `Repair the checkpoint for ${repairTask.suite.entry} with ${offer.team.map(({ agent }) => agent.role).join(" and ")}`,
       quote,
+      strategy,
     );
     const reply = await client.post(`${base}/bids`, { bid: mine });
     const kind = pendingEndorsers(mine).length > 0 ? "proposed a coalition at" : "bid";
@@ -224,7 +227,13 @@ export function agentLoop(
     const product = await produce(agent, model, {
       objective: task.manifest.objective,
       inherited,
-      history,
+      history: [
+        ...history,
+        ...(repairTask === undefined || resume === null
+          ? []
+          : repairFeedback(resume.source, repairTask, task.recoveryFeedback ?? [])),
+        ...rebuildInstruction(assigned.bid.strategy),
+      ],
       resume,
       diagnosis,
       ...(repairTask === undefined ? {} : { repairTask }),

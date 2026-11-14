@@ -7,6 +7,7 @@ import {
   toYocto,
   type Bid,
   type Endorsement,
+  type RecoveryStrategy,
   type SignedBid,
 } from "@backstop/shared";
 import type { PricedAgent, Quote } from "./pricing.js";
@@ -115,6 +116,7 @@ export function pricedBid(
   context: Omit<BidContext, "excludedAgents">,
   plan: string,
   offer: PricedOffer,
+  strategy?: RecoveryStrategy,
 ): SignedBid {
   const [lead] = offer.members;
   if (lead === undefined) throw new RangeError("A priced offer has at least one member");
@@ -133,6 +135,7 @@ export function pricedBid(
       planHash: digestOf(plan),
       committedAtMs: context.nowMs,
       expiresAtMs: context.nowMs + context.bidWindowMs + 60_000,
+      ...(strategy === undefined ? {} : { strategy }),
     },
     lead.agent,
   );

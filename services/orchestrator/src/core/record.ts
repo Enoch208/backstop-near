@@ -5,6 +5,7 @@ import type {
   EvidenceBundle,
   FailureReason,
   Lease,
+  RecoveryFeedback,
   SignedBid,
   TaskManifest,
   TaskState,
@@ -60,6 +61,7 @@ export type TaskRecord = {
   readonly candidate: Candidate | null;
   readonly excludedAgents: readonly string[];
   readonly failures: readonly { attempt: number; reason: FailureReason }[];
+  readonly recoveryFeedback: readonly RecoveryFeedback[];
   readonly ledger: Ledger;
 };
 
@@ -83,6 +85,7 @@ export function newRecord(manifest: TaskManifest, manifestHash: Digest): TaskRec
     candidate: null,
     excludedAgents: [],
     failures: [],
+    recoveryFeedback: [],
     ledger: openLedger(manifest.owner),
   };
 }

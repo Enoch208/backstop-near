@@ -5,6 +5,9 @@ import { agentIdSchema, nearAccountSchema, taskIdSchema } from "./ids.js";
 import { signatureSchema } from "./signing.js";
 import { agentRoles } from "./task-state.js";
 
+export const recoveryStrategies = ["patch", "rebuild"] as const;
+export type RecoveryStrategy = (typeof recoveryStrategies)[number];
+
 export const bidMemberSchema = z.strictObject({
   agentId: agentIdSchema,
   account: nearAccountSchema,
@@ -24,6 +27,7 @@ export const bidSchema = z
     committedAtMs: z.int().min(0),
     expiresAtMs: z.int().min(0),
     purpose: z.literal("standby").exactOptional(),
+    strategy: z.enum(recoveryStrategies).exactOptional(),
   })
   .refine(
     (bid) =>

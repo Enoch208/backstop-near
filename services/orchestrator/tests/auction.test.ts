@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { endorseBid, fixtureBids, roster, signBid } from "@backstop/agents";
-import { near, toYocto, type SignedBid } from "@backstop/shared";
+import { digestOf, near, toYocto, type SignedBid, type TaskManifest } from "@backstop/shared";
 import { advance, run, runAuction } from "../src/index.js";
+import { preferredRecoveryStrategy } from "../src/core/recovery-routing.js";
 import { assignedTask, record, refusal } from "./support.js";
 
 function recoveryOpen() {
@@ -26,6 +27,46 @@ const bidsFor = (driver: ReturnType<typeof recoveryOpen>) =>
   );
 
 describe("the recovery auction", () => {
+  it("routes a held-out rejection to an eligible rebuild bid without bypassing fixed order or budget", () => {
+    const driver = recoveryOpen();
+    const task = record(driver);
+    const [patch, coalition, overBudget] = bidsFor(driver);
+    if (patch === undefined || coalition === undefined || overBudget === undefined)
+      throw new Error("expected three signed bids");
+    const rebuild = endorseBid(
+      signBid({ ...coalition.bid, strategy: "rebuild" }, roster.gamma),
+      roster.delta,
+    );
+    const expensive = signBid({ ...overBudget.bid, strategy: "rebuild" }, roster.epsilon);
+    const manifest: TaskManifest = {
+      ...task.manifest,
+      policy: { ...task.manifest.policy, recoveryStrategy: "patch" },
+    };
+    const rejected = {
+      ...task,
+      manifest,
+      failures: [{ attempt: 1, reason: "VERDICT_REJECTED" }] as const,
+      recoveryFeedback: [
+        {
+          attempt: 1,
+          artifactHash: digestOf("rejected patch"),
+          publicFailedCaseIds: [],
+          heldOutFailures: 1,
+          executionErrors: 0,
+        },
+      ],
+    };
+    expect(preferredRecoveryStrategy({ ...task, manifest })).toBe("patch");
+    const strategy = preferredRecoveryStrategy(rejected);
+    expect(strategy).toBe("rebuild");
+    const quotes = [patch, rebuild, expensive];
+    const select = (excluded: string[], fixed?: readonly string[]) =>
+      runAuction(quotes, task.ledger, driver.nowMs, excluded, fixed, strategy).winner?.bidHash;
+    expect(select([])).toBe(rebuild.bidHash);
+    expect(select(["gamma"])).toBe(patch.bidHash);
+    expect(select([], ["beta", "gamma", "epsilon"])).toBe(patch.bidHash);
+  });
+
   it("TC-007 awards exactly one winner by price and records why the rest lost", () => {
     const driver = recoveryOpen();
     for (const bid of bidsFor(driver)) run(driver, "agent", { kind: "bid", bid }, "bid");

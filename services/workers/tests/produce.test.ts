@@ -2,12 +2,13 @@ import { createServer, type Server } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { roster } from "@backstop/agents";
 import { candidate } from "@backstop/fixture-checkout";
-import { sha256Hex } from "@backstop/shared";
+import { digestText, sha256Hex } from "@backstop/shared";
 import { addressOfSecret, checkReceipt, signPersonal } from "@backstop/tee";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { diagnose } from "../src/diagnosis.js";
 import { produce } from "../src/produce.js";
+import { repairFeedback } from "../src/recovery-feedback.js";
 
 let server: Server | null = null;
 
@@ -67,6 +68,35 @@ afterEach(() => {
 });
 
 describe("live production", () => {
+  it("explains public failures only for the artifact the verifier rejected", () => {
+    const source = "function increment(n) { return n; }";
+    const brief = {
+      source,
+      rules: "Return the input plus one.",
+      suite: {
+        suiteId: "feedback-test",
+        entry: "increment",
+        cases: [
+          { id: "public", visibility: "public" as const, input: 2, expected: 3 },
+          { id: "private", visibility: "held_out" as const, input: 884211, expected: 884212 },
+        ],
+      },
+      probes: [],
+    };
+    const rejection = {
+      attempt: 1,
+      artifactHash: digestText(source),
+      publicFailedCaseIds: ["public"],
+      heldOutFailures: 1,
+      executionErrors: 0,
+    };
+    const hints = repairFeedback(source, brief, [rejection]).join("\n");
+    expect(hints).toContain("expected 3, got 2");
+    expect(hints).toContain("1 held-out failures");
+    expect(hints).not.toContain("884211");
+    expect(repairFeedback(source + "\n", brief, [rejection])).toEqual([]);
+  });
+
   it("submits the model's patch only after running the public tests itself", async () => {
     const model = await fakeModel([fenced(candidate("gamma-integer").source)]);
     const product = await produce(

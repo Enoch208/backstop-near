@@ -7,7 +7,7 @@ import {
   retryTransfer,
   type Ledger,
 } from "@backstop/ledger";
-import { fromYocto, type Outcome, type TaskState } from "@backstop/shared";
+import { fromYocto, recoveryFeedback, type Outcome, type TaskState } from "@backstop/shared";
 import type { TaskEvent, TaskEventBody } from "./events.js";
 import { newRecord, type TaskRecord } from "./record.js";
 import { canTransition } from "./transitions.js";
@@ -182,6 +182,10 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
         ? record
         : {
             ...record,
+            recoveryFeedback:
+              body.evidence.body.verdict === "REJECT"
+                ? [...record.recoveryFeedback, recoveryFeedback(body.evidence)]
+                : record.recoveryFeedback,
             candidate: {
               ...record.candidate,
               evidence: body.evidence,

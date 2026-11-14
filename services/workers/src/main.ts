@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { asPrincipal, modelFromEnv, roster, type RosterName } from "@backstop/agents";
-import { near } from "@backstop/shared";
+import { near, recoveryStrategies } from "@backstop/shared";
+import { z } from "zod";
 import { agentLoop } from "./agent-loop.js";
 import { apiClient } from "./client.js";
 import { externalWorker, registerWorker } from "./external.js";
@@ -14,6 +15,7 @@ const { values } = parseArgs({
     account: { type: "string" },
     "standby-price": { type: "string" },
     "standby-ms": { type: "string" },
+    "recovery-strategy": { type: "string" },
   },
 });
 if (values.account !== undefined && existsSync(".env")) process.loadEnvFile(".env");
@@ -33,12 +35,14 @@ if (name === "" || api === "" || taskId === "") {
 }
 
 const standbyPrice = values["standby-price"];
+const strategy = z.enum(recoveryStrategies).optional().parse(values["recovery-strategy"]);
 const standby =
   standbyPrice === undefined
     ? undefined
     : {
         amount: near(standbyPrice),
         durationMs: Number(values["standby-ms"] ?? "45000"),
+        ...(strategy === undefined ? {} : { strategy }),
       };
 const outside =
   values.account === undefined ? null : externalWorker(name, values.account, standby?.amount);
@@ -80,6 +84,7 @@ const onEvent = agentLoop(
   outside?.profile,
   process.env.BACKSTOP_WORKER_CURRENCY,
   standby,
+  strategy,
 );
 
 log(`started for ${taskId}${model === null ? "" : ` with live AI (${model.model})`}`);

@@ -51,6 +51,28 @@ export const evidenceBundleSchema = z.strictObject({
 });
 export type EvidenceBundle = z.infer<typeof evidenceBundleSchema>;
 
+export const recoveryFeedbackSchema = z.strictObject({
+  attempt: z.int().positive(),
+  artifactHash: digestSchema,
+  publicFailedCaseIds: z.array(z.string()),
+  heldOutFailures: z.int().nonnegative(),
+  executionErrors: z.int().nonnegative(),
+});
+export type RecoveryFeedback = z.infer<typeof recoveryFeedbackSchema>;
+
+export function recoveryFeedback({ body }: EvidenceBundle): RecoveryFeedback {
+  const failed = body.checks.filter(({ status }) => status !== "pass");
+  return {
+    attempt: body.attempt,
+    artifactHash: body.artifactHash,
+    publicFailedCaseIds: failed
+      .filter(({ visibility }) => visibility === "public")
+      .map(({ id }) => id),
+    heldOutFailures: failed.filter(({ visibility }) => visibility === "held_out").length,
+    executionErrors: failed.filter(({ status }) => status === "error").length,
+  };
+}
+
 export function evidenceHash(body: EvidenceBody): Digest {
   return digestOf(body);
 }

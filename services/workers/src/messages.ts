@@ -4,6 +4,7 @@ import {
   evidenceBundleSchema,
   failureReasons,
   findingSchema,
+  recoveryFeedbackSchema,
   signedBidSchema,
   taskManifestSchema,
   yoctoSchema,
@@ -55,6 +56,7 @@ export const snapshotSchema = z.object({
     excludedAgents: z.array(z.string()),
     checkpoints: z.array(z.object({ checkpoint: checkpointSchema, hash: digestSchema })),
     failures: z.array(z.object({ attempt: z.int(), reason: z.enum(failureReasons) })),
+    recoveryFeedback: z.array(recoveryFeedbackSchema).optional(),
     standby: z.array(signedBidSchema).optional(),
     assignment: z.object({ bid: signedBidSchema }).nullable().optional(),
     ledger: z.object({

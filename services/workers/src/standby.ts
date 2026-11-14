@@ -1,9 +1,13 @@
 import { signBid, type FixtureAgent } from "@backstop/agents";
-import { digestOf, toYocto } from "@backstop/shared";
+import { digestOf, toYocto, type RecoveryStrategy } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
 import type { Snapshot } from "./messages.js";
 
-export type StandbyTerms = { readonly amount: bigint; readonly durationMs: number };
+export type StandbyTerms = {
+  readonly amount: bigint;
+  readonly durationMs: number;
+  readonly strategy?: RecoveryStrategy;
+};
 
 export async function reserveStandby(
   client: ApiClient,
@@ -39,6 +43,7 @@ export async function reserveStandby(
         committedAtMs: now,
         expiresAtMs: manifest.deadlineMs,
         purpose: "standby",
+        ...(terms.strategy === undefined ? {} : { strategy: terms.strategy }),
       },
       agent,
     );

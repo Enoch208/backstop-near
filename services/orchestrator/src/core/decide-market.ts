@@ -12,6 +12,7 @@ import { recoveryCapacity } from "@backstop/ledger";
 import { runAuction } from "./auction.js";
 import type { Decision, DecisionContext } from "./commands.js";
 import type { TaskRecord } from "./record.js";
+import { preferredRecoveryStrategy } from "./recovery-routing.js";
 import { checkEndorsement, checkSignedBid } from "./signed-bid.js";
 
 export function decideReserveStandby(
@@ -153,7 +154,15 @@ export function decideCloseAuction(record: TaskRecord, context: DecisionContext)
     return fail("POLICY_VIOLATION", "The bid window is open");
   const excluded = [...record.excludedAgents, ...(context.busyAgents ?? [])];
   const fixedOrder = record.manifest.policy.recoveryOrder;
-  const ordinary = runAuction(auction.bids, record.ledger, context.nowMs, excluded, fixedOrder);
+  const preferred = preferredRecoveryStrategy(record);
+  const ordinary = runAuction(
+    auction.bids,
+    record.ledger,
+    context.nowMs,
+    excluded,
+    fixedOrder,
+    preferred,
+  );
   const standby =
     ordinary.winner === null
       ? runAuction(
@@ -167,6 +176,7 @@ export function decideCloseAuction(record: TaskRecord, context: DecisionContext)
           context.nowMs,
           excluded,
           fixedOrder,
+          preferred,
         )
       : null;
   const winner = ordinary.winner ?? standby?.winner ?? null;
