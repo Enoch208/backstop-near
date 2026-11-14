@@ -3,7 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import { spawnWorker } from "@backstop/workers";
 import type { Runtime, WorkerControl, WorkerProcess } from "./runtime.js";
 
-export const swarm = ["alpha", "beta", "gamma", "epsilon", "kappa"] as const;
+export const swarm = ["alpha", "beta", "gamma", "delta", "epsilon", "kappa"] as const;
 
 type Tracked = { child: ChildProcess; record: WorkerProcess };
 

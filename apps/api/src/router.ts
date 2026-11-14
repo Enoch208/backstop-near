@@ -1,6 +1,6 @@
 import { errorResponse, type ApiError } from "./http.js";
 import { fault } from "./routes/demo.js";
-import { bid, createTask, fund } from "./routes/funding.js";
+import { bid, createTask, endorse, fund } from "./routes/funding.js";
 import { events, getArtifact, getTask, health, workers } from "./routes/read.js";
 import { challenge, settle } from "./routes/verdicts.js";
 import { checkpoint, claim, heartbeat, submitArtifact } from "./routes/work.js";
@@ -43,6 +43,9 @@ const routes: readonly Route[] = [
   ),
   route("POST", "/api/tasks/:task/bids", (runtime, request, params) =>
     bid(runtime, request, first(params)),
+  ),
+  route("POST", "/api/tasks/:task/endorsements", (runtime, request, params) =>
+    endorse(runtime, request, first(params)),
   ),
   route("POST", "/api/tasks/:task/claim", (runtime, request, params) =>
     claim(runtime, request, first(params)),

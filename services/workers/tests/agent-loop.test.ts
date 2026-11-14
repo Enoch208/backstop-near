@@ -98,6 +98,28 @@ describe("the agent loop", () => {
     expect(beta.posts.map((post) => post.path)).toEqual([`/api/tasks/${taskId}/claim`]);
   });
 
+  it("co-signs a coalition seat that meets its own price, and only its own seat", async () => {
+    const [, coalition] = fixtureBids({
+      taskId,
+      epoch: 1,
+      nowMs: 0,
+      bidWindowMs: 1_000,
+      excludedAgents: [],
+    });
+    const delta = loopFor(roster.delta);
+    const epsilon = loopFor(roster.epsilon);
+    const proposed = event(12, { type: "coalition_proposed", bid: coalition });
+    delta.onEvent(proposed);
+    epsilon.onEvent(proposed);
+    await settle();
+    expect(delta.posts.map((post) => post.path)).toEqual([`/api/tasks/${taskId}/endorsements`]);
+    expect(delta.posts[0]?.body).toMatchObject({
+      bidHash: coalition?.bidHash,
+      signature: { scheme: "ed25519" },
+    });
+    expect(epsilon.posts).toEqual([]);
+  });
+
   it("ignores events it does not understand", () => {
     const alpha = loopFor(roster.alpha);
     expect(() => {

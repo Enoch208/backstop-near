@@ -1,4 +1,4 @@
-import { roster, signBid } from "@backstop/agents";
+import { endorseBid, roster, rosterAgent, signBid } from "@backstop/agents";
 import type { Episode, TaskEventBody } from "@backstop/orchestrator";
 import {
   digestOf,
@@ -57,7 +57,11 @@ function reissue(signed: SignedBid, payoutAccount: (agentId: string) => string):
     ...member,
     account: payoutAccount(member.agentId),
   }));
-  return signBid({ ...signed.bid, members }, lead);
+  const proposal = signBid({ ...signed.bid, members }, lead);
+  return signed.endorsements.reduce(
+    (endorsed, { agentId }) => endorseBid(endorsed, rosterAgent(agentId)),
+    proposal,
+  );
 }
 
 export async function replayOnChain(parties: ChainParties, episode: Episode): Promise<ChainRun> {

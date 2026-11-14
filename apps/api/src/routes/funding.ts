@@ -1,6 +1,8 @@
 import {
+  digestSchema,
   fromYocto,
   leadAgent,
+  signatureSchema,
   signedBidSchema,
   taskManifestSchema,
   yoctoSchema,
@@ -18,6 +20,7 @@ const fundBody = z.strictObject({
   liabilityYocto: yoctoSchema.nullable(),
 });
 const bidBody = z.strictObject({ bid: signedBidSchema });
+const endorseBody = z.strictObject({ bidHash: digestSchema, signature: signatureSchema });
 
 export function createTask(runtime: Runtime, request: Request): Promise<Response> {
   return signedWrite(runtime, request, ({ actor, body }) => {
@@ -108,6 +111,22 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
       runtime,
       taskId,
       execute(runtime, taskId, actor.id, { kind: "bid", bid: signed }),
+    );
+  });
+}
+
+export function endorse(runtime: Runtime, request: Request, taskId: string): Promise<Response> {
+  return signedWrite(runtime, request, ({ actor, body }) => {
+    const parsed = parseBody(endorseBody, body);
+    if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
+    return fromOutcome(
+      runtime,
+      taskId,
+      execute(runtime, taskId, actor.id, {
+        kind: "endorse",
+        bidHash: parsed.value.bidHash,
+        endorsement: { agentId: actor.id, signature: parsed.value.signature },
+      }),
     );
   });
 }

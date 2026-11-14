@@ -13,6 +13,7 @@ export const workerEventSchema = z.object({
   body: z.discriminatedUnion("type", [
     z.object({ type: z.literal("guarantee_posted") }),
     z.object({ type: z.literal("recovery_opened"), epoch: z.int() }),
+    z.object({ type: z.literal("coalition_proposed"), bid: signedBidSchema }),
     z.object({
       type: z.literal("attempt_assigned"),
       attempt: z.int(),

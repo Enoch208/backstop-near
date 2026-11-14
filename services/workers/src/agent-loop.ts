@@ -1,4 +1,6 @@
 import {
+  decideToJoin,
+  endorsement,
   fixtureBids,
   primaryBid,
   searchCounterexample,
@@ -6,7 +8,14 @@ import {
   type FixtureAgent,
 } from "@backstop/agents";
 import { checkoutSuite } from "@backstop/fixture-checkout";
-import { formatNear, fromYocto, leadAgent, type Digest } from "@backstop/shared";
+import {
+  formatNear,
+  fromYocto,
+  leadAgent,
+  pendingEndorsers,
+  type Digest,
+  type SignedBid,
+} from "@backstop/shared";
 import type { ApiClient } from "./client.js";
 import {
   artifactReplySchema,
@@ -50,8 +59,23 @@ export function agentLoop(
     }).filter((signed) => leadAgent(signed.bid) === agent.agentId);
     if (mine === undefined) return;
     const reply = await client.post(`${base}/bids`, { bid: mine });
+    const kind = pendingEndorsers(mine).length > 0 ? "proposed a coalition at" : "bid";
     log(
-      `bid ${formatNear(fromYocto(mine.bid.amountYocto))} NEAR for epoch ${String(epoch)} (HTTP ${String(reply.status)})`,
+      `${kind} ${formatNear(fromYocto(mine.bid.amountYocto))} NEAR for epoch ${String(epoch)} (HTTP ${String(reply.status)})`,
+    );
+  };
+
+  const join = async (signed: SignedBid) => {
+    const task = await snapshot();
+    const decision = decideToJoin(agent, signed, task.excludedAgents);
+    if (!decision.join) {
+      log(`declined ${leadAgent(signed.bid)}'s coalition: ${decision.reason}`);
+      return;
+    }
+    const { signature } = endorsement(signed, agent);
+    const reply = await client.post(`${base}/endorsements`, { bidHash: signed.bidHash, signature });
+    log(
+      `co-signed ${leadAgent(signed.bid)}'s coalition: ${decision.reason} (HTTP ${String(reply.status)})`,
     );
   };
 
@@ -137,6 +161,9 @@ export function agentLoop(
     if (body.type === "recovery_opened" && !bidEpochs.has(body.epoch)) {
       bidEpochs.add(body.epoch);
       run(bidRecovery(body.epoch));
+    }
+    if (body.type === "coalition_proposed" && pendingEndorsers(body.bid).includes(agent.agentId)) {
+      run(join(body.bid));
     }
     if (body.type === "attempt_assigned" && leadAgent(body.bid.bid) === agent.agentId) run(work());
     const accepted =
