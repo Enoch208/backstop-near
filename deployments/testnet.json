@@ -1,0 +1,96 @@
+{
+  "network": "testnet",
+  "contractId": "vault.backstop-6501bb.testnet",
+  "deployTx": "3xyHBrhZNRfKafZRNw4LbMYUREY5DiAUHFKYxqqxqewW",
+  "runs": [
+    {
+      "at": "2026-11-14T11:32:52.576Z",
+      "taskId": "checkout-mwgbt9k9",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "bkdgUQPc2CNFmS6Z1NJKSBFK1DCQgLfW7gFJReZDSHP",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/bkdgUQPc2CNFmS6Z1NJKSBFK1DCQgLfW7gFJReZDSHP"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "44jfHka6TZASf7i4N9KKDG86dYrAnfPH9Z39wyhZCEiX",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/44jfHka6TZASf7i4N9KKDG86dYrAnfPH9Z39wyhZCEiX"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "DWuECbyiQP5rR9XjvAnPsWrmErUAJTs3vktPtgVwZtbg",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/DWuECbyiQP5rR9XjvAnPsWrmErUAJTs3vktPtgVwZtbg"
+        },
+        {
+          "label": "Coordinator commits attempt 1 to alpha",
+          "txHash": "2pAWDiZuboT5wMTWSMvCk6qxbfmRy9Q9C8qmiMAeAtwW",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/2pAWDiZuboT5wMTWSMvCk6qxbfmRy9Q9C8qmiMAeAtwW"
+        },
+        {
+          "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+          "txHash": "7dyU8dC4Bqzrn5fX8QsQiSDqDDxcnVTpYt7CN7uFKdxk",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/7dyU8dC4Bqzrn5fX8QsQiSDqDDxcnVTpYt7CN7uFKdxk"
+        },
+        {
+          "label": "Coordinator commits attempt 2 to beta",
+          "txHash": "85AttME1AiDKBwPvMYh9rt2B8KfTMkTgfK7evSm7btvU",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/85AttME1AiDKBwPvMYh9rt2B8KfTMkTgfK7evSm7btvU"
+        },
+        {
+          "label": "Verifier records REJECT for attempt 2",
+          "txHash": "8L6QQPLSjyF5t3hcKaLXwMdNTqVvP1EkRmBejvf5yY6F",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/8L6QQPLSjyF5t3hcKaLXwMdNTqVvP1EkRmBejvf5yY6F"
+        },
+        {
+          "label": "Coordinator commits attempt 3 to gamma",
+          "txHash": "2KquPafVSGvR8UQZg1uWzoTHTLjqFYLoWbwW9WT7Faz2",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/2KquPafVSGvR8UQZg1uWzoTHTLjqFYLoWbwW9WT7Faz2"
+        },
+        {
+          "label": "Verifier records ACCEPT for attempt 3",
+          "txHash": "2wDd6bCRsVromTGLDYUryQPVU6TPmd1cBeGy6sphgQyV",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/2wDd6bCRsVromTGLDYUryQPVU6TPmd1cBeGy6sphgQyV"
+        },
+        {
+          "label": "Coordinator finalizes the success settlement",
+          "txHash": "SnGxGJrzuM9KEya69gXdzxH6NA16tQ9yji5P6Cya3dk",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/SnGxGJrzuM9KEya69gXdzxH6NA16tQ9yji5P6Cya3dk"
+        },
+        {
+          "label": "A repeated settlement is refused",
+          "txHash": "HAL7MY7Aqk1QuVEDmvawpDkZjLFy1fZ7JtENQV1s3dvj",
+          "outcome": "refused ERR_ALREADY_SETTLED",
+          "explorer": "https://testnet.nearblocks.io/txns/HAL7MY7Aqk1QuVEDmvawpDkZjLFy1fZ7JtENQV1s3dvj"
+        }
+      ],
+      "rebids": [
+        {
+          "attempt": 1,
+          "offchainBidHash": "sha256:ca443494700f316831958fa8a3c2557aa5a56781ce0c80c9a114bb38d17d70a5",
+          "chainBidHash": "sha256:542ef7c0a0617a2443ca6fa32f3eb2fb321f2cd5c078ba9c602c88e86bd9ee56"
+        },
+        {
+          "attempt": 2,
+          "offchainBidHash": "sha256:c97c2188f6ea81e8623ee343f53e5ccf78fc7bc7a7e0f135c5becaf1f24badbf",
+          "chainBidHash": "sha256:6ec6fa012d0c40f369de134dc076b0f452a8dc0f541bde92c1beaac759c316d0"
+        },
+        {
+          "attempt": 3,
+          "offchainBidHash": "sha256:6469d8fd3e9ce5479573fa35403135d5e997538e6f61a95b29b1f9a0a151549c",
+          "chainBidHash": "sha256:0adeeacf819a755a3597192c6bce9059ffa136007c687d85d1fda7e867b382f3"
+        }
+      ]
+    }
+  ]
+}
