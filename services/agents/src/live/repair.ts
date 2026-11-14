@@ -3,6 +3,7 @@ import { complete, type ChatMessage, type Completion, type ModelConfig } from ".
 
 export type RepairBrief = {
   readonly objective: string;
+  readonly rules: string;
   readonly brokenSource: string;
   readonly suite: TestSuite;
   readonly validatedSubtasks: readonly string[];
@@ -22,6 +23,7 @@ export function repairPrompt(brief: RepairBrief): ChatMessage[] {
   }));
   const user = [
     `Objective: ${brief.objective}`,
+    `The published rules:\n${brief.rules}`,
     `Function name: ${brief.suite.entry}`,
     "Current source:",
     "```js",

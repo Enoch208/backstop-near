@@ -106,6 +106,10 @@ export function agentLoop(
       objective: task.manifest.objective,
       inherited,
       history,
+    }).catch((error: unknown) => {
+      clearInterval(beat);
+      log("stopped heartbeats so the lease expires and the work is re-auctioned");
+      throw error;
     });
     await wait(step);
     const parent = (await snapshot()).checkpoints.at(-1)?.hash ?? null;

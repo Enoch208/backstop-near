@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { checkoutSuite, candidate } from "@backstop/fixture-checkout";
+import { checkoutRules, checkoutSuite, candidate } from "@backstop/fixture-checkout";
 import { canonicalJson } from "@backstop/shared";
 import { extractSource, modelFromEnv, repairPrompt } from "../src/index.js";
 
 const brief = {
   objective: "Repair checkoutTotal.",
+  rules: checkoutRules,
   brokenSource: candidate("original").source,
   suite: checkoutSuite,
   validatedSubtasks: ["discount-before-tax"],
@@ -25,6 +26,7 @@ describe("the live repair prompt", () => {
     }
     for (const testCase of publicIds) expect(prompt).toContain(canonicalJson(testCase.input));
     expect(prompt).toContain("discount-before-tax");
+    expect(prompt).toContain(checkoutRules);
     expect(prompt).toContain("LEASE_EXPIRED");
     expect(prompt).toContain(candidate("original").source.trim());
   });

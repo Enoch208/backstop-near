@@ -1,5 +1,5 @@
 import { proposeRepair, workFor, type FixtureAgent, type ModelConfig } from "@backstop/agents";
-import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
+import { candidate, checkoutRules, checkoutSuite } from "@backstop/fixture-checkout";
 import { canonicalJson, digestText, publicView, type Digest } from "@backstop/shared";
 import type { InferenceReceipt } from "@backstop/tee";
 import { runInSandbox } from "@backstop/verifier";
@@ -66,6 +66,7 @@ export async function produce(
   }
   const brief = {
     objective: context.objective,
+    rules: checkoutRules,
     brokenSource: candidate("original").source,
     suite: checkoutSuite,
     validatedSubtasks: context.inherited,

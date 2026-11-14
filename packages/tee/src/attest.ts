@@ -144,3 +144,18 @@ export function liveAttestation(
     nonce: bytesToHex(randomBytes(32)),
   });
 }
+
+export function signerRecord(attestation: Attestation, signer: string) {
+  const instances = attestation.instances.filter((item) => item.signingAddress === signer);
+  const first = instances[0];
+  return {
+    model: attestation.model,
+    signingAddress: signer,
+    attestationHash: attestation.attestationHash,
+    nonce: attestation.nonce,
+    instances: instances.length,
+    tcbStatus: first?.tcbStatus ?? null,
+    mrTd: first?.mrTd ?? null,
+    nvidiaKeyId: first?.gpu.keyId ?? null,
+  };
+}

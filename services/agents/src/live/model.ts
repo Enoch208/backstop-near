@@ -86,7 +86,12 @@ export async function complete(
   messages: readonly ChatMessage[],
   timeoutMs = 60_000,
 ): Promise<Completion> {
-  const requestBody = JSON.stringify({ model: config.model, messages, temperature: 0 });
+  const requestBody = JSON.stringify({
+    model: config.model,
+    messages,
+    temperature: 0,
+    chat_template_kwargs: { thinking: false },
+  });
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${config.apiKey}` },

@@ -14,3 +14,12 @@ export const checkoutSuite: TestSuite = {
 };
 
 export const checkoutSuiteHash: Digest = suiteHash(checkoutSuite);
+
+export const checkoutRules = [
+  "All money is integer cents; never use fractional currency.",
+  "subtotalCents is the sum of unitPriceCents times quantity over every line.",
+  "discountCents is subtotalCents times discountPercent / 100, rounded half up to a whole cent.",
+  "Tax applies after the discount: taxCents is (subtotalCents - discountCents) times taxRateBps / 10000, rounded half up to a whole cent.",
+  "Shipping is free (0) when subtotalCents - discountCents is at least freeShippingThresholdCents; otherwise it is shippingCents.",
+  "totalCents is subtotalCents - discountCents + taxCents + shippingCents.",
+].join("\n");

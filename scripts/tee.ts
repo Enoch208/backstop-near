@@ -11,7 +11,7 @@ import {
   testnetRoot,
   toHex32,
 } from "@backstop/near";
-import { liveAttestation } from "@backstop/tee";
+import { liveAttestation, signerRecord } from "@backstop/tee";
 
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const command = process.argv[2] ?? "attest";
@@ -53,16 +53,8 @@ for (const signer of attestation.signers) {
     `register ${signer}: ${call.ok ? "ok" : `refused ${call.errorCode ?? ""}`} ${explorerTx(call.txHash)}`,
   );
   if (!call.ok) process.exit(1);
-  const instance = attestation.instances.find((item) => item.signingAddress === signer);
   appendTestnetEntry(vault.accountId, "teeSigners", {
     txHash: call.txHash,
-    model,
-    signingAddress: signer,
-    attestationHash: attestation.attestationHash,
-    nonce: attestation.nonce,
-    instances: attestation.instances.filter((item) => item.signingAddress === signer).length,
-    tcbStatus: instance?.tcbStatus ?? null,
-    mrTd: instance?.mrTd ?? null,
-    nvidiaKeyId: instance?.gpu.keyId ?? null,
+    ...signerRecord(attestation, signer),
   });
 }

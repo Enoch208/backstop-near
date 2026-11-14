@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { modelFromEnv, principals } from "@backstop/agents";
 import { chainBridge, createRuntime, startApi, supervise, trustAttestedModel } from "@backstop/api";
 import {
+  appendTestnetEntry,
   appendTestnetRun,
   chainOptionsFromEnv,
   explorerTx,
@@ -14,7 +15,7 @@ import {
 } from "@backstop/near";
 import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { formatNear, near, toYocto } from "@backstop/shared";
-import type { Attestation } from "@backstop/tee";
+import { signerRecord, type Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
 import { z } from "zod";
 
@@ -55,6 +56,12 @@ const registerSigners = async (attestation: Attestation, modelName: string) => {
       modelName,
       toHex32(attestation.attestationHash),
     );
+    if (call.ok && chain.network === "testnet") {
+      appendTestnetEntry(chain.contract.accountId, "teeSigners", {
+        txHash: call.txHash,
+        ...signerRecord(attestation, signer),
+      });
+    }
     const outcome = call.ok ? "ok" : `refused ${call.errorCode ?? ""}`;
     out(
       `${stamp()} [near] Owner registers the attested key ${signer}: ${outcome} ${link(call.txHash)}`,

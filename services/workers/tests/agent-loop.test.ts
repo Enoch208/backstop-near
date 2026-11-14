@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixtureBids, roster, type FixtureAgent } from "@backstop/agents";
+import { fixtureBids, roster, type FixtureAgent, type ModelConfig } from "@backstop/agents";
 import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import type { Json } from "@backstop/shared";
 import { agentLoop } from "../src/agent-loop.js";
@@ -9,11 +9,15 @@ const taskId = "checkout-loop";
 
 function fakeClient(excludedAgents: string[] = []) {
   const posts: { path: string; body: Json }[] = [];
+  const leased = { events: [{ body: { type: "lease_granted", lease: { fencingToken: 2 } } }] };
   const manifest = checkoutManifest({ taskId, createdAtMs: 0, maxAttempts: 3, timing: liveTiming });
   const client: ApiClient = {
     post: (path, body) => {
       posts.push({ path, body });
-      return Promise.resolve({ status: 200, body: { events: [] } });
+      return Promise.resolve({
+        status: 200,
+        body: path.endsWith("/claim") ? leased : { events: [] },
+      });
     },
     get: () =>
       Promise.resolve({
@@ -36,7 +40,7 @@ function fakeClient(excludedAgents: string[] = []) {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
-function loopFor(agent: FixtureAgent, excluded: string[] = []) {
+function loopFor(agent: FixtureAgent, excluded: string[] = [], model: ModelConfig | null = null) {
   const fake = fakeClient(excluded);
   const lines: string[] = [];
   const onEvent = agentLoop(
@@ -45,6 +49,7 @@ function loopFor(agent: FixtureAgent, excluded: string[] = []) {
     taskId,
     (line) => lines.push(line),
     () => undefined,
+    model,
   );
   return { onEvent, ...fake, lines };
 }
@@ -52,6 +57,24 @@ function loopFor(agent: FixtureAgent, excluded: string[] = []) {
 const event = (version: number, body: Record<string, unknown>) => ({ taskId, version, body });
 
 describe("the agent loop", () => {
+  it("lets its lease lapse instead of holding it when the model call fails", async () => {
+    const unreachable = { baseUrl: "http://127.0.0.1:9", apiKey: "test", model: "test/model" };
+    const beta = loopFor(roster.beta, [], unreachable);
+    beta.onEvent(
+      event(17, {
+        type: "attempt_assigned",
+        attempt: 2,
+        epoch: 1,
+        bid: fixtureBids({ taskId, epoch: 1, nowMs: 0, bidWindowMs: 1, excludedAgents: [] })[0],
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    expect(beta.lines).toContain(
+      "stopped heartbeats so the lease expires and the work is re-auctioned",
+    );
+    expect(beta.posts.filter((post) => post.path.endsWith("/heartbeat"))).toEqual([]);
+  });
+
   it("lets only the executor offer itself as the primary once the guarantee is posted", async () => {
     const alpha = loopFor(roster.alpha);
     const beta = loopFor(roster.beta);
