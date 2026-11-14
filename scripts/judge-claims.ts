@@ -194,17 +194,24 @@ export async function attestationClaim(): Promise<Claim> {
   };
 }
 
+async function inTurn<T, R>(items: readonly T[], check: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  for (const item of items) results.push(await check(item));
+  return results;
+}
+
 export async function networkClaims(): Promise<Claim[]> {
   const provider = new JsonRpcProvider({
     url: process.env.BACKSTOP_TESTNET_RPC ?? defaultTestnetRpc,
   });
   const root = record.contractId.slice(record.contractId.indexOf(".") + 1);
   const deployed = (await provider.viewAccount({ accountId: record.contractId })).code_hash;
-  const steps = await Promise.all(
-    record.runs.flatMap((run) => run.steps).map((step) => verifyStep(provider, step, root)),
+  const steps = await inTurn(
+    record.runs.flatMap((run) => run.steps),
+    (step) => verifyStep(provider, step, root),
   );
-  const ledgers = await Promise.all(
-    record.runs.map((run) => verifyLedger(provider, record.contractId, run.taskId)),
+  const ledgers = await inTurn(record.runs, (run) =>
+    verifyLedger(provider, record.contractId, run.taskId),
   );
   const signer =
     enclave === undefined
