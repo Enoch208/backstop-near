@@ -87,6 +87,7 @@ After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.39699
 - [How it works](#how-it-works)
 - [Intent-based payouts](#intent-based-payouts)
 - [Attacks Backstop refuses](#attacks-backstop-refuses)
+- [Attacks refused on NEAR testnet](#attacks-refused-on-near-testnet)
 - [Reliability arena](#reliability-arena)
 - [The economics](#the-economics)
 - [The swarm](#the-swarm)
@@ -329,6 +330,22 @@ NEAR Intents has no testnet, so Backstop only requests dry-run quotes at mainnet
 | Code in a submitted patch reaching the host                                  | sandbox without `require`, `process`, network or string evaluation, with a timeout                                                     | each case reported as an error                                                      |
 
 Every row is exercised by the test suites (`pnpm test`, `pnpm test:chain`, `cargo test`).
+
+## Attacks refused on NEAR testnet
+
+`pnpm chain:redteam` fires real attacks at the deployed vault from the real party accounts, then settles the task honestly. Run `redteam-mwgpql89` on 14 Nov 2026: every attack was refused by the contract, and the task ended `FAILURE_SETTLED` with every yoctoNEAR returned.
+
+| Attack                                                  | Refused with             | Transaction                                                                                    |
+| ------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
+| the customer guarantees its own task                    | `ERR_SELF_GUARANTEE`     | [8yxfR1ZDqy…](https://testnet.nearblocks.io/txns/8yxfR1ZDqyZwCDQEE7qp77fj5CVNyZb2EjrgHM2i6TYB) |
+| the coordinator assigns more than escrow plus liability | `ERR_BUDGET_EXCEEDED`    | [EgvX6QiVBk…](https://testnet.nearblocks.io/txns/EgvX6QiVBkX9fZybV7xWSFbCZjmNYAL6hLBuBN2jNAnz) |
+| the customer records its own ACCEPT                     | `ERR_NOT_VERIFIER`       | [AYBRKMzCxr…](https://testnet.nearblocks.io/txns/AYBRKMzCxrpg7reJZf69MN566VzhAgAdQJG5zNfY8PFc) |
+| a verdict for an attempt that is not current            | `ERR_STALE_ATTEMPT`      | [HWMjj7btiy…](https://testnet.nearblocks.io/txns/HWMjj7btiyVUAxTCDNLWtyMErYJaZZQwYzKCfTKm7ByQ) |
+| an AI receipt signed by an unattested key (0xb946e432…) | `ERR_UNKNOWN_TEE_SIGNER` | [6GUuJaoeou…](https://testnet.nearblocks.io/txns/6GUuJaoeoupztQ2HEGFfdf8roc8PGb8BAEX8nk1D89TU) |
+| the customer settles before any verdict                 | `ERR_INVALID_STATE`      | [4gfZXQeERg…](https://testnet.nearblocks.io/txns/4gfZXQeERgCPEJMVYAGJCGk2QbWgvAvGG2fSJhNhyWLM) |
+| someone other than the owner registers an enclave key   | `ERR_NOT_OWNER`          | [87oxo7UduZ…](https://testnet.nearblocks.io/txns/87oxo7UduZAQ5j6uub51JGjNZh8cZD6N44VAFgnPvRQj) |
+
+These transactions are part of the public record, so `pnpm verify:testnet`, `pnpm judge --network` and the `/verify` page re-check each refusal against the chain.
 
 ## Reliability arena
 

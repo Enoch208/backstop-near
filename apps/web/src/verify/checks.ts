@@ -8,7 +8,8 @@ export type Tamper = "none" | "settled-twice" | "paid-more" | "other-key" | "for
 
 export type Check = {
   readonly id: string;
-  readonly group: "Code" | "Enclave key" | "AI receipt" | "Transactions" | "Ledgers";
+  readonly group:
+    "Code" | "Enclave key" | "AI receipt" | "Attacks refused on chain" | "Transactions" | "Ledgers";
   readonly label: string;
   readonly ok: boolean;
   readonly unread?: boolean;
@@ -201,7 +202,7 @@ export async function runChecks(tamper: Tamper, onCheck: (check: Check) => void)
     });
     onCheck({
       id: step.txHash,
-      group: "Transactions",
+      group: step.label.startsWith("Attack:") ? "Attacks refused on chain" : "Transactions",
       label: step.label,
       ok: actual === step.outcome,
       ...(actual === null ? { unread: true } : {}),

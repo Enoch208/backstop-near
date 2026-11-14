@@ -16,6 +16,7 @@ const groups: readonly Check["group"][] = [
   "Code",
   "Enclave key",
   "AI receipt",
+  "Attacks refused on chain",
   "Ledgers",
   "Transactions",
 ];

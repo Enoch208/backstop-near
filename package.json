@@ -30,7 +30,8 @@
     "tee": "tsx scripts/tee.ts",
     "chain:harden": "tsx scripts/harden.ts",
     "web": "pnpm --filter @backstop/web dev",
-    "judge": "tsx scripts/judge.ts"
+    "judge": "tsx scripts/judge.ts",
+    "chain:redteam": "tsx scripts/red-team.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",

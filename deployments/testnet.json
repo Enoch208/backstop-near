@@ -553,6 +553,104 @@
       },
       "ledgerState": "SETTLED",
       "intentQuotes": []
+    },
+    {
+      "at": "2026-11-14T18:02:47.158Z",
+      "kind": "red team",
+      "taskId": "redteam-mwgpql89",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "8BBewPGr7HFeC1A5X4TuDfVF5dPRev9qAEiyohMMRLeQ",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/8BBewPGr7HFeC1A5X4TuDfVF5dPRev9qAEiyohMMRLeQ"
+        },
+        {
+          "label": "Attack: the customer guarantees its own task",
+          "txHash": "8yxfR1ZDqyZwCDQEE7qp77fj5CVNyZb2EjrgHM2i6TYB",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "refused ERR_SELF_GUARANTEE",
+          "explorer": "https://testnet.nearblocks.io/txns/8yxfR1ZDqyZwCDQEE7qp77fj5CVNyZb2EjrgHM2i6TYB"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "GRHj77dwy3gHiqQKWPjbzJURCV8WYTohNvvbJKXEEFQ9",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/GRHj77dwy3gHiqQKWPjbzJURCV8WYTohNvvbJKXEEFQ9"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "CP8C4Yvy9MvXcXnqRofF6h2xLFKwcrvGRomjSvyKPfze",
+          "signer": "guarantor.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/CP8C4Yvy9MvXcXnqRofF6h2xLFKwcrvGRomjSvyKPfze"
+        },
+        {
+          "label": "Attack: the coordinator assigns more than escrow plus liability",
+          "txHash": "EgvX6QiVBkX9fZybV7xWSFbCZjmNYAL6hLBuBN2jNAnz",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "refused ERR_BUDGET_EXCEEDED",
+          "explorer": "https://testnet.nearblocks.io/txns/EgvX6QiVBkX9fZybV7xWSFbCZjmNYAL6hLBuBN2jNAnz"
+        },
+        {
+          "label": "Coordinator commits attempt 1",
+          "txHash": "8YiWoECEsdbvJQrrgkikUBya79GYMKGMP5VHSS7Zhvmd",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/8YiWoECEsdbvJQrrgkikUBya79GYMKGMP5VHSS7Zhvmd"
+        },
+        {
+          "label": "Attack: the customer records its own ACCEPT",
+          "txHash": "AYBRKMzCxrpg7reJZf69MN566VzhAgAdQJG5zNfY8PFc",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "refused ERR_NOT_VERIFIER",
+          "explorer": "https://testnet.nearblocks.io/txns/AYBRKMzCxrpg7reJZf69MN566VzhAgAdQJG5zNfY8PFc"
+        },
+        {
+          "label": "Attack: a verdict for an attempt that is not current",
+          "txHash": "HWMjj7btiyVUAxTCDNLWtyMErYJaZZQwYzKCfTKm7ByQ",
+          "signer": "verifier.backstop-6501bb.testnet",
+          "outcome": "refused ERR_STALE_ATTEMPT",
+          "explorer": "https://testnet.nearblocks.io/txns/HWMjj7btiyVUAxTCDNLWtyMErYJaZZQwYzKCfTKm7ByQ"
+        },
+        {
+          "label": "Attack: an AI receipt signed by an unattested key (0xb946e432…)",
+          "txHash": "6GUuJaoeoupztQ2HEGFfdf8roc8PGb8BAEX8nk1D89TU",
+          "signer": "verifier.backstop-6501bb.testnet",
+          "outcome": "refused ERR_UNKNOWN_TEE_SIGNER",
+          "explorer": "https://testnet.nearblocks.io/txns/6GUuJaoeoupztQ2HEGFfdf8roc8PGb8BAEX8nk1D89TU"
+        },
+        {
+          "label": "Attack: the customer settles before any verdict",
+          "txHash": "4gfZXQeERgCPEJMVYAGJCGk2QbWgvAvGG2fSJhNhyWLM",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "refused ERR_INVALID_STATE",
+          "explorer": "https://testnet.nearblocks.io/txns/4gfZXQeERgCPEJMVYAGJCGk2QbWgvAvGG2fSJhNhyWLM"
+        },
+        {
+          "label": "Attack: someone other than the owner registers an enclave key",
+          "txHash": "87oxo7UduZAQ5j6uub51JGjNZh8cZD6N44VAFgnPvRQj",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "refused ERR_NOT_OWNER",
+          "explorer": "https://testnet.nearblocks.io/txns/87oxo7UduZAQ5j6uub51JGjNZh8cZD6N44VAFgnPvRQj"
+        },
+        {
+          "label": "Verifier records REJECT; one attempt was allowed, so the task fails",
+          "txHash": "5Mh46j1E3PsUVgzygFD5oStFaA2sGwtZB3m7o188CXrQ",
+          "signer": "verifier.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/5Mh46j1E3PsUVgzygFD5oStFaA2sGwtZB3m7o188CXrQ"
+        },
+        {
+          "label": "Coordinator settles the failure and returns the funds",
+          "txHash": "Axqr2modsgb3NKXKXstPNpesZ15MocsqZYY941o7RZBA",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/Axqr2modsgb3NKXKXstPNpesZ15MocsqZYY941o7RZBA"
+        }
+      ]
     }
   ]
 }

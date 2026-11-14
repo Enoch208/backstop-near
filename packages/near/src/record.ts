@@ -10,7 +10,7 @@ export const testnetRecord = fileURLToPath(
 );
 
 export type RecordedRun = {
-  readonly kind: "replay" | "live swarm";
+  readonly kind: "replay" | "live swarm" | "red team";
   readonly taskId: string;
   readonly steps: readonly ChainStep[];
   readonly extra: Record<string, unknown>;
