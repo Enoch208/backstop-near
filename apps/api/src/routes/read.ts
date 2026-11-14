@@ -78,3 +78,21 @@ export function payouts(runtime: Runtime, taskId: string): Response {
     quotes: runtime.payouts.get(taskId) ?? [],
   });
 }
+
+export function chainSteps(runtime: Runtime, taskId: string): Response {
+  if (runtime.store.records[taskId] === undefined) return notFound(`No task ${taskId}`);
+  const bridge = runtime.chain;
+  return json({
+    network: bridge?.network ?? null,
+    steps: (bridge?.log ?? [])
+      .filter((entry) => entry.taskId === taskId)
+      .map((entry) => ({
+        label: entry.step.label,
+        txHash: entry.step.call.txHash,
+        ok: entry.step.call.ok,
+        errorCode: entry.step.call.errorCode,
+        refusalExpected: entry.step.refusalExpected,
+        events: entry.step.call.events.map((event) => event.event),
+      })),
+  });
+}

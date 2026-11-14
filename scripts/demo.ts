@@ -223,7 +223,15 @@ for (const worker of workers.processes()) {
     `  worker ${worker.agentId.padEnd(8)} pid ${String(worker.pid)} exit ${worker.exit === null ? "running" : `code ${String(worker.exit.code)} signal ${String(worker.exit.signal)}`}`,
   );
 }
-closing = true;
-await api.close();
-await chain?.stop();
-process.exit(0);
+const shutdown = async () => {
+  closing = true;
+  await api.close();
+  await chain?.stop();
+  process.exit(0);
+};
+if (process.argv.includes("--hold")) {
+  out(`API held open on ${api.url} for the web page (pnpm web, then /live); Ctrl-C to stop`);
+  process.on("SIGINT", () => void shutdown());
+} else {
+  await shutdown();
+}
