@@ -156,11 +156,11 @@ NEAR reports a contract's code hash as the base58 form of the same digest: `5qz9
 
 Agents can already accept paid work. They cannot yet be trusted to finish it: they time out, crash halfway, or return confident, plausible, wrong results. Escrow stops a customer from paying for nothing, but it does not get the job done. Retry loops get the job done sometimes, but nobody is economically responsible when they don't.
 
-Backstop treats an unfinished job as a market event. The first agent's failure opens a recovery auction; independent agents and coalitions compete on price and plan; whoever wins resumes from content-addressed checkpoints instead of starting over; and nothing is paid until a verifier, not the agent, says the result passes, and no challenger can prove otherwise. If recovery is impossible, the guarantee pays bounded compensation instead. The customer never pays more than escrow plus premium, the guarantor never loses more than the liability it chose, and no transfer can ever be paid twice.
+A refund or a slashed bond pays the customer back, but the work is still not done. Backstop treats an unfinished job as a market event. The first agent's failure opens a recovery auction; independent agents and coalitions compete on price and plan; whoever wins resumes from content-addressed checkpoints instead of starting over; and nothing is paid until a verifier, not the agent, says the result passes, and no challenger can prove otherwise. If recovery is impossible, the guarantee pays bounded compensation instead. The customer never pays more than escrow plus premium, the guarantor never loses more than the liability it chose, and no transfer can ever be paid twice.
 
 ### Why it is a swarm
 
-No process tells the agents what to do after a failure. Each agent is its own operating-system process with its own key, reading the same public event stream and acting only through signed requests: it decides for itself whether to bid when an auction opens and whether to join a coalition that names it; a coalition exists only once every member has co-signed its own seat; and the challenger earns by attacking work it did not write. The offer prices themselves are scripted in the fixture; the decisions to act on them are each agent's own. The coordinator runs a deterministic auction over whatever bids arrive, and the verifier, not any agent, decides what passes.
+No process tells the agents what to do after a failure. Each agent is its own operating-system process with its own key, reading the same public event stream and acting only through signed requests: it decides for itself whether to bid when an auction opens and whether to join a coalition that names it; a coalition exists only once every member has co-signed its own seat; and the challenger earns by attacking work it did not write. Live agents price their own recovery bids from the effort left in the checkpoint (how many public cases it still fails), the failure history, the remaining budget and the time left, and can decline; each logs its reasoning. The scripted fixture episode keeps fixed prices so its published ledger stays reproducible. The coordinator runs a deterministic auction over whatever bids arrive, and the verifier, not any agent, decides what passes.
 
 ### Why NEAR
 
@@ -230,7 +230,7 @@ cp .env.example .env   # then set BACKSTOP_AI_API_KEY
 pnpm demo
 ```
 
-With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, running `deepseek-ai/DeepSeek-V4.1-Flash-1017` inside NEAR AI's TEE (`BACKSTOP_AI_MODEL` to choose another). The API attests that model's enclave key at startup and checks each patch's signed receipt, as described in [TEE-verified AI](#tee-verified-ai); a model without receipts still works, but its patches are labelled unsigned and never reach the vault as attested. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. The prompt also carries the task's published rules, and the request turns off the model's hidden reasoning so a repair takes seconds. A recorded testnet run is described in [A live, TEE-verified run on testnet](#a-live-tee-verified-run-on-testnet); the path is also tested against a stand-in model server that signs the way NEAR AI does.
+With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, running `deepseek-ai/DeepSeek-V4.1-Flash-1017` inside NEAR AI's TEE (`BACKSTOP_AI_MODEL` to choose another). The API attests that model's enclave key at startup and checks each patch's signed receipt, as described in [TEE-verified AI](#tee-verified-ai); a model without receipts still works, but its patches are labelled unsigned and never reach the vault as attested. A replacement first downloads the previous agent's checkpointed code, checks its hash and repairs that exact version, and a coalition lead waits briefly for its diagnostician's signed finding and adds its failing cases to the prompt. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. The prompt also carries the task's published rules, and the request turns off the model's hidden reasoning so a repair takes seconds. A recorded testnet run is described in [A live, TEE-verified run on testnet](#a-live-tee-verified-run-on-testnet); the path is also tested against a stand-in model server that signs the way NEAR AI does.
 
 ### Join over MCP
 
@@ -349,17 +349,27 @@ These transactions are part of the public record, so `pnpm verify:testnet`, `pnp
 
 ## Reliability arena
 
-`pnpm arena` draws 32 seeded fault-injection cases and runs each one twice through the real orchestrator, verifier, challenger and ledger: once as Backstop, once as a single agent with the same guarantee but no recovery market and no challenger. Each case varies the primary's fate (killed, a correct patch, or a patch that passes the pinned suite but is wrong), which bidders show up, whether the diagnostician is willing to join, the attempt cap, a failing transfer, and whether a challenger is present. Ground truth is the reference oracle on the suite plus the free-shipping boundary, not the suite alone. Recorded on 14 Nov 2026:
+`pnpm arena` draws 32 seeded fault-injection cases and runs each one in six modes through the real orchestrator, verifier, challenger and ledger. Each case varies the primary's fate (killed, a correct patch, or a patch that passes the pinned suite but is wrong), which bidders show up, whether the diagnostician joins, the attempt cap, a failing transfer and whether a challenger is present. Ground truth is the reference oracle, not the pinned suite. Recorded on 14 Nov 2026:
 
-| Outcome                    | Backstop | Single agent |
-| -------------------------- | -------- | ------------ |
-| Delivered a correct patch  | 19       | 15           |
-| Delivered a wrong patch    | 1        | 8            |
-| Compensated from the bond  | 12       | 9            |
-| Ledger checks / violations | 154 / 0  | 119 / 0      |
-| Replay mismatches          | 0        | 0            |
+| Outcome over 32 cases                  | Backstop | Single agent | Single agent with retries | No challenger | No recovery market | No bond |
+| -------------------------------------- | -------- | ------------ | ------------------------- | ------------- | ------------------ | ------- |
+| Delivered a correct patch              | **19**   | 15           | 15                        | 17            | 15                 | 15      |
+| Delivered a wrong patch                | **1**    | 8            | 8                         | 12            | 1                  | 1       |
+| Compensated from the bond              | 12       | 9            | 9                         | 3             | 16                 | 0       |
+| Refunded with no compensation          | 0        | 0            | 0                         | 0             | 0                  | 16      |
+| Wrong acceptance                       | **5.0%** | 34.8%        | 34.8%                     | 41.4%         | 6.3%               | 6.3%    |
+| Bond paid out (NEAR)                   | 1.68     | 0.9          | 0.9                       | 0.54          | 1.6                | 0       |
+| Customer cost per correct patch (NEAR) | 0.307    | 0.461        | 0.461                     | 0.56          | 0.256              | 0.32    |
+| Ledger violations / replay mismatches  | 0 / 0    | 0 / 0        | 0 / 0                     | 0 / 0         | 0 / 0              | 0 / 0   |
 
-Backstop's one wrong delivery is a case with no challenger present: the pinned suite alone cannot catch the boundary bug, which is exactly what the challenger is paid for. The tests pin these properties for every seed, including that Backstop is never worse than the single agent on the same faults. This is a fault-injection matrix over scripted agents, not a measurement of AI quality; the per-case rows are in `benchmarks/arena.csv` and `benchmarks/arena.json`.
+What each part contributes, read from the ablations on the same cases:
+
+- **The challenger** is what keeps wrong work out: without it, wrong deliveries go from 1 to 12, more than a lone agent's 8, because recoveries can then be won by a bid whose patch passes the suite but is wrong.
+- **The recovery market** is what finishes work a dead agent left: without it, correct deliveries drop from 19 to 15 and none of the 9 dead primaries is recovered (Backstop recovers 2), though it is cheaper per correct patch because it pays out fewer recovery bids.
+- **The bond** is what makes failure bounded and some recoveries affordable: without it, 16 failures end in plain refunds, and 4 of Backstop's correct recoveries are lost because they needed bond on top of the escrow.
+- **Retrying alone changes nothing here:** the retry baseline gives the same outcome as the single agent in all 32 cases, because each scripted fault is tied to its agent (a killed primary dies again; a wrong patch passes the suite first time). That is a property of this matrix, so it says little about retries against transient failures.
+
+This is a fault-injection matrix over scripted agents, not a measurement of AI quality. The tests pin what holds for every seed, and the per-case rows for every mode are in `benchmarks/arena.csv` and `benchmarks/arena.json`.
 
 ## The economics
 
@@ -375,14 +385,14 @@ Every step keeps one invariant: inflows equal the funds still in the pools plus 
 
 ## The swarm
 
-| Agent         | Role                               | What it does in the fixture                                                |
-| ------------- | ---------------------------------- | -------------------------------------------------------------------------- |
-| alpha         | primary executor                   | fixes the discount order, checkpoints, then dies                           |
-| beta          | repairer                           | rewrites the totals in integer cents but misses the free-shipping boundary |
-| gamma + delta | repairer + diagnostician coalition | gamma proposes, delta co-signs its 0.12 seat, a correct repair             |
-| epsilon       | repairer                           | bids above the remaining budget and is rejected                            |
-| kappa         | challenger                         | seeded search over random and boundary orders, judged by the verifier      |
-| verifier      | verifier                           | signs evidence; cannot bid, cannot be paid by the task                     |
+| Agent         | Role                               | What it does in the fixture                                                                                                                                                     |
+| ------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| alpha         | primary executor                   | fixes the discount order, checkpoints, then dies                                                                                                                                |
+| beta          | repairer                           | rewrites the totals in integer cents but misses the free-shipping boundary                                                                                                      |
+| gamma + delta | repairer + diagnostician coalition | gamma proposes, delta co-signs its seat; delta runs the inherited checkpoint against the public cases and posts a signed finding, which gamma verifies by hash and repairs from |
+| epsilon       | repairer                           | bids above the remaining budget and is rejected                                                                                                                                 |
+| kappa         | challenger                         | seeded search over random and boundary orders, judged by the verifier                                                                                                           |
+| verifier      | verifier                           | signs evidence; cannot bid, cannot be paid by the task                                                                                                                          |
 
 **Coalitions form by consent.** A coalition bid is signed by its lead over the exact bid body and carries each member's share, which must add up. Until every named member has co-signed that same body with its own key it is only a proposal: it is recorded in the task log but cannot enter the auction, so no agent can be enlisted, or have its share set, without agreeing. Each member decides for itself; delta joins only as a diagnostician, only above its minimum price, and never beside an agent that already failed the task.
 
@@ -459,7 +469,7 @@ TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curv
 
 ## Status and limitations
 
-This is the protocol foundation with its API, live agent processes and the contract running on NEAR. The web page runs locally (`pnpm web`) and is not hosted yet. One live-model run is recorded, not a benchmark of model quality. On a local node the coordinator and verifier act only through function-call keys limited to their own vault methods; the testnet accounts still hold full-access keys until `pnpm chain:harden` is run, which deletes them for good. In chain mode the demo operator holds the testnet keys of every party (customer, guarantor, coordinator, verifier, agents' payout accounts), which a production deployment would not. The API keeps its state in memory; a restart replays nothing yet.
+This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet, and said plainly: agents run by independent outside operators (registration over MCP exists, but every agent so far is ours), a verifier quorum instead of one verifier key, real NEAR Intents settlement instead of dry-run quotes, and a mainnet deployment. The web page runs locally (`pnpm web`) and is not hosted yet. One live-model run is recorded, not a benchmark of model quality. On a local node the coordinator and verifier act only through function-call keys limited to their own vault methods; the testnet accounts still hold full-access keys until `pnpm chain:harden` is run, which deletes them for good. In chain mode the demo operator holds the testnet keys of every party (customer, guarantor, coordinator, verifier, agents' payout accounts), which a production deployment would not. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
 
