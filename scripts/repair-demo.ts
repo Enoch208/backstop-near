@@ -21,6 +21,8 @@ export function demoOptions() {
       "task-id": { type: "string" },
       "external-recovery": { type: "boolean" },
       chain: { type: "string" },
+      "token-fixture": { type: "string" },
+      "usdc-root": { type: "string" },
       intents: { type: "boolean" },
       capture: { type: "boolean" },
       hold: { type: "boolean" },
@@ -37,12 +39,36 @@ export function demoOptions() {
   if (values["manual-kill"] && task?.primaryMilestone === undefined) {
     throw new Error("--manual-kill requires a task with a primaryMilestone");
   }
+  const token = values["token-fixture"] !== undefined || values["usdc-root"] !== undefined;
+  if (
+    token &&
+    (task?.primaryMilestone === undefined ||
+      values.intents ||
+      values.capture ||
+      values["external-recovery"])
+  )
+    throw new Error("A token demo requires a repair task with a primary milestone");
+  if (
+    values["token-fixture"] !== undefined &&
+    !(values.chain === "sandbox" && values["usdc-root"] === undefined)
+  )
+    throw new Error("--token-fixture requires --chain sandbox");
+  if (
+    values["usdc-root"] !== undefined &&
+    ((values.chain !== "testnet" && values.chain !== "mainnet") ||
+      values["task-id"] === undefined ||
+      !/^[a-z\d-]{1,64}$/.test(values["task-id"]))
+  ) {
+    throw new Error("--usdc-root requires --chain testnet or mainnet and a fresh --task-id");
+  }
   return {
     task,
     output: values.output,
     taskId: values["task-id"],
     external: values["external-recovery"] === true,
     manualKill: values["manual-kill"] === true,
+    tokenFixture: values["token-fixture"],
+    usdcRoot: values["usdc-root"],
   };
 }
 

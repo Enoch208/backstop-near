@@ -39,7 +39,7 @@ export type ChainOptions =
     };
 
 export type ChainSetup = {
-  readonly network: "sandbox" | "testnet";
+  readonly network: "sandbox" | "testnet" | "mainnet";
   readonly parties: ChainParties;
   readonly contract: Account;
   readonly deployTx: string | null;

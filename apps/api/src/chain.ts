@@ -6,6 +6,7 @@ import {
   readFinalOutcome,
   reissue,
   sendJournaled,
+  tokenAmount,
   type ChainCall,
   type ChainMirror,
   type ChainParties,
@@ -47,9 +48,8 @@ export function chainBridge(
     ...parties,
     vault: {
       ...parties.vault,
-      send: (signer, actions) => {
+      send: (signer, actions, receiverId) => {
         const scope = operation.getStore();
-        const receiverId = parties.vault.contractId;
         const send = tail.then(async () => {
           if (scope === undefined) {
             const result = await signer.signAndSendTransaction({
@@ -140,7 +140,7 @@ async function reconcileTransfers(
     if (
       view.id !== transfer.id ||
       view.task_id !== current.taskId ||
-      view.amount !== transfer.amount.toString() ||
+      view.amount !== tokenAmount(bridge.parties.vault, transfer.amount).toString() ||
       view.pool !== transfer.pool.toUpperCase() ||
       view.recipient !== expected ||
       view.retries !== transfer.retries

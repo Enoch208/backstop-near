@@ -17,6 +17,7 @@ export type Market = {
   readonly failingCases: number;
   readonly publicCases: number;
   readonly msLeft: number;
+  readonly currency?: string;
 };
 
 export type PricedShare = { readonly agent: FixtureAgent; readonly shareYocto: bigint };
@@ -45,7 +46,6 @@ const rushWindows = 3;
 const wholeBps = 10_000n;
 
 const percent = (bps: number) => `${String(bps / 100)}%`;
-const nearText = (amount: bigint) => `${formatNear(amount)} NEAR`;
 const plural = (count: number, noun: string) => `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
 
 export function riskLoadingBps(failures: readonly FailureReason[]): number {
@@ -82,6 +82,7 @@ function decline(reason: string, reasoning: readonly string[]): Quote {
 }
 
 export function priceRecovery(team: readonly PricedAgent[], market: Market): Quote {
+  const amountText = (amount: bigint) => `${formatNear(amount)} ${market.currency ?? "NEAR"}`;
   const units = market.failingCases + 1;
   const risk = riskLoadingBps(market.failures);
   const reasoning = [
@@ -117,7 +118,7 @@ export function priceRecovery(team: readonly PricedAgent[], market: Market): Quo
     const cost = profile.floorPerUnitYocto * BigInt(units);
     const price = (cost * (wholeBps + loading)) / wholeBps;
     reasoning.push(
-      `${agent.agentId} (${agent.role}): floor ${nearText(profile.floorPerUnitYocto)}/unit × ${String(units)} = ${nearText(cost)}, +${percent(risk + rush)} = ${nearText(price)}`,
+      `${agent.agentId} (${agent.role}): floor ${amountText(profile.floorPerUnitYocto)}/unit × ${String(units)} = ${amountText(cost)}, +${percent(risk + rush)} = ${amountText(price)}`,
     );
     return { agent, cost, price };
   });
@@ -126,7 +127,7 @@ export function priceRecovery(team: readonly PricedAgent[], market: Market): Quo
   const budget = market.budgetYocto;
   if (floor > budget) {
     return decline(
-      `its floor of ${nearText(floor)} is above the ${nearText(budget)} left in escrow plus liability`,
+      `its floor of ${amountText(floor)} is above the ${amountText(budget)} left in escrow plus liability`,
       reasoning,
     );
   }
@@ -137,8 +138,8 @@ export function priceRecovery(team: readonly PricedAgent[], market: Market): Quo
   const amount = shareTotal(members);
   reasoning.push(
     asked > budget
-      ? `asks ${nearText(asked)} but ${nearText(budget)} is left: markups scaled down to bid ${nearText(amount)}`
-      : `bids ${nearText(amount)} of the ${nearText(budget)} left in escrow plus liability`,
+      ? `asks ${amountText(asked)} but ${amountText(budget)} is left: markups scaled down to bid ${amountText(amount)}`
+      : `bids ${amountText(amount)} of the ${amountText(budget)} left in escrow plus liability`,
   );
   return {
     kind: "offer",

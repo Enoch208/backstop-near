@@ -1,5 +1,5 @@
 import { digestSchema, fromYocto, yoctoSchema } from "@backstop/shared";
-import { chainDeposit, chainGuarantee } from "@backstop/near";
+import { chainDeposit, chainGuarantee, fitsToken } from "@backstop/near";
 import { decide, type TaskRecord } from "@backstop/orchestrator";
 import { z } from "zod";
 import { keepReply, signedWrite, type Authenticated, type HandlerResult } from "../auth.js";
@@ -163,6 +163,18 @@ export function fund(runtime: Runtime, request: Request, taskId: string): Promis
     const { pool, amountYocto, liabilityYocto } = parsed.value;
     const unauthorized = authorizeFunding(runtime, record, actor, pool);
     if (unauthorized !== null) return refuse(runtime, taskId, unauthorized);
+    const vault = runtime.chain?.parties.vault;
+    if (
+      vault?.token !== undefined &&
+      (!fitsToken(vault, fromYocto(amountYocto)) ||
+        (liabilityYocto !== null && !fitsToken(vault, fromYocto(liabilityYocto))))
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure("POLICY_VIOLATION", "Funding has more precision than the settlement token"),
+      );
+    }
     const pending: PendingFunding = {
       actor: actor.id,
       key,

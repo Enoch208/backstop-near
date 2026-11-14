@@ -19,6 +19,7 @@ export type ChainCall = {
   readonly ok: boolean;
   readonly errorCode: string | null;
   readonly events: readonly VaultEvent[];
+  readonly vaultEvents?: Readonly<Record<string, readonly VaultEvent[]>>;
 };
 
 function failureText(status: unknown): string | null {
@@ -28,19 +29,30 @@ function failureText(status: unknown): string | null {
 
 export function readOutcome(response: unknown): ChainCall {
   const parsed = transactionResponseSchema.parse(response);
-  const logs = [
-    ...parsed.transaction_outcome.outcome.logs,
-    ...parsed.receipts_outcome.flatMap((receipt) => receipt.outcome.logs),
-  ];
   const failure = failureText(parsed.status);
+  const vaultEvents: Record<string, VaultEvent[]> = Object.create(null) as Record<
+    string,
+    VaultEvent[]
+  >;
+  const events = parsed.transaction_outcome.outcome.logs.flatMap((line) => {
+    const event = parseEventLog(line);
+    return event === null ? [] : [event];
+  });
+  for (const { outcome } of parsed.receipts_outcome) {
+    for (const line of outcome.logs) {
+      const event = parseEventLog(line);
+      if (event === null) continue;
+      events.push(event);
+      if (failureText(outcome.status) === null)
+        (vaultEvents[outcome.executor_id] ??= []).push(event);
+    }
+  }
   return {
     txHash: parsed.transaction.hash,
     signer: parsed.transaction.signer_id,
     ok: failure === null,
     errorCode: failure === null ? null : (/ERR_[A-Z_]+/.exec(failure)?.[0] ?? "ERR_UNKNOWN"),
-    events: logs.flatMap((line) => {
-      const event = parseEventLog(line);
-      return event === null ? [] : [event];
-    }),
+    vaultEvents,
+    events,
   };
 }

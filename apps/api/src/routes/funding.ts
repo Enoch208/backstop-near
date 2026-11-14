@@ -1,6 +1,7 @@
 import {
   digestOf,
   digestSchema,
+  fromYocto,
   leadAgent,
   repairRunnerId,
   repairTaskSchema,
@@ -10,6 +11,7 @@ import {
   taskManifestSchema,
 } from "@backstop/shared";
 import { checkoutRunnerId, checkoutSuite, checkoutSuiteHash } from "@backstop/fixture-checkout";
+import { fitsToken } from "@backstop/near";
 import { roster } from "@backstop/agents";
 import { z } from "zod";
 import { signedWrite } from "../auth.js";
@@ -30,6 +32,22 @@ export function createTask(runtime: Runtime, request: Request): Promise<Response
     const parsed = parseBody(createBody, body);
     if (!parsed.ok) return { error: parsed.error, taskVersion: null };
     const { manifest, repairTask } = parsed.value;
+    const vault = runtime.chain?.parties.vault;
+    if (
+      vault?.token !== undefined &&
+      [
+        manifest.budget.escrowYocto,
+        manifest.budget.premiumYocto,
+        manifest.guarantee?.maxLiabilityYocto ?? "0",
+        manifest.guarantee?.compensationCapYocto ?? "0",
+      ].some((value) => !fitsToken(vault, fromYocto(value)))
+    ) {
+      return refuse(
+        runtime,
+        manifest.taskId,
+        failure("POLICY_VIOLATION", "The manifest has more precision than the settlement token"),
+      );
+    }
     if (manifest.owner !== actor.account) {
       return refuse(
         runtime,
@@ -92,6 +110,17 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
     }
     const record = runtime.store.records[taskId];
     const members = signed.bid.members;
+    const vault = runtime.chain?.parties.vault;
+    if (
+      vault?.token !== undefined &&
+      members.some(({ shareYocto }) => !fitsToken(vault, fromYocto(shareYocto)))
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure("POLICY_VIOLATION", "A bid share has more precision than the settlement token"),
+      );
+    }
     if (
       members.some((member) => runtime.identities.get(member.agentId)?.account !== member.account)
     ) {

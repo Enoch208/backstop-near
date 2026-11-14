@@ -5,7 +5,8 @@ import { ledgerViewSchema, rolesSchema, transferViewSchema, type Hex32 } from ".
 
 export type Vault = {
   readonly contractId: string;
-  readonly send?: (signer: Account, actions: Action[]) => Promise<ChainCall>;
+  readonly token?: { readonly contractId: string; readonly unitsPerBaseUnit: bigint };
+  readonly send?: (signer: Account, actions: Action[], receiverId: string) => Promise<ChainCall>;
 };
 
 export const defaultGas = teraToGas("30");
@@ -21,7 +22,7 @@ export async function callVault(
   const calls = [
     actions.functionCall(method, args, options.gas ?? defaultGas, options.deposit ?? 0n),
   ];
-  if (vault.send !== undefined) return vault.send(signer, calls);
+  if (vault.send !== undefined) return vault.send(signer, calls, vault.contractId);
   const response = await signer.signAndSendTransaction({
     receiverId: vault.contractId,
     actions: calls,
@@ -29,6 +30,62 @@ export async function callVault(
     throwOnFailure: false,
   });
   return readOutcome(response);
+}
+
+export function fitsToken(vault: Vault, value: bigint): boolean {
+  const scale = vault.token?.unitsPerBaseUnit ?? 1n;
+  return scale > 0n && value % scale === 0n;
+}
+
+export function tokenAmount(vault: Vault, value: bigint): bigint {
+  if (!fitsToken(vault, value))
+    throw new Error(
+      "The task amount cannot be represented exactly in the vault token's base units",
+    );
+  return value / (vault.token?.unitsPerBaseUnit ?? 1n);
+}
+
+async function fundPool(
+  vault: Vault,
+  signer: Account,
+  method: string,
+  operation: string,
+  args: Record<string, unknown>,
+  amount: bigint,
+): Promise<ChainCall> {
+  if (vault.token === undefined) return callVault(vault, signer, method, args, { deposit: amount });
+  const amountText = tokenAmount(vault, amount).toString();
+  const receiverId = vault.token.contractId;
+  const calls = [
+    actions.functionCall(
+      "ft_transfer_call",
+      {
+        receiver_id: vault.contractId,
+        amount: amountText,
+        msg: JSON.stringify({ operation, ...args }),
+      },
+      teraToGas("130"),
+      1n,
+    ),
+  ];
+  const result =
+    vault.send !== undefined
+      ? await vault.send(signer, calls, receiverId)
+      : readOutcome(
+          await signer.signAndSendTransaction({
+            receiverId,
+            actions: calls,
+            waitUntil: "FINAL",
+            throwOnFailure: false,
+          }),
+        );
+  if (!result.ok) return result;
+  const expectedEvent = operation === "guarantee" ? "guarantee_posted" : "task_funded";
+  return result.vaultEvents?.[vault.contractId]?.some(
+    ({ event, data }) => event === expectedEvent && data.task_id === args.task_id,
+  )
+    ? result
+    : { ...result, ok: false, errorCode: "ERR_TOKEN_FUNDING_REFUNDED" };
 }
 
 async function view<T>(
@@ -70,24 +127,28 @@ export const createTask = (
   policy: VaultPolicy,
   escrow: bigint,
 ) =>
-  callVault(
+  fundPool(
     vault,
     customer,
     "create_task",
+    "create",
     {
       task_id: taskId,
       manifest_hash: manifestHash,
       policy: {
         deadline_ns: policy.deadlineNs.toString(),
         max_attempts: policy.maxAttempts,
-        compensation_cap: policy.compensationCap.toString(),
+        compensation_cap: tokenAmount(vault, policy.compensationCap).toString(),
       },
     },
-    { deposit: escrow },
+    escrow,
   );
 
+export const fundTask = (vault: Vault, customer: Account, taskId: string, escrow: bigint) =>
+  fundPool(vault, customer, "fund_task", "escrow", { task_id: taskId }, escrow);
+
 export const fundPremium = (vault: Vault, customer: Account, taskId: string, premium: bigint) =>
-  callVault(vault, customer, "fund_premium", { task_id: taskId }, { deposit: premium });
+  fundPool(vault, customer, "fund_premium", "premium", { task_id: taskId }, premium);
 
 export const postGuarantee = (
   vault: Vault,
@@ -96,12 +157,13 @@ export const postGuarantee = (
   bond: bigint,
   liability: bigint,
 ) =>
-  callVault(
+  fundPool(
     vault,
     guarantor,
     "post_guarantee",
-    { task_id: taskId, max_liability: liability.toString() },
-    { deposit: bond },
+    "guarantee",
+    { task_id: taskId, max_liability: tokenAmount(vault, liability).toString() },
+    bond,
   );
 
 export type ChainAssignment = {
@@ -122,8 +184,14 @@ export const registerAssignment = (
     attempt: assignment.attempt,
     agent: assignment.agent,
     bid_hash: assignment.bidHash,
-    amount: assignment.payees.reduce((total, payee) => total + payee.amount, 0n).toString(),
-    payees: assignment.payees.map((payee) => [payee.account, payee.amount.toString()]),
+    amount: tokenAmount(
+      vault,
+      assignment.payees.reduce((total, payee) => total + payee.amount, 0n),
+    ).toString(),
+    payees: assignment.payees.map((payee) => [
+      payee.account,
+      tokenAmount(vault, payee.amount).toString(),
+    ]),
   });
 
 export const openRecovery = (

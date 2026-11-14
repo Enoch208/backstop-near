@@ -18,6 +18,13 @@ import { signerRecord, type Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
 import { capture } from "./capture.js";
 import { checked, confirmKill, deliver, demoManifest, demoOptions } from "./repair-demo.js";
+import {
+  setUpTokenDemo,
+  setUpUsdcDemo,
+  tokenDemoBudget,
+  tokenDemoWorkers,
+  verifyTokenRescue,
+} from "./demo-token.js";
 import { z } from "zod";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -32,14 +39,40 @@ if (options.output !== undefined && existsSync(options.output)) {
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const startedAt = Date.now();
 const stamp = () => `+${((Date.now() - startedAt) / 1_000).toFixed(1).padStart(5, " ")}s`;
+const taskId =
+  options.taskId ??
+  (options.task === undefined
+    ? `checkout-live-${String(startedAt % 100_000)}`
+    : `repair-${crypto.randomUUID().slice(0, 8)}`);
 
 const chainFlag = process.argv.indexOf("--chain");
 const network = chainFlag === -1 ? null : (process.argv[chainFlag + 1] ?? "sandbox");
 const chain =
-  network === null ? null : await setUpChain(chainOptionsFromEnv(network, process.env), out);
-const link = (hash: string) => (network === "testnet" ? explorerTx(hash) : hash);
+  options.tokenFixture !== undefined
+    ? await setUpTokenDemo(options.tokenFixture)
+    : options.usdcRoot !== undefined && (network === "mainnet" || network === "testnet")
+      ? await setUpUsdcDemo(network, options.usdcRoot, taskId)
+      : network === null
+        ? null
+        : await setUpChain(chainOptionsFromEnv(network, process.env), out);
+const tokenDemo = chain !== null && chain.parties.vault.token !== undefined;
+const assetLabel =
+  options.usdcRoot !== undefined ? "USDC" : tokenDemo ? "sandbox token units" : "NEAR";
+if (tokenDemo) process.env.BACKSTOP_WORKER_CURRENCY = assetLabel;
+const link = (hash: string) =>
+  network === "testnet"
+    ? explorerTx(hash)
+    : network === "mainnet"
+      ? `https://nearblocks.io/txns/${hash}`
+      : hash;
 
-const runtime = createRuntime(Date.now, true);
+const runtime = createRuntime(
+  Date.now,
+  true,
+  options.usdcRoot === undefined
+    ? undefined
+    : (process.env.BACKSTOP_USDC_STATE_PATH ?? `.backstop/usdc-${taskId}.sqlite`),
+);
 if (process.argv.includes("--intents")) {
   runtime.intents = {
     quote: oneClickQuoter(),
@@ -64,12 +97,14 @@ const registerSigners = async (attestation: Attestation, modelName: string) => {
       modelName,
       toHex32(attestation.attestationHash),
     );
-    if (call.ok && chain.network === "testnet") {
+    if (call.ok && chain.network === "testnet" && !tokenDemo) {
       appendTestnetEntry(chain.contract.accountId, "teeSigners", {
         txHash: call.txHash,
         ...signerRecord(attestation, signer),
       });
     }
+    if (!call.ok && tokenDemo)
+      throw new Error(`Token vault refused the attested signer at ${link(call.txHash)}`);
     const outcome = call.ok ? "ok" : `refused ${call.errorCode ?? ""}`;
     out(
       `${stamp()} [near] Owner registers the attested key ${signer}: ${outcome} ${link(call.txHash)}`,
@@ -83,24 +118,23 @@ runtime.workers = supervise(
   runtime,
   api.url,
   (line) => out(`${stamp()}   ${line}`),
-  options.external ? ["alpha", "kappa"] : undefined,
+  options.external || tokenDemo ? ["alpha", "kappa"] : undefined,
 );
 
 const customer = apiClient(api.url, principals.customer);
 const guarantor = apiClient(api.url, principals.guarantor);
 const coordinator = apiClient(api.url, principals.coordinator);
-const taskId =
-  options.taskId ??
-  (options.task === undefined
-    ? `checkout-live-${String(startedAt % 100_000)}`
-    : `repair-${crypto.randomUUID().slice(0, 8)}`);
 const recorder = process.argv.includes("--capture") ? capture(customer, taskId, startedAt) : null;
+const tokenWorkers =
+  tokenDemo && chain !== null
+    ? tokenDemoWorkers(api.url, taskId, chain, (line) => out(`${stamp()}   ${line}`))
+    : [];
 
 out(`Backstop live demo: ${taskId} on ${api.url}`);
 const vaultMode =
   chain === null
     ? "FIXTURE vault (no NEAR moves)"
-    : `NEAR ${chain.network} vault ${chain.contract.accountId} (real NEAR moves)`;
+    : `NEAR ${chain.network} vault ${chain.contract.accountId} (${assetLabel})`;
 out(
   model === null
     ? `Mode: ${vaultMode}, scripted patches; real HTTP, real signed requests,`
@@ -110,7 +144,20 @@ out(
   "real worker processes, a real SIGKILL, the real verifier sandbox, challenge search and ledger.",
 );
 
-const manifest = demoManifest(options, taskId, startedAt);
+const originalManifest = demoManifest(options, taskId, startedAt);
+const manifest = tokenDemo
+  ? {
+      ...originalManifest,
+      budget: {
+        escrowYocto: toYocto(tokenDemoBudget.escrow),
+        premiumYocto: toYocto(tokenDemoBudget.premium),
+      },
+      guarantee: {
+        maxLiabilityYocto: toYocto(tokenDemoBudget.bond),
+        compensationCapYocto: toYocto(near("0.10")),
+      },
+    }
+  : originalManifest;
 await checked(
   customer.post("/api/tasks", {
     manifest,
@@ -121,7 +168,7 @@ await checked(
 await checked(
   customer.post(`/api/tasks/${taskId}/funding`, {
     pool: "escrow",
-    amountYocto: toYocto(near("0.40")),
+    amountYocto: manifest.budget.escrowYocto,
     liabilityYocto: null,
   }),
   "Fund escrow",
@@ -129,7 +176,7 @@ await checked(
 await checked(
   customer.post(`/api/tasks/${taskId}/funding`, {
     pool: "premium",
-    amountYocto: toYocto(near("0.04")),
+    amountYocto: manifest.budget.premiumYocto,
     liabilityYocto: null,
   }),
   "Fund premium",
@@ -137,8 +184,8 @@ await checked(
 await checked(
   guarantor.post(`/api/tasks/${taskId}/funding`, {
     pool: "bond",
-    amountYocto: toYocto(near("0.25")),
-    liabilityYocto: toYocto(near("0.25")),
+    amountYocto: manifest.guarantee?.maxLiabilityYocto ?? toYocto(near("0.25")),
+    liabilityYocto: manifest.guarantee?.maxLiabilityYocto ?? toYocto(near("0.25")),
   }),
   "Post bond",
 );
@@ -181,7 +228,16 @@ const settled = new Promise<string>((resolve, reject) => {
   );
 });
 
-const kind = await settled;
+const stop = async () => {
+  closing = true;
+  for (const worker of tokenWorkers) worker.kill();
+  await api.close();
+  await chain?.stop();
+};
+const kind = await settled.catch(async (error: unknown) => {
+  await stop();
+  throw error;
+});
 if (options.task !== undefined && kind === "success") {
   const path = options.output ?? `${taskId}.js`;
   const hash = await deliver(customer, taskId, path);
@@ -205,12 +261,20 @@ if (runtime.intents !== null) {
 }
 
 if (chain !== null) {
-  const repeat = await finalizeSuccess(chain.parties.vault, chain.parties.coordinator, taskId);
+  const proof = tokenDemo
+    ? await verifyTokenRescue(chain, taskId).catch(async (error: unknown) => {
+        await stop();
+        throw error;
+      })
+    : null;
+  const repeat =
+    proof?.duplicate ??
+    (await finalizeSuccess(chain.parties.vault, chain.parties.coordinator, taskId));
   out(
     `${stamp()}     judge: settle again on NEAR -> refused ${repeat.errorCode ?? "(accepted!)"} ${link(repeat.txHash)}`,
   );
-  const ledger = await getLedger(chain.parties.vault, chain.contract, taskId);
-  if (chain.network === "testnet") {
+  const ledger = proof?.ledger ?? (await getLedger(chain.parties.vault, chain.contract, taskId));
+  if (chain.network === "testnet" && !tokenDemo) {
     const steps = [
       ...(runtime.chain?.log ?? [])
         .filter((entry) => entry.taskId === taskId)
@@ -234,9 +298,15 @@ if (chain !== null) {
     });
     out(`${stamp()}     recorded in deployments/testnet.json`);
   }
-  out(
-    `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
-  );
+  if (tokenDemo) {
+    out(
+      `${stamp()}     token ledger: ${ledger?.state ?? "missing"}, in ${ledger?.total_inflow ?? "0"} base units, out ${ledger?.confirmed_outflow ?? "0"} base units, bond spent ${ledger?.bond_consumed ?? "0"} base units`,
+    );
+  } else {
+    out(
+      `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
+    );
+  }
 }
 
 const workers = runtime.workers;
@@ -266,7 +336,7 @@ const view = z
 out("");
 out(`Final state: ${view.task.state} (${kind})`);
 for (const [recipient, amount] of Object.entries(view.statement.confirmedByRecipient)) {
-  out(`  ${recipient.padEnd(28)} ${formatNear(BigInt(amount))} NEAR`);
+  out(`  ${recipient.padEnd(28)} ${formatNear(BigInt(amount))} ${assetLabel}`);
 }
 for (const worker of workers.processes()) {
   out(
@@ -274,9 +344,7 @@ for (const worker of workers.processes()) {
   );
 }
 const shutdown = async () => {
-  closing = true;
-  await api.close();
-  await chain?.stop();
+  await stop();
   process.exit(0);
 };
 if (process.argv.includes("--hold")) {

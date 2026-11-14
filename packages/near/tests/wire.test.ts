@@ -67,4 +67,26 @@ describe("the vault wire format", () => {
       events: [{ event: "transfer_confirmed" }],
     });
   });
+
+  it("distinguishes a failed vault callback from a successful token resolver", () => {
+    const status = { SuccessValue: "MA==" };
+    const log =
+      'EVENT_JSON:{"standard":"backstop","version":"1.0.0","event":"task_funded","data":[{"task_id":"t"}]}';
+    const result = readOutcome({
+      ...response(status, []),
+      receipts_outcome: [
+        {
+          id: "rollback",
+          outcome: { logs: [log], executor_id: "vault.testnet", status: { Failure: {} } },
+        },
+        {
+          id: "resolver",
+          outcome: { logs: [log], executor_id: "token.testnet", status },
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.vaultEvents?.["vault.testnet"]).toBeUndefined();
+    expect(result.vaultEvents?.["token.testnet"]).toHaveLength(1);
+  });
 });

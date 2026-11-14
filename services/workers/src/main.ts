@@ -54,6 +54,7 @@ const onEvent = agentLoop(
   },
   model,
   outside?.profile,
+  process.env.BACKSTOP_WORKER_CURRENCY,
 );
 
 log(`started for ${taskId}${model === null ? "" : ` with live AI (${model.model})`}`);

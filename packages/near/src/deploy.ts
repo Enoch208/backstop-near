@@ -47,6 +47,36 @@ export async function deployVault(
 
 const emptyCodeHash = "11111111111111111111111111111111";
 
+export async function deployTokenVault(
+  contract: Account,
+  roles: VaultRoles,
+  asset: NonNullable<Vault["token"]>,
+  wasm: Uint8Array = readFileSync(vaultWasmPath),
+): Promise<ChainCall> {
+  if ((await contract.getState()).codeHash !== emptyCodeHash)
+    throw new Error("Token vault deployment requires a fresh contract account");
+  return readOutcome(
+    await contract.signAndSendTransaction({
+      receiverId: contract.accountId,
+      actions: [
+        actions.deployContract(wasm),
+        actions.functionCall(
+          "new_with_token",
+          {
+            ...roles,
+            token_contract: asset.contractId,
+            min_escrow: "10000",
+          },
+          teraToGas("45"),
+          0n,
+        ),
+      ],
+      waitUntil: "FINAL",
+      throwOnFailure: false,
+    }),
+  );
+}
+
 export const codeHashOf = (wasm: Uint8Array): string =>
   baseEncode(createHash("sha256").update(wasm).digest());
 

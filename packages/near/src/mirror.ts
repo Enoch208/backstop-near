@@ -10,11 +10,11 @@ import {
 import type { Account } from "near-api-js";
 import type { ChainCall } from "./outcome.js";
 import {
-  callVault,
   createTask,
   finalizeFailure,
   finalizeSuccess,
   fundPremium,
+  fundTask,
   openRecovery,
   postGuarantee,
   recordVerdict,
@@ -90,13 +90,7 @@ export function chainDeposit(
   if (!createsTask) {
     return step(
       "Customer adds escrow",
-      callVault(
-        parties.vault,
-        parties.customer,
-        "fund_task",
-        { task_id: record.taskId },
-        { deposit: amount },
-      ),
+      fundTask(parties.vault, parties.customer, record.taskId, amount),
     );
   }
   const policy = {

@@ -48,6 +48,7 @@ export function agentLoop(
   onDone: () => void,
   model: ModelConfig | null = null,
   externalProfile?: PricingProfile,
+  currency = "NEAR",
 ) {
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
@@ -70,7 +71,7 @@ export function agentLoop(
   const bidPrimary = async () => {
     const signed = primaryBid(agent, taskId, "0.30", Date.now());
     const reply = await client.post(`${base}/bids`, { bid: signed });
-    log(`offered to be the primary for 0.30 NEAR (HTTP ${String(reply.status)})`);
+    log(`offered to be the primary for 0.30 ${currency} (HTTP ${String(reply.status)})`);
   };
 
   const bidRecovery = async (epoch: number) => {
@@ -106,6 +107,7 @@ export function agentLoop(
       failingCases: check.failures.length,
       publicCases: check.passed.length + check.failures.length,
       msLeft: task.manifest.deadlineMs - Date.now(),
+      currency,
     });
     for (const line of quote.reasoning) log(`pricing: ${line}`);
     if (quote.kind === "decline") return;
@@ -119,7 +121,7 @@ export function agentLoop(
     const reply = await client.post(`${base}/bids`, { bid: mine });
     const kind = pendingEndorsers(mine).length > 0 ? "proposed a coalition at" : "bid";
     log(
-      `${kind} ${formatNear(fromYocto(mine.bid.amountYocto))} NEAR for epoch ${String(epoch)} (HTTP ${String(reply.status)})`,
+      `${kind} ${formatNear(fromYocto(mine.bid.amountYocto))} ${currency} for epoch ${String(epoch)} (HTTP ${String(reply.status)})`,
     );
   };
 
