@@ -1,8 +1,19 @@
-import type { JsonRpcProvider } from "near-api-js";
+import { FailoverRpcProvider, JsonRpcProvider, type Provider } from "near-api-js";
 import { z } from "zod";
-import { readOutcome } from "./outcome.js";
+import { vaultMethods, type RestrictedRole } from "./keys.js";
+import { defaultTestnetRpc } from "./network.js";
+import { readFinalOutcome } from "./journal.js";
 import { teeSignerSchema } from "./tee.js";
 import { ledgerViewSchema } from "./wire.js";
+
+export function testnetProofProvider(url?: string): Provider {
+  if (url !== undefined) return new JsonRpcProvider({ url });
+  return new FailoverRpcProvider(
+    [defaultTestnetRpc, "https://api.zan.top/near-testnet", "https://testnet-rpc.intea.rs"].map(
+      (endpoint) => new JsonRpcProvider({ url: endpoint }, { retries: 1 }),
+    ),
+  );
+}
 
 const stepSchema = z.object({
   label: z.string(),
@@ -46,26 +57,30 @@ export function signerOf(step: z.infer<typeof stepSchema>, root: string): string
 }
 
 export async function verifyStep(
-  provider: JsonRpcProvider,
+  provider: Provider,
   step: z.infer<typeof stepSchema>,
   root: string,
 ): Promise<Finding> {
+  await new Promise((resolve) => setTimeout(resolve, 700));
   const response = await provider.viewTransactionStatus({
     txHash: step.txHash,
     accountId: signerOf(step, root),
     waitUntil: "FINAL",
   });
-  const call = readOutcome(response);
+  const call = readFinalOutcome(response);
   const observed = call.ok ? "success" : `refused ${call.errorCode ?? ""}`.trim();
   return {
-    ok: observed === step.outcome,
+    ok:
+      call.txHash === step.txHash &&
+      call.signer === signerOf(step, root) &&
+      observed === step.outcome,
     subject: step.txHash,
     detail: `${step.label}: recorded ${step.outcome}, chain says ${observed}`,
   };
 }
 
 export async function verifyLedger(
-  provider: JsonRpcProvider,
+  provider: Provider,
   contractId: string,
   taskId: string,
 ): Promise<Finding> {
@@ -87,7 +102,7 @@ export async function verifyLedger(
 }
 
 export async function verifyTeeSigner(
-  provider: JsonRpcProvider,
+  provider: Provider,
   contractId: string,
   recorded: z.infer<typeof signerRecordSchema>,
   latest: boolean,
@@ -115,21 +130,26 @@ const permissionSchema = z.union([
 ]);
 
 export async function verifyRestriction(
-  provider: JsonRpcProvider,
+  provider: Provider,
   contractId: string,
   account: string,
+  role: RestrictedRole,
 ): Promise<Finding> {
   const list = await provider.viewAccessKeyList({ accountId: account });
   const permissions = list.keys.map((key) => permissionSchema.parse(key.access_key.permission));
+  const allowed = new Set<string>(vaultMethods[role]);
   const restricted =
     permissions.length > 0 &&
     permissions.every(
       (permission) =>
-        permission !== "FullAccess" && permission.FunctionCall.receiver_id === contractId,
+        permission !== "FullAccess" &&
+        permission.FunctionCall.receiver_id === contractId &&
+        permission.FunctionCall.method_names.length > 0 &&
+        permission.FunctionCall.method_names.every((method) => allowed.has(method)),
     );
   return {
     ok: restricted,
     subject: account,
-    detail: `${account} holds ${String(permissions.length)} key(s), ${restricted ? `all function-call keys for ${contractId} only` : "at least one key with wider access"}`,
+    detail: `${account} holds ${String(permissions.length)} key(s), ${restricted ? `all restricted to ${role} calls on ${contractId}` : "key scopes do not establish the expected restrictions"}`,
   };
 }

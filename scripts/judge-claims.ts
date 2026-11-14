@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { ledgerViolations, statement } from "@backstop/ledger";
 import {
-  defaultTestnetRpc,
+  testnetProofProvider,
   publishedCodeHash,
   testnetRecordSchema,
   verifyLedger,
@@ -25,7 +25,6 @@ import {
   nearAiAttestationBase,
   signPersonal,
 } from "@backstop/tee";
-import { JsonRpcProvider } from "near-api-js";
 import { z } from "zod";
 
 export type Claim = { readonly claim: string; readonly ok: boolean; readonly evidence: string };
@@ -201,9 +200,7 @@ async function inTurn<T, R>(items: readonly T[], check: (item: T) => Promise<R>)
 }
 
 export async function networkClaims(): Promise<Claim[]> {
-  const provider = new JsonRpcProvider({
-    url: process.env.BACKSTOP_TESTNET_RPC ?? defaultTestnetRpc,
-  });
+  const provider = testnetProofProvider(process.env.BACKSTOP_TESTNET_RPC);
   const root = record.contractId.slice(record.contractId.indexOf(".") + 1);
   const deployed = (await provider.viewAccount({ accountId: record.contractId })).code_hash;
   const steps = await inTurn(
@@ -228,7 +225,7 @@ export async function networkClaims(): Promise<Claim[]> {
     .parse(raw ?? null);
   const restrictions = await Promise.all(
     record.keyRestrictions.map((entry) =>
-      verifyRestriction(provider, record.contractId, entry.account),
+      verifyRestriction(provider, record.contractId, entry.account, entry.role),
     ),
   );
   const locked: Claim[] =

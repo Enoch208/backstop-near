@@ -32,7 +32,7 @@ function base58(hex: string): string {
 
 const resultSchema = z.object({ result: z.unknown().optional(), error: z.unknown().optional() });
 
-const endpoints = [rpc, "https://rpc.testnet.near.org"];
+const endpoints = [rpc, "https://api.zan.top/near-testnet", "https://testnet-rpc.intea.rs"];
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class Unreadable extends Error {}
@@ -84,7 +84,14 @@ function signerOf(step: RecordedStep): string {
   return `${role}.${root}`;
 }
 
-const statusSchema = z.object({ status: z.unknown() });
+const statusSchema = z.object({
+  final_execution_status: z.literal("FINAL"),
+  status: z.union([
+    z.object({ SuccessValue: z.string() }),
+    z.object({ Failure: z.looseObject({}) }),
+  ]),
+  transaction: z.object({ hash: z.string(), signer_id: z.string() }),
+});
 
 async function chainOutcome(step: RecordedStep): Promise<string> {
   const result = statusSchema.parse(
@@ -94,8 +101,10 @@ async function chainOutcome(step: RecordedStep): Promise<string> {
       wait_until: "FINAL",
     }),
   );
+  if (result.transaction.hash !== step.txHash || result.transaction.signer_id !== signerOf(step))
+    throw new Unreadable("RPC returned another transaction");
   const status = result.status;
-  if (typeof status === "object" && status !== null && "Failure" in status) {
+  if ("Failure" in status) {
     const code = /ERR_[A-Z_]+/.exec(JSON.stringify(status))?.[0] ?? "ERR_UNKNOWN";
     return `refused ${code}`;
   }
@@ -224,7 +233,7 @@ export async function runChecks(tamper: Tamper, onCheck: (check: Check) => void)
         : ledger?.total_inflow;
     const ok =
       ledger !== null &&
-      /SETTLED/.test(ledger.state) &&
+      (ledger.state === "SETTLED" || ledger.state === "FAILURE_SETTLED") &&
       ledger.confirmed_outflow === claimedOut &&
       ledger.pending_outflow === "0" &&
       ledger.failed_outflow === "0";

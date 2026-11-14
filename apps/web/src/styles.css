@@ -72,7 +72,7 @@ body {
 
 .photo-closing {
   background-image:
-    url("/images/backstop.jpg"), radial-gradient(ellipse at 35% 45%, #5e5e5b 0%, transparent 45%),
+    radial-gradient(ellipse at 35% 45%, #5e5e5b 0%, transparent 45%),
     linear-gradient(180deg, #b9b9b4, #8f8f8b);
 }
 

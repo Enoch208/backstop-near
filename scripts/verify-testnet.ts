@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import {
-  defaultTestnetRpc,
+  testnetProofProvider,
   testnetRecordSchema,
   verifyLedger,
   verifyStep,
@@ -8,14 +8,12 @@ import {
   verifyTeeSigner,
   type Finding,
 } from "@backstop/near";
-import { baseEncode, JsonRpcProvider } from "near-api-js";
+import { baseEncode } from "near-api-js";
 
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const record = testnetRecordSchema.parse(JSON.parse(read("../deployments/testnet.json")));
-const provider = new JsonRpcProvider({
-  url: process.env.BACKSTOP_TESTNET_RPC ?? defaultTestnetRpc,
-});
+const provider = testnetProofProvider(process.env.BACKSTOP_TESTNET_RPC);
 const root = record.contractId.slice(record.contractId.indexOf(".") + 1);
 const findings: Finding[] = [];
 
@@ -58,7 +56,9 @@ for (const restriction of record.keyRestrictions) {
     signer: restriction.account,
   };
   findings.push(await verifyStep(provider, step, root));
-  findings.push(await verifyRestriction(provider, record.contractId, restriction.account));
+  findings.push(
+    await verifyRestriction(provider, record.contractId, restriction.account, restriction.role),
+  );
 }
 for (const run of record.runs) {
   for (const step of run.steps) findings.push(await verifyStep(provider, step, root));

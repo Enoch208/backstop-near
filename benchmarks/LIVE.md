@@ -37,3 +37,15 @@ This benchmark runs the scheduler, pricing, coalition consent, acceptance and le
 ## Recorded pilot
 
 On 14 November 2026, the pilot used `deepseek-ai/DeepSeek-V4.1-Flash-1017` through NEAR AI Cloud. Each scheduler delivered eight correct repairs across two tasks and four conditions. The 42 model responses all reported token usage. The market had zero paired wins and zero losses against either baseline. It used 956 tokens per successful repair versus 966.75 for persistent retries and 953.875 for the fixed workflow. The results and delivered source are in [live-pilot.json](live-pilot.json).
+
+## Full recorded comparison
+
+The full run on 14 November 2026 used the same model, with one repeat for each of eight tasks, four conditions and three modes. Offline verification checked all 96 pairings and independently reran all 92 delivered artifacts. Of 32 trials per mode:
+
+| Mode                     | Correct | Incorrect accepted | Unresolved | Tokens per correct repair |
+| ------------------------ | ------: | -----------------: | ---------: | ------------------------: |
+| Persistent single agent  |      29 |                  1 |          2 |                     1,215 |
+| Fixed specialists        |      30 |                  1 |          1 |                     1,129 |
+| Backstop recovery market |      30 |                  1 |          1 |                     1,147 |
+
+The market had one more correct outcome than persistent retries, and tied fixed specialists on every paired correctness result. The exploratory task-level interval for the difference against retries was 0 to 9.375 percentage points. The matched modes also accepted the same discount-task mutant, which the separate audit caught. This shows where to improve acceptance coverage and does not establish a reliability advantage over fixed scheduling. All [raw trial results](live-results.json), including the incorrect acceptances and unsuccessful cases, are available. Verify with `pnpm benchmark:live --verify-run benchmarks/live-results.json`.
