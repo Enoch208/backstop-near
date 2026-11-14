@@ -78,13 +78,28 @@ export function choose(
     attempt: number;
     failures: readonly FailureReason[];
     excluded: readonly string[];
+    unavailable: readonly string[];
+    costBps: Readonly<Record<string, number>>;
     failingCases: number;
     publicCases: number;
     msLeft: number;
   },
 ): Assignment {
-  const { taskId, attempt, excluded, failures, failingCases, publicCases, msLeft } = context;
+  const {
+    taskId,
+    attempt,
+    excluded,
+    unavailable,
+    costBps,
+    failures,
+    failingCases,
+    publicCases,
+    msLeft,
+  } = context;
+  const available = (agent: string) => !unavailable.includes(agent);
+  const noAssignment = { lead: "", payees: [], bids: [] };
   if (mode === "single" || attempt === 1) {
+    if (!available("alpha")) return noAssignment;
     return {
       lead: "alpha",
       payees: [{ account: roster.alpha.account, amount: near(economics.fixedPayment) }],
@@ -92,23 +107,25 @@ export function choose(
     };
   }
   const leads = ["beta", "gamma", "epsilon"] as const satisfies readonly RosterName[];
-  if (mode === "fixed") {
-    const next = leads.find((lead) => !excluded.includes(lead));
-    if (next === undefined) return { lead: "", payees: [], bids: [] };
-    const payees =
-      next === "gamma"
-        ? [
-            { account: roster.gamma.account, amount: near("0.28") },
-            { account: roster.delta.account, amount: near("0.12") },
-          ]
-        : [{ account: roster[next].account, amount: near(economics.fixedPayment) }];
-    return { lead: next, payees, bids: [] };
-  }
   const trace: Assignment["bids"][number][] = [];
   const bids = leads.flatMap((lead) => {
     const team = recoveryTeam(lead);
     if (team === null) throw new Error(`No roster pricing for ${lead}`);
-    const quote = priceRecovery(team.team, {
+    if (
+      team.team.some(({ agent }) => !available(agent.agentId) || excluded.includes(agent.agentId))
+    ) {
+      trace.push({ lead, quote: "", reason: "unavailable-or-excluded" });
+      return [];
+    }
+    const priced = team.team.map(({ agent, profile }) => ({
+      agent,
+      profile: {
+        ...profile,
+        floorPerUnitYocto:
+          (profile.floorPerUnitYocto * BigInt(costBps[agent.agentId] ?? 10_000)) / 10_000n,
+      },
+    }));
+    const quote = priceRecovery(priced, {
       budgetYocto: recoveryCapacity(ledger),
       epoch: attempt - 1,
       failures,
@@ -143,6 +160,18 @@ export function choose(
     });
     return [join?.join === true ? endorseBid(bid, roster.delta) : bid];
   });
+  if (mode === "fixed") {
+    const next = bids[0];
+    if (next === undefined) return noAssignment;
+    return {
+      lead: leadAgent(next.bid),
+      payees: next.bid.members.map((member) => ({
+        account: member.account,
+        amount: fromYocto(member.shareYocto),
+      })),
+      bids: [],
+    };
+  }
   const { winner, rejected } = runAuction(bids, ledger, 1100, excluded);
   const records = trace.map((bid) => ({
     ...bid,

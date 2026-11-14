@@ -396,3 +396,23 @@ export const tasks: readonly TaskDefinition[] = [
     ],
   },
 ];
+
+export const recoveryTasks = tasks.map((task): TaskDefinition =>
+  task.id === "discount-units"
+    ? {
+        ...task,
+        acceptance: [
+          ...task.acceptance,
+          { prices: [35, 35, 35, 500], bundleSize: 3, discountPercent: 33 },
+        ],
+        audit: [
+          { prices: [17, 19, 23, 400, 500], bundleSize: 3, discountPercent: 17 },
+          ...task.audit.slice(1),
+        ],
+        anchors: [
+          ...task.anchors,
+          [{ prices: [35, 35, 35, 500], bundleSize: 3, discountPercent: 33 }, 571],
+        ],
+      }
+    : task,
+);

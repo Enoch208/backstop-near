@@ -1,10 +1,16 @@
 import { repairPrompt, type ModelConfig } from "@backstop/agents";
-import { digestText, type FailureReason } from "@backstop/shared";
+import { digestText, seededRandom, type FailureReason } from "@backstop/shared";
 import { check, type PreparedTask } from "./evaluate.js";
 import { infer, limits, type Inference } from "./inference.js";
 import { accounting, choose, fundedLedger, type Assignment, type Mode } from "./schedule.js";
 
-export const faults = ["healthy", "transient-tool", "worker-death", "incorrect-output"] as const;
+export const legacyFaults = [
+  "healthy",
+  "transient-tool",
+  "worker-death",
+  "incorrect-output",
+] as const;
+export const faults = [...legacyFaults, "constrained-recovery"] as const;
 export type Fault = (typeof faults)[number];
 
 type Attempt = {
@@ -35,6 +41,7 @@ function candidateAfterFault(
   switch (fault) {
     case "transient-tool":
       return { source: null, fault: "injected-transient-tool-loss" };
+    case "constrained-recovery":
     case "worker-death":
       return { source, fault: "injected-worker-death-after-checkpoint" };
     case "incorrect-output":
@@ -50,6 +57,7 @@ export async function runTrial(
   mode: Mode,
   fault: Fault,
   repeat: number,
+  seed: number,
 ) {
   const began = performance.now();
   const deadline = began + limits.wallMs;
@@ -58,6 +66,21 @@ export async function runTrial(
   const excluded: string[] = [];
   const history: string[] = [];
   const attempts: Attempt[] = [];
+  const random = seededRandom(
+    (seed ^ Number.parseInt(digestText(task.id).slice(7, 15), 16) ^ repeat) >>> 0,
+  );
+  const providers = { alpha: 0, beta: 0, gamma: 1, delta: 1, epsilon: 2 };
+  const outage = Math.floor(random() * 3);
+  const unavailable =
+    fault === "constrained-recovery"
+      ? Object.entries(providers)
+          .filter(([, provider]) => provider === outage)
+          .map(([agent]) => agent)
+      : [];
+  const costBps = Object.fromEntries(
+    Object.keys(providers).map((agent) => [agent, 5_000 + Math.floor(random() * 15_001)]),
+  );
+
   let checkpoint = task.starter;
   let winner: Assignment | null = null;
   let accepted = false;
@@ -77,6 +100,8 @@ export async function runTrial(
       attempt,
       failures,
       excluded,
+      unavailable: attempt === 1 ? [] : unavailable,
+      costBps,
       failingCases: failingCases.length,
       publicCases: task.visible.length,
       msLeft,
@@ -162,6 +187,8 @@ export async function runTrial(
     mode,
     fault,
     repeat,
+    unavailableDuringRecovery: unavailable,
+    costBps,
     correct,
     accepted,
     terminal,

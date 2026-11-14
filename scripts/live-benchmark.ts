@@ -6,9 +6,9 @@ import { digestOf, seededRandom } from "@backstop/shared";
 import { prepare } from "./benchmark/evaluate.js";
 import { limits } from "./benchmark/inference.js";
 import { results } from "./benchmark/report.js";
-import { faults, runTrial, type Trial } from "./benchmark/run.js";
+import { faults, legacyFaults, runTrial, type Trial } from "./benchmark/run.js";
 import { modes } from "./benchmark/schedule.js";
-import { tasks } from "./benchmark/tasks.js";
+import { recoveryTasks, tasks } from "./benchmark/tasks.js";
 import { verifyRun } from "./benchmark/verify-run.js";
 
 const { values } = parseArgs({
@@ -31,10 +31,13 @@ const numeric = (raw: string, name: string, minimum: number, maximum: number): n
   return value;
 };
 
-const prepared = tasks.map(prepare);
-const corpusHash = digestOf(tasks);
+const prepared = recoveryTasks.map(prepare);
+const corpusHash = digestOf(recoveryTasks);
 if (values["verify-run"] !== undefined) {
-  const { trials, deliveries } = verifyRun(values["verify-run"], prepared, corpusHash);
+  const { trials, deliveries } = verifyRun(values["verify-run"], [
+    { tasks: prepared, hash: corpusHash, faults },
+    { tasks: tasks.map(prepare), hash: digestOf(tasks), faults: legacyFaults },
+  ]);
   process.stdout.write(
     `Confirmed pairing for ${String(trials)} recorded trials and independently rechecked ${String(deliveries)} delivered artifacts.\n`,
   );
@@ -54,7 +57,8 @@ if (values["verify-run"] !== undefined) {
   const seed = numeric(values.seed, "seed", 1, 4_294_967_295);
   const random = seededRandom(seed);
   const output =
-    values.out ?? (values.pilot ? "benchmarks/live-pilot.json" : "benchmarks/live-results.json");
+    values.out ??
+    (values.pilot ? "benchmarks/market-pilot.json" : "benchmarks/market-results.json");
   const trials: Trial[] = [];
   const blocks = selected
     .flatMap((task) =>
@@ -100,7 +104,7 @@ if (values["verify-run"] !== undefined) {
   );
   for (const block of blocks) {
     for (const { mode } of block.modes) {
-      const trial = await runTrial(config, block.task, mode, block.fault, block.repeat);
+      const trial = await runTrial(config, block.task, mode, block.fault, block.repeat, seed);
       trials.push(trial);
       save();
       process.stdout.write(

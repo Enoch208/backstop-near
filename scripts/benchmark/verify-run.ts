@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { digestSchema, digestText } from "@backstop/shared";
 import { z } from "zod";
 import { check, type PreparedTask } from "./evaluate.js";
-import { faults } from "./run.js";
+import { faults, type Fault } from "./run.js";
 import { modes } from "./schedule.js";
 
 const attemptSchema = z.object({
@@ -30,11 +30,15 @@ const reportSchema = z.object({
   trials: z.array(trialSchema),
 });
 
-export function verifyRun(path: string, tasks: readonly PreparedTask[], corpusHash: string) {
+export function verifyRun(
+  path: string,
+  corpora: readonly { tasks: readonly PreparedTask[]; hash: string; faults: readonly Fault[] }[],
+) {
   const report = reportSchema.parse(JSON.parse(readFileSync(path, "utf8")));
-  if (report.corpusHash !== corpusHash) throw new Error("The recorded corpus digest differs");
-  const selected = report.pilot ? tasks.slice(0, 2) : tasks;
-  const expected = selected.length * faults.length * modes.length * report.repeats;
+  const corpus = corpora.find(({ hash }) => hash === report.corpusHash);
+  if (corpus === undefined) throw new Error("The recorded corpus digest differs");
+  const selected = report.pilot ? corpus.tasks.slice(0, 2) : corpus.tasks;
+  const expected = selected.length * corpus.faults.length * modes.length * report.repeats;
   if (
     report.completedTrials !== expected ||
     report.expectedTrials !== expected ||
@@ -47,7 +51,12 @@ export function verifyRun(path: string, tasks: readonly PreparedTask[], corpusHa
   for (const row of report.trials) {
     const task = selected.find(({ id }) => id === row.task);
     const name = `${row.task}/${row.fault}/${row.mode}/${String(row.repeat)}`;
-    if (task === undefined || row.repeat > report.repeats || seen.has(name))
+    if (
+      task === undefined ||
+      !corpus.faults.includes(row.fault) ||
+      row.repeat > report.repeats ||
+      seen.has(name)
+    )
       throw new Error(`Unexpected trial ${name}`);
     seen.add(name);
     if (row.deliveredSource === null) {

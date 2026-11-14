@@ -50,6 +50,12 @@ export function prepare(task: TaskDefinition) {
   ) {
     throw new Error(`Hand-calculated anchors disagree with the reference for ${task.id}`);
   }
+  if (
+    task.id === "discount-units" &&
+    new Set([...acceptance, ...audit].map(({ input }) => canonicalJson(input))).size !==
+      acceptance.length + audit.length
+  )
+    throw new Error(`Duplicate benchmark inputs for ${task.id}`);
   if (check(task.starter, task.entry, acceptance).length === 0)
     throw new Error(`Starter already passes ${task.id}`);
   if (
