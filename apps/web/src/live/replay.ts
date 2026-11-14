@@ -4,8 +4,10 @@ import { z } from "zod";
 import {
   chainSchema,
   eventSchema,
+  logsSchema,
   snapshotSchema,
   workersSchema,
+  type AgentLine,
   type ChainSteps,
   type FeedEvent,
   type Snapshot,
@@ -18,6 +20,7 @@ const frameSchema = z.object({
   task: z.unknown(),
   workers: z.unknown(),
   chain: z.unknown(),
+  logs: z.unknown().optional(),
 });
 
 const runSchema = z.object({
@@ -40,6 +43,7 @@ export type ReplayState = {
   readonly snapshot: Snapshot | null;
   readonly workers: readonly Worker[];
   readonly chain: ChainSteps | null;
+  readonly lines: readonly AgentLine[];
   readonly done: boolean;
 };
 
@@ -88,7 +92,16 @@ export function useReplay(runId: string, speed: number, startedAt: number): Repl
   }, []);
   return useMemo(() => {
     if (run === null)
-      return { run, error, events: [], snapshot: null, workers: [], chain: null, done: false };
+      return {
+        run,
+        error,
+        events: [],
+        snapshot: null,
+        workers: [],
+        chain: null,
+        lines: [],
+        done: false,
+      };
     const elapsed = (now - startedAt) * speed + (run.frames[0]?.atMs ?? 0);
     const shown = run.frames.filter((frame) => frame.atMs <= elapsed);
     const events = shown.flatMap((frame) => {
@@ -103,6 +116,7 @@ export function useReplay(runId: string, speed: number, startedAt: number): Repl
       snapshot: lastParsed(shown, (frame) => frame.task, snapshotSchema),
       workers: (workers?.workers ?? []).filter((worker) => worker.taskId === run.taskId),
       chain: lastParsed(shown, (frame) => frame.chain, chainSchema),
+      lines: lastParsed(shown, (frame) => frame.logs, logsSchema)?.lines ?? [],
       done: shown.length === run.frames.length,
     };
   }, [run, error, now, speed, startedAt]);

@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Mark } from "../components/Mark.js";
 import { Pill } from "../components/Pill.js";
-import type { ChainSteps, FeedEvent, Snapshot, Worker } from "./api.js";
-import { Feed } from "./Feed.js";
+import type { AgentLine, ChainSteps, FeedEvent, Snapshot, Worker } from "./api.js";
+import { Feed, Reasoning } from "./Feed.js";
 import { Agents, Chain, Evidence, Money } from "./Panels.js";
 
 export type BoardData = {
@@ -12,6 +12,7 @@ export type BoardData = {
   readonly snapshot: Snapshot | null;
   readonly workers: readonly Worker[];
   readonly chain: ChainSteps | null;
+  readonly lines: readonly AgentLine[];
 };
 
 const stateTone = (state: string) =>
@@ -60,7 +61,10 @@ export function Board({ data }: { readonly data: BoardData }) {
         <Agents workers={data.workers} excluded={data.snapshot?.task.excludedAgents ?? []} />
         <Evidence snapshot={data.snapshot} />
       </div>
-      <Feed events={data.events} />
+      <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] gap-px bg-white/10 lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+        <Feed events={data.events} />
+        <Reasoning lines={data.lines} />
+      </div>
       <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-px bg-white/10">
         <Money snapshot={data.snapshot} onChain={data.chain?.network ?? null} />
         <Chain chain={data.chain} />

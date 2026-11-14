@@ -66,6 +66,11 @@ export const chainSchema = z.object({
 });
 export type ChainSteps = z.infer<typeof chainSchema>;
 
+export const logsSchema = z.object({
+  lines: z.array(z.object({ atMs: z.number(), agentId: z.string(), line: z.string() })),
+});
+export type AgentLine = z.infer<typeof logsSchema>["lines"][number];
+
 export const eventSchema = z.object({
   version: z.number(),
   actor: z.string(),

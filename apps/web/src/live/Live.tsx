@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   chainSchema,
+  logsSchema,
   snapshotSchema,
   useEvents,
   useLatestTask,
@@ -70,6 +71,7 @@ function LiveView({ preferred }: { readonly preferred: string | null }) {
   const snapshot = usePolled(base, snapshotSchema, 800);
   const workers = usePolled(taskId === null ? null : "/api/workers", workersSchema, 1000);
   const chain = usePolled(base === null ? null : `${base}/chain`, chainSchema, 1500);
+  const logs = usePolled(base === null ? null : `${base}/logs`, logsSchema, 1000);
   const events = useEvents(taskId);
   if (taskId === null)
     return (
@@ -86,6 +88,7 @@ function LiveView({ preferred }: { readonly preferred: string | null }) {
           snapshot: snapshot.value,
           workers: (workers.value?.workers ?? []).filter((worker) => worker.taskId === taskId),
           chain: chain.value,
+          lines: logs.value?.lines ?? [],
         }}
       />
     </Shell>
@@ -147,6 +150,7 @@ function ReplayView({ runId }: { readonly runId: string }) {
           snapshot: replay.snapshot,
           workers: replay.workers,
           chain: replay.chain,
+          lines: replay.lines,
         }}
       />
     </Shell>

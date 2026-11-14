@@ -8,6 +8,7 @@ type Frame = {
   readonly task: unknown;
   readonly workers: unknown;
   readonly chain: unknown;
+  readonly logs: unknown;
 };
 
 export type Capture = {
@@ -17,7 +18,7 @@ export type Capture = {
 
 export function capture(client: ApiClient, taskId: string, startedAt: number): Capture {
   const frames: Frame[] = [];
-  const last = { task: "", workers: "", chain: "" };
+  const last = { task: "", workers: "", chain: "", logs: "" };
   let queue = Promise.resolve();
   const changed = (key: keyof typeof last, value: unknown) => {
     const text = JSON.stringify(value);
@@ -27,10 +28,11 @@ export function capture(client: ApiClient, taskId: string, startedAt: number): C
   };
   const snapshot = async (event: unknown) => {
     const atMs = Date.now() - startedAt;
-    const [task, workers, chain] = await Promise.all([
+    const [task, workers, chain, logs] = await Promise.all([
       client.get(`/api/tasks/${taskId}`),
       client.get("/api/workers"),
       client.get(`/api/tasks/${taskId}/chain`),
+      client.get(`/api/tasks/${taskId}/logs`),
     ]);
     frames.push({
       atMs,
@@ -38,6 +40,7 @@ export function capture(client: ApiClient, taskId: string, startedAt: number): C
       task: changed("task", task.body),
       workers: changed("workers", workers.body),
       chain: changed("chain", chain.body),
+      logs: changed("logs", logs.body),
     });
   };
   return {
