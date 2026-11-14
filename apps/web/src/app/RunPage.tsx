@@ -1,9 +1,13 @@
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { ledgerSchema, nearAmount, useVaultView } from "../data/near.js";
 import {
   isRefusal,
   nearblocks,
   record,
+  recordedOutcome,
+  recoveryProofId,
+  refundProofId,
+  repository,
   runKind,
   shortHash,
   whenUtc,
@@ -39,7 +43,7 @@ export function ChainLedger({ taskId }: { readonly taskId: string }) {
               >
                 <span className="truncate font-mono text-[12px] text-ink/70">{row.recipient}</span>
                 <span className="font-mono text-[13px] tabular-nums">
-                  {nearAmount(row.amount)} NEAR
+                  {nearAmount(row.amount, 24).replace(/0+$/u, "").replace(/\.$/u, "")} NEAR
                 </span>
               </li>
             ))}
@@ -111,8 +115,8 @@ function RecordView({ run }: { readonly run: RecordedRun }) {
         />
         <Kpi
           label="Recorded ledger"
-          value={<span className="text-[20px] sm:text-[24px]">{run.ledgerState ?? "–"}</span>}
-          note="at the end of the run"
+          value={<span className="text-[20px] sm:text-[24px]">{recordedOutcome(run) ?? "–"}</span>}
+          note="at the end of the recorded run"
         />
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
@@ -135,6 +139,25 @@ export function RunPage() {
   if (recordings.includes(runId))
     return (
       <>
+        {runId === recoveryProofId && (
+          <Panel
+            title="Work recovered. Verified payout settled."
+            meta="real NEAR testnet settlement"
+            className="mb-6"
+          >
+            <p className="text-[14px] leading-relaxed text-ink/70">
+              After the primary process was killed, the recovery patch passed the pinned checks. The
+              worker received 0.0625 NEAR; 0.3775 NEAR returned to the customer and 0.25 NEAR to the
+              guarantor. All 0.69 NEAR is reconciled below.
+            </p>
+            <Link
+              to={`/app/runs/${refundProofId}`}
+              className="mt-3 inline-block text-[13px] font-medium hover:underline"
+            >
+              Compare with the failed task refund →
+            </Link>
+          </Panel>
+        )}
         <ReplayView runId={runId} />
         {run !== undefined && (
           <div className="mt-4 lg:mt-6">
@@ -151,5 +174,42 @@ export function RunPage() {
         subtitle={`${runId} is not in the testnet record.`}
       />
     );
-  return <RecordView run={run} />;
+  return (
+    <>
+      {runId === refundProofId && (
+        <Panel
+          title="Task failed. Customer refunded."
+          meta="real NEAR testnet settlement"
+          className="mb-6"
+        >
+          <p className="text-[14px] leading-relaxed text-ink/70">
+            Recovery did not deliver before the deadline. An observer finalized the expired task
+            without the coordinator: 0.05 NEAR returned to the customer, and a duplicate refund was
+            refused. This recorded task had no bond or compensation allowance, so compensation was 0
+            NEAR. It proves the refund path; it does not prove a compensated failure.
+          </p>
+          <Link
+            to={`/app/runs/${recoveryProofId}`}
+            className="mt-3 inline-block text-[13px] font-medium hover:underline"
+          >
+            Compare with the successful recovery →
+          </Link>
+          <p className="mt-3 text-[13px] leading-relaxed text-ink/60">
+            To inspect bounded compensation, run <code>pnpm episode exhausted</code>: a scripted
+            fixture with simulated funds.{" "}
+            <a
+              href={`${repository}/blob/main/docs/independent-reproduction.md`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Reproduction guide
+            </a>
+            .
+          </p>
+        </Panel>
+      )}
+      <RecordView run={run} />
+    </>
+  );
 }

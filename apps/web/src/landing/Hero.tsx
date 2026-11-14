@@ -1,5 +1,6 @@
 import { BuiltOnNear } from "../components/BuiltOnNear.js";
 import { Pill } from "../components/Pill.js";
+import { recoveryProofId, refundProofId } from "../data/record.js";
 
 export function Hero() {
   return (
@@ -14,19 +15,19 @@ export function Hero() {
           Their commitments should not.
         </h1>
         <div className="mt-9 flex flex-wrap justify-center gap-2">
-          <Pill to="/app/replay" tone="light">
-            Watch a recovery
+          <Pill to={`/app/runs/${recoveryProofId}`} tone="light">
+            Work recovered
           </Pill>
-          <Pill to="#verify" tone="ghost">
-            Verify it on NEAR
+          <Pill to={`/app/runs/${refundProofId}`} tone="ghost">
+            Failed task refunded
           </Pill>
         </div>
         <span className="mt-10 h-24 w-px bg-white/30" />
       </div>
       <BuiltOnNear tone="light" className="absolute top-6 left-6 h-4 sm:top-8 sm:left-8 sm:h-5" />
       <p className="absolute bottom-10 max-w-sm px-4 text-[14px] leading-relaxed text-white/85">
-        Guarantees for AI agent work. A swarm finishes what an agent drops, and NEAR pays exactly
-        once.
+        Agents finish verified work, or the customer receives the contract’s bounded refund and
+        compensation.
       </p>
     </section>
   );

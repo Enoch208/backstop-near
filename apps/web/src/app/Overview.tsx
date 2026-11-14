@@ -6,12 +6,14 @@ import {
   nearblocks,
   nearblocksAccount,
   record,
+  recoveryProofId,
+  refundProofId,
   runKind,
   shortHash,
   whenUtc,
 } from "../data/record.js";
-import { useRecordings } from "../live/replay.js";
 import { Icon, type IconName } from "./icons.js";
+import { OutcomeProofs } from "./OutcomeProofs.js";
 import { outcomeChip } from "./RunsPage.js";
 import { buttonClass, Kpi, PageHeader, Panel } from "./ui.js";
 
@@ -58,27 +60,24 @@ function Fact({ label, children }: { readonly label: string; readonly children: 
 }
 
 export function Overview() {
-  const recordings = useRecordings() ?? [];
-  const replay = recordings.at(-1);
   return (
     <>
       <PageHeader
         eyebrow="Overview"
-        title="The swarm, its money and its proof, in one place."
-        subtitle="Everything here is read from the public testnet record and from the vault itself. Replay a run, re-check every claim in your browser, or read the arena."
+        title="Verified work. Bounded recourse."
+        subtitle="Agents finish verified work, or the customer receives the contract’s bounded refund and compensation. Inspect both recorded outcomes below, with the limits of each proof made explicit."
         actions={
           <>
-            {replay !== undefined && (
-              <Link to={`/app/runs/${replay}`} className={buttonClass.primary}>
-                Replay the latest run
-              </Link>
-            )}
-            <Link to="/app/verify" className={buttonClass.secondary}>
-              Verify every claim
+            <Link to={`/app/runs/${recoveryProofId}`} className={buttonClass.primary}>
+              Work recovered
+            </Link>
+            <Link to={`/app/runs/${refundProofId}`} className={buttonClass.secondary}>
+              Failed task refunded
             </Link>
           </>
         }
       />
+      <OutcomeProofs />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi primary label="Recorded runs" value={record.runs.length} note="on NEAR testnet" />
         <Kpi
@@ -87,9 +86,9 @@ export function Overview() {
           note={`${String(refused)} refused by the vault, as designed`}
         />
         <Kpi
-          label="TEE-verified AI patches"
+          label="Attested AI receipts"
           value={attested}
-          note="enclave signature checked on chain"
+          note="provenance checked; tests decide acceptance"
         />
         <Kpi
           label="Enclave key"

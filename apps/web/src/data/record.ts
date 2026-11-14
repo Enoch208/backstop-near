@@ -28,6 +28,7 @@ const recordSchema = z.object({
       at: z.string(),
       kind: z.string().optional(),
       ledgerState: z.string().optional(),
+      ledger: z.object({ state: z.string() }).optional(),
       primaryExit: z
         .object({ code: z.number().nullable(), signal: z.string().nullable() })
         .optional(),
@@ -41,6 +42,8 @@ export type RecordedRun = z.infer<typeof recordSchema>["runs"][number];
 
 export const record = recordSchema.parse(raw);
 export const liveRunId = "checkout-live-71193";
+export const recoveryProofId = "two-bidders-testnet-1794682474";
+export const refundProofId = "recovery-red-team-mwgrr0y8";
 
 const run = record.runs.find((entry) => entry.taskId === liveRunId);
 if (run === undefined) throw new Error(`The testnet record has no run ${liveRunId}`);
@@ -55,6 +58,8 @@ export const nearblocks = (hash: string) => `https://testnet.nearblocks.io/txns/
 export const nearblocksAccount = (account: string) =>
   `https://testnet.nearblocks.io/address/${account}`;
 export const shortHash = (hash: string) => `${hash.slice(0, 10)}…`;
+
+export const recordedOutcome = (run: RecordedRun) => run.ledgerState ?? run.ledger?.state;
 
 export const runKind = (run: RecordedRun) => run.kind ?? "replay";
 export const isRefusal = (step: RecordedStep) => step.outcome.startsWith("refused");

@@ -1,5 +1,12 @@
 import { Link } from "react-router";
-import { isRefusal, record, runKind, whenUtc, type RecordedRun } from "../data/record.js";
+import {
+  isRefusal,
+  record,
+  recordedOutcome,
+  runKind,
+  whenUtc,
+  type RecordedRun,
+} from "../data/record.js";
 import { useRecordings } from "../live/replay.js";
 import { Chip, PageHeader, Panel, type Tone } from "./ui.js";
 
@@ -7,8 +14,9 @@ const kindTone = (run: RecordedRun): Tone =>
   runKind(run) === "red team" ? "fail" : runKind(run) === "live swarm" ? "pass" : "neutral";
 
 export function outcomeChip(run: RecordedRun) {
-  if (run.ledgerState !== undefined)
-    return <Chip tone={run.ledgerState === "SETTLED" ? "pass" : "warn"}>{run.ledgerState}</Chip>;
+  const outcome = recordedOutcome(run);
+  if (outcome !== undefined)
+    return <Chip tone={outcome === "SETTLED" ? "pass" : "warn"}>{outcome}</Chip>;
   const refused = run.steps.filter(isRefusal).length;
   return refused > 0 ? (
     <Chip tone="fail">{refused} refused</Chip>

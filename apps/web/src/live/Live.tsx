@@ -68,24 +68,30 @@ export function LivePage() {
       <Waiting recording={recordings?.at(-1) ?? null} />
     ) : (
       <PageHeader
-        eyebrow="Mission Control · live"
+        eyebrow="Mission Control · scripted fixture"
         title="Starting a fresh run."
-        subtitle="Six agent processes are starting on this site's server. The run appears here in a few seconds."
+        subtitle="Team-controlled agent processes are starting a scripted fixture on this server. The vault is simulated; this creates no NEAR transactions."
       />
     );
   return (
     <>
       <PageHeader
-        eyebrow="Mission Control · live"
+        eyebrow={
+          hosted === null
+            ? "Mission Control · live processes"
+            : "Mission Control · scripted fixture"
+        }
         title={`Following ${taskId}`}
         subtitle={
           hosted === null
             ? "Read from the local API as it happens: the event log over SSE, the agents' own output, the verdict, the ledger and every NEAR transaction."
-            : "Six agent processes running on this site's server, with a fixture vault and scripted repairs. Kill the working agent yourself, and watch the others finish its job."
+            : "Interactive fixture: team-controlled processes, scripted repairs and simulated transfers. Kill the worker to trigger recovery. Real testnet outcomes are linked from Overview."
         }
         actions={
           <>
-            <Chip tone="pass">Live</Chip>
+            <Chip tone={hosted === null ? "pass" : "warn"}>
+              {hosted === null ? "Live process feed" : "Scripted fixture · simulated vault"}
+            </Chip>
             {hosted?.canKill === true && (
               <>
                 <Chip tone="warn">
@@ -151,7 +157,7 @@ export function ReplayView({ runId }: { readonly runId: string }) {
         subtitle={
           run === null
             ? "Loading the recorded frames."
-            : `Recorded on NEAR ${run.network} on ${whenUtc(run.recordedAt)}${run.model === null ? "" : ` with live AI (${run.model})`}. Every frame is the API's own response captured during the run, and every transaction link is real.`
+            : `Recorded on NEAR ${run.network} on ${whenUtc(run.recordedAt)}${run.model === null ? " with scripted repairs" : ` with live AI (${run.model})`}. Team-controlled workers; captured API frames and real transaction links. A replay does not launch new work.`
         }
         actions={
           <>
