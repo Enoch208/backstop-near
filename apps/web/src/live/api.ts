@@ -78,6 +78,17 @@ export const eventSchema = z.object({
 });
 export type FeedEvent = z.infer<typeof eventSchema>;
 
+export const controlSchema = z.object({
+  phase: z.enum(["starting", "armed", "recovering", "settled"]),
+  canKill: z.boolean(),
+  canStart: z.boolean(),
+  autoKillInMs: z.number().nullable(),
+});
+
+export async function postControl(action: "kill" | "start"): Promise<void> {
+  await fetch(`/api/demo/${action}`, { method: "POST" });
+}
+
 async function getJson<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${path} answered HTTP ${String(response.status)}`);

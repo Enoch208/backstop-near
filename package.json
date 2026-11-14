@@ -17,6 +17,7 @@
     "gate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "episode": "tsx scripts/episode.ts",
     "demo": "tsx scripts/demo.ts",
+    "demo:hosted": "tsx scripts/hosted-demo.ts",
     "api": "tsx apps/api/src/main.ts",
     "test:chain": "vitest run -c vitest.chain.config.ts",
     "chain": "tsx scripts/chain.ts",

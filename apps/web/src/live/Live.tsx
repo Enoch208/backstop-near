@@ -4,7 +4,9 @@ import { buttonClass, Chip, PageHeader, Panel, Segmented } from "../app/ui.js";
 import { whenUtc } from "../data/record.js";
 import {
   chainSchema,
+  controlSchema,
   logsSchema,
+  postControl,
   snapshotSchema,
   useEvents,
   useLatestTask,
@@ -60,14 +62,59 @@ export function LivePage() {
   const chain = usePolled(base === null ? null : `${base}/chain`, chainSchema, 1500);
   const logs = usePolled(base === null ? null : `${base}/logs`, logsSchema, 1000);
   const events = useEvents(taskId);
-  if (taskId === null) return <Waiting recording={recordings?.at(-1) ?? null} />;
+  const hosted = usePolled("/api/demo/control", controlSchema, 700).value;
+  if (taskId === null)
+    return hosted === null ? (
+      <Waiting recording={recordings?.at(-1) ?? null} />
+    ) : (
+      <PageHeader
+        eyebrow="Mission Control · live"
+        title="Starting a fresh run."
+        subtitle="Six agent processes are starting on this site's server. The run appears here in a few seconds."
+      />
+    );
   return (
     <>
       <PageHeader
         eyebrow="Mission Control · live"
         title={`Following ${taskId}`}
-        subtitle="Read from the local API as it happens: the event log over SSE, the agents' own output, the verdict, the ledger and every NEAR transaction."
-        actions={<Chip tone="pass">Live</Chip>}
+        subtitle={
+          hosted === null
+            ? "Read from the local API as it happens: the event log over SSE, the agents' own output, the verdict, the ledger and every NEAR transaction."
+            : "Six agent processes running on this site's server, with a fixture vault and scripted repairs. Kill the working agent yourself, and watch the others finish its job."
+        }
+        actions={
+          <>
+            <Chip tone="pass">Live</Chip>
+            {hosted?.canKill === true && (
+              <>
+                <Chip tone="warn">
+                  Auto in {String(Math.ceil((hosted.autoKillInMs ?? 0) / 1_000))} s
+                </Chip>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void postControl("kill");
+                  }}
+                  className={buttonClass.primary}
+                >
+                  Kill alpha
+                </button>
+              </>
+            )}
+            {hosted?.canStart === true && (
+              <button
+                type="button"
+                onClick={() => {
+                  void postControl("start");
+                }}
+                className={buttonClass.secondary}
+              >
+                Start a new run
+              </button>
+            )}
+          </>
+        }
       />
       <Board
         data={{

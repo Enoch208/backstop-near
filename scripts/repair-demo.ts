@@ -36,8 +36,8 @@ export function demoOptions() {
   if (task === undefined && (values.output !== undefined || values["external-recovery"])) {
     throw new Error("--output and --external-recovery require --task <file.json>");
   }
-  if (values["manual-kill"] && task?.primaryMilestone === undefined) {
-    throw new Error("--manual-kill requires a task with a primaryMilestone");
+  if (values["manual-kill"] && task !== undefined && task.primaryMilestone === undefined) {
+    throw new Error("--manual-kill with --task requires a task with a primaryMilestone");
   }
   const token = values["token-fixture"] !== undefined || values["usdc-root"] !== undefined;
   if (
