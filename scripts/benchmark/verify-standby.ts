@@ -9,6 +9,8 @@ import {
   fromYocto,
   leadAgent,
   near,
+  recoveryFeedbackSchema,
+  recoveryStrategies,
   signedBidSchema,
   verifyValue,
   yoctoSchema,
@@ -20,6 +22,13 @@ import { benchmarkFaults } from "./live-pair.js";
 import type { TaskDefinition } from "./tasks.js";
 
 const events = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("bid_submitted"), bid: signedBidSchema }),
+  z.object({
+    type: z.literal("recovery_awarded"),
+    epoch: z.int(),
+    winner: digestSchema,
+    rejected: z.array(z.object({ bidHash: digestSchema, reason: z.string() })),
+  }),
   z.object({ type: z.literal("standby_reserved"), bid: signedBidSchema }),
   z.object({ type: z.literal("standby_ready"), bidHash: digestSchema, epoch: z.int() }),
   z.object({ type: z.literal("standby_activated"), bidHash: digestSchema, epoch: z.int() }),
@@ -39,6 +48,8 @@ const trial = z.object({
   fault: z.enum(benchmarkFaults),
   mode: z.enum(["fixed", "market"]),
   fixedOrder: z.array(z.string()).optional(),
+  routingStrategy: z.enum(recoveryStrategies).optional(),
+  feedback: z.array(recoveryFeedbackSchema).optional(),
   repeat: z.int().positive(),
   accepted: z.boolean(),
   correct: z.boolean(),
@@ -68,6 +79,7 @@ const reportSchema = z.object({
   repeats: z.int().positive().optional(),
   fixedPolicy: z.literal("ascending quoted price in each tier").optional(),
   quotes: z.array(z.object({ id: z.string(), price: z.string(), standby: z.boolean() })).optional(),
+  routed: z.boolean().optional(),
   trials: z.array(trial),
 });
 
@@ -128,6 +140,8 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
   let standby = 0;
   let matchingAssignments = 0;
   let matchingFirstRecovery = 0;
+  let differentFirstRecovery = 0;
+  let verifiedFeedback = 0;
   let marketWins = 0;
   let fixedWins = 0;
   for (const row of report.trials) {
@@ -142,14 +156,25 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
     const commits = new Map<string, { index: number; signer: string }>();
     const ready = new Set<string>();
     const checkpoints = [];
+    const checkpointByAttempt = new Map<number, string>();
+    const submitted = new Set<string>();
+    if (report.routed) {
+      assert(row.routingStrategy !== undefined);
+      assert(row.feedback !== undefined);
+    }
     let primaryCheckpoint = null;
     const assigned = [];
     for (const [index, { body }] of row.events.entries()) {
       if (body.type === "checkpoint_recorded") {
         checkpoints.push(body.checkpoint.contentHash);
+        checkpointByAttempt.set(body.checkpoint.attempt, body.checkpoint.contentHash);
         if (body.checkpoint.attempt === 1) primaryCheckpoint = body.checkpoint.contentHash;
       }
-      if (body.type === "standby_reserved" || body.type === "attempt_assigned") {
+      if (
+        body.type === "standby_reserved" ||
+        body.type === "attempt_assigned" ||
+        body.type === "bid_submitted"
+      ) {
         const signed = body.bid;
         assert.equal(signed.bid.taskId, row.taskId);
         assert.equal(signed.bidHash, bidHash(signed.bid));
@@ -157,13 +182,15 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
         if (body.type === "standby_reserved") {
           assert.equal(signed.bid.purpose, "standby");
           commits.set(signed.bidHash, { index, signer: signed.signature.publicKey });
-        } else {
+        } else if (body.type === "attempt_assigned") {
           assigned.push(signed);
           if (report.fixedPolicy !== undefined && signed.bid.epoch > 0)
             assert.equal(fromYocto(signed.bid.amountYocto), quotes.get(leadAgent(signed.bid)));
           if (signed.bid.purpose === "standby") {
             assert(ready.has(signed.bidHash));
-            const activation = row.events[index - 1]?.body;
+            const award = row.events[index - 1]?.body;
+            const activation =
+              row.events[index - (award?.type === "recovery_awarded" ? 2 : 1)]?.body;
             assert(activation?.type === "standby_activated");
             assert.equal(activation.bidHash, signed.bidHash);
             standby++;
@@ -174,6 +201,21 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
         assert(commits.has(body.bidHash));
         ready.add(body.bidHash);
       }
+      if (body.type === "bid_submitted") submitted.add(body.bid.bidHash);
+      if (body.type === "recovery_awarded") {
+        assert(submitted.has(body.winner) || ready.has(body.winner));
+        const assignment = row.events[index + 1]?.body;
+        assert(assignment?.type === "attempt_assigned");
+        assert.equal(assignment.bid.bidHash, body.winner);
+        assert.equal(assignment.bid.bid.epoch, body.epoch);
+      }
+    }
+    for (const feedback of row.feedback ?? []) {
+      assert.equal(checkpointByAttempt.get(feedback.attempt), feedback.artifactHash);
+      assert(
+        feedback.publicFailedCaseIds.every((id) => task.visible.some((test) => test.id === id)),
+      );
+      verifiedFeedback++;
     }
     assert(assigned.length > 0 && assigned.length <= limits.calls);
     assert.equal(commits.size, 4);
@@ -191,6 +233,8 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
       assert.notEqual(row.mode, pair.mode);
       if (JSON.stringify(assignments) === JSON.stringify(pair.assignments)) matchingAssignments++;
       if (assignments[1] === pair.assignments[1]) matchingFirstRecovery++;
+      else if (assignments[1] !== undefined && pair.assignments[1] !== undefined)
+        differentFirstRecovery++;
       if (pair.correct !== row.correct) {
         if (row.correct ? row.mode === "market" : pair.mode === "market") marketWins++;
         else fixedWins++;
@@ -250,6 +294,8 @@ export function verifyStandbyRun(path: string, definitions: readonly TaskDefinit
     standby,
     matchingAssignments,
     matchingFirstRecovery,
+    differentFirstRecovery,
+    verifiedFeedback,
     marketWins,
     fixedWins,
     byMode,

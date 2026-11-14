@@ -11,13 +11,22 @@ import {
   digestOf,
   digestText,
   near,
+  recoveryFeedbackSchema,
+  recoveryStrategies,
   repairBriefSchema,
   signingKeyFromSeed,
   taskManifestSchema,
   toYocto,
   type Json,
 } from "@backstop/shared";
-import { apiClient, registerWorker, reserveStandby, type Reply } from "@backstop/workers";
+import {
+  apiClient,
+  rebuildInstruction,
+  registerWorker,
+  repairFeedback,
+  reserveStandby,
+  type Reply,
+} from "@backstop/workers";
 import { z } from "zod";
 import { infer, limits } from "./inference.js";
 
@@ -28,6 +37,7 @@ const settings = z
     BENCH_OPERATOR_SEED: z.string(),
     BENCH_OPERATOR_PRICE: z.string(),
     BENCH_OPERATOR_STYLE: z.string(),
+    BENCH_OPERATOR_STRATEGY: z.enum(recoveryStrategies).optional(),
   })
   .parse(process.env);
 const agent: FixtureAgent =
@@ -61,6 +71,7 @@ const snapshot = z.object({
       z.object({ checkpoint: z.object({ contentHash: z.string() }), hash: z.string() }),
     ),
     failures: z.array(z.object({ reason: z.string() })),
+    recoveryFeedback: z.array(recoveryFeedbackSchema).optional(),
   }),
 });
 function ok(reply: Reply): unknown {
@@ -73,13 +84,18 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
   const path = `/api/tasks/${taskId}`;
   const { task } = snapshot.parse(ok(await client.get(path)));
   const price = near(settings.BENCH_OPERATOR_PRICE);
+  const strategy = settings.BENCH_OPERATOR_STRATEGY;
   if (action === "primary-bid") {
     const bid = primaryBid(agent, taskId, settings.BENCH_OPERATOR_PRICE, Date.now());
     ok(await client.post(`${path}/bids`, { bid }));
     return { assigned: true };
   }
   if (action === "reserve") {
-    await reserveStandby(client, agent, task, { amount: price, durationMs: limits.callMs });
+    await reserveStandby(client, agent, task, {
+      amount: price,
+      durationMs: limits.callMs,
+      ...(strategy === undefined ? {} : { strategy }),
+    });
     return { reserved: true };
   }
   if (action === "ready") {
@@ -101,6 +117,7 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
         amountYocto: amount,
         estimatedDurationMs: limits.callMs,
         planHash: digestOf(settings.BENCH_OPERATOR_STYLE),
+        ...(strategy === undefined ? {} : { strategy }),
       },
       agent,
     );
@@ -130,7 +147,13 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
         generic: true,
         validatedSubtasks: [],
         diagnosis: null,
-        failureHistory: task.failures.map(({ reason }) => reason),
+        failureHistory: [
+          ...task.failures.map(({ reason }) => reason),
+          ...(task.manifest.policy.recoveryStrategy === undefined
+            ? []
+            : repairFeedback(original, brief, task.recoveryFeedback ?? [])),
+          ...rebuildInstruction(strategy),
+        ],
       }),
       performance.now() + Math.max(0, task.manifest.deadlineMs - Date.now()),
     );

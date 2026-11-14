@@ -21,6 +21,7 @@ const { values } = parseArgs({
     repeats: { type: "string", default: "2" },
     pilot: { type: "boolean", default: false },
     external: { type: "boolean", default: false },
+    routed: { type: "boolean", default: false },
     "resume-from": { type: "string" },
   },
 });
@@ -33,6 +34,7 @@ if (values.verify !== undefined) {
   process.exit(0);
 }
 const laneCount = Number(values.lanes);
+if (values.routed && !values.external) throw new Error("--routed requires --external");
 const repeats = Number(values.repeats);
 if (
   !Number.isSafeInteger(laneCount) ||
@@ -88,6 +90,7 @@ type Trial = Awaited<ReturnType<Lane["trial"]>>;
 const trials: Trial[] = [];
 const metadata = {
   startedAt,
+  routed: values.routed,
   seed,
   corpusHash: digestOf(definitions),
   repeats,
@@ -129,6 +132,7 @@ if (values["resume-from"] !== undefined) {
       expectedTrials: z.int(),
       fixedPolicy: z.literal("ascending quoted price in each tier").optional(),
       startedAt: z.iso.datetime(),
+      routed: z.boolean().default(false),
       trials: z.array(
         z
           .object({
@@ -145,7 +149,8 @@ if (values["resume-from"] !== undefined) {
     previous.corpusHash !== metadata.corpusHash ||
     previous.seed !== seed ||
     previous.expectedTrials !== expectedTrials ||
-    previous.fixedPolicy !== metadata.fixedPolicy
+    previous.fixedPolicy !== metadata.fixedPolicy ||
+    previous.routed !== metadata.routed
   )
     throw new Error("Resume requires the same corpus, seed, run size, and fixed policy");
   Object.assign(metadata, { resumedFromStartedAt: previous.startedAt, lanes: laneCount });
@@ -176,6 +181,7 @@ const lanes = await Promise.allSettled(
       primary,
       secondary,
       values.external,
+      values.routed,
     ),
   ),
 );

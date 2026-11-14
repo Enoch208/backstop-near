@@ -26,6 +26,8 @@ export const benchmarkFaults = [
 ] as const;
 type Fault = (typeof benchmarkFaults)[number];
 type Mode = "market" | "fixed";
+const rebuildTasks = new Set(["he-119", "he-129", "he-132", "he-154"]);
+const preferredStrategy = (taskId: string) => (rebuildTasks.has(taskId) ? "rebuild" : "patch");
 const resultSchema = z.object({ inference: inferenceSchema.nullable(), status: z.string() });
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -40,11 +42,23 @@ export async function createBenchLane(
   primary: ModelConfig,
   secondary: ModelConfig,
   priceAwareFixed = false,
+  routed = false,
 ) {
   const runtime = createRuntime(Date.now, false, statePath);
   const api = await startApi(runtime, "127.0.0.1", 0, 30);
   const all = await Promise.allSettled(
-    operatorSpecs.map((spec) => startOperator(api.url, spec, spec.secondary ? secondary : primary)),
+    operatorSpecs.map((spec) =>
+      startOperator(
+        api.url,
+        spec,
+        spec.secondary ? secondary : primary,
+        routed && spec.id !== "blind-primary"
+          ? spec.id.endsWith("-low") || spec.id === "blind-low-bid"
+            ? "patch"
+            : "rebuild"
+          : undefined,
+      ),
+    ),
   );
   const operators = all.flatMap((item) => (item.status === "fulfilled" ? [item.value] : []));
   const stop = async () => {
@@ -111,10 +125,11 @@ export async function createBenchLane(
       policy: {
         maxAttempts: limits.calls,
         leaseMs: 1_200,
-        heartbeatGraceMs: 0,
+        heartbeatGraceMs: routed ? 750 : 0,
         bidWindowMs: 1_000,
         challengeWindowMs: 1_000,
         ...(mode === "fixed" ? { recoveryOrder: fixedOrder } : {}),
+        ...(routed && mode === "market" && { recoveryStrategy: preferredStrategy(task.id) }),
       },
     };
     await requireOk(customer.post("/api/tasks", { manifest, repairTask }));
@@ -224,6 +239,7 @@ export async function createBenchLane(
         "attempt_assigned",
         "attempt_failed",
         "attempt_rejected",
+        ...(routed ? ["bid_submitted", "recovery_awarded"] : []),
         "checkpoint_recorded",
         "settlement_started",
         "task_settled",
@@ -236,6 +252,10 @@ export async function createBenchLane(
       task: task.id,
       mode,
       ...(mode === "fixed" && { fixedOrder }),
+      ...(routed && {
+        routingStrategy: preferredStrategy(task.id),
+        feedback: final.recoveryFeedback,
+      }),
       fault,
       repeat,
       correct,

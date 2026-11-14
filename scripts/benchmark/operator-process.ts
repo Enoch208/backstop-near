@@ -2,7 +2,7 @@ import { fork } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { ModelConfig } from "@backstop/agents";
-import type { Json } from "@backstop/shared";
+import type { Json, RecoveryStrategy } from "@backstop/shared";
 import { tsxLoader } from "@backstop/workers";
 import { z } from "zod";
 
@@ -61,6 +61,7 @@ export async function startOperator(
   api: string,
   spec: Omit<OperatorSpec, "id"> & { readonly id: string },
   config: ModelConfig,
+  strategy?: RecoveryStrategy,
 ) {
   const child = fork(entry, [], {
     execArgv: ["--import", tsxLoader],
@@ -74,6 +75,7 @@ export async function startOperator(
       BENCH_OPERATOR_ID: spec.id,
       BENCH_OPERATOR_PRICE: spec.price,
       BENCH_OPERATOR_STYLE: spec.style,
+      BENCH_OPERATOR_STRATEGY: strategy,
     },
     stdio: ["ignore", "ignore", "inherit", "ipc"],
   });

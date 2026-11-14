@@ -151,3 +151,25 @@ Backstop alone succeeded in one pair, and fixed specialists alone succeeded in t
 pnpm benchmark:standby --external --verify benchmarks/external-standby.json
 pnpm benchmark:standby --external --lanes 8 --repeats 2 --out /tmp/backstop-external.json --state /tmp/backstop-external-state
 ```
+
+## Verifier feedback and recovery routing
+
+The rerun uses the same ten external tasks, quotes, providers, fixture vault, 0.65 NEAR recovery cap, three inference calls, and four fault conditions. Both arms have the same patch and rebuild specialists. The quote-aware baseline still locks in the cheapest order within each tier. Backstop prefers the task's stated strategy and can switch to rebuild after verifier errors, repeated rejected artifacts, or failures confined to held-out cases. When the primary provider is disabled, only the standby specialists can take recovery. Signed bids retain the offered strategy and use the same price and eligibility checks.
+
+The initial strategy labels were chosen before this rerun, with the previous results available. HumanEval/119, /129, /132 and /154 prefer rebuild. The others prefer patch. The workers received public examples, a summary of verifier failures for the rejected checkpoint, and their own strategy instructions. Fixed specialists received the same strategy instructions and the existing generic failure reason. This compares both changes together. The audit inputs stayed out of worker prompts. The same 750 ms heartbeat grace was added in both arms to reduce infrastructure interruptions.
+
+| Scope | Scheduler | Correct | False accepts | p95 seconds | Settlement cost per correct result | Total bond consumed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| All trials | Backstop | 62/80 | 0 | 31.06 | 0.479 NEAR | 5.88 NEAR |
+| All trials | Fixed specialists | 64/80 | 0 | 51.55 | 0.431 NEAR | 4.76 NEAR |
+| Primary provider outage | Backstop | 17/20 | 0 | 15.58 | 0.571 NEAR | 2.91 NEAR |
+| Primary provider outage | Fixed specialists | 17/20 | 0 | 15.51 | 0.554 NEAR | 2.61 NEAR |
+
+The 14 November 2026 run completed all 80 pairs. Backstop alone delivered a correct repair in two pairs, and fixed specialists alone did so in four. The initial recovery worker differed in 42 of the 66 pairs where both arms started recovery. Backstop correctly recovered 16/20 worker crashes, versus 14/20 for fixed specialists, and delivered 15/20 after an injected rejected patch, versus 18/20. The benchmark recorded lower p95 overall for Backstop, with slightly higher p95 during outage and higher settlement cost per correct result. Deployment expenses and inference charges are outside settlement cost. [Raw results](routed-standby.json)
+
+HumanEval/132, /119, and /129 accounted for 17 of Backstop's 18 unsuccessful trials. Public verifier feedback did not reliably break repeated failures. For the paired result, the most frequent difference was failure to produce an accepted repair within the call limit. The task strategy labels express engineering judgment and the operator profiles are team-controlled. This run does not establish the best worker for each task or isolate the effect of feedback from the routing rule.
+
+```sh
+pnpm benchmark:standby --external --verify benchmarks/routed-standby.json
+pnpm benchmark:standby --external --routed --lanes 5 --repeats 2 --out /tmp/backstop-routed.json --state /tmp/backstop-routed-state
+```
