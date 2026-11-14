@@ -83,7 +83,7 @@ describe("live production", () => {
     const model = await fakeModel([fenced(candidate("gamma-integer").source)]);
     const product = await produce(
       roster.gamma,
-      { baseUrl: model.baseUrl, apiKey: "test", model: "test/model" },
+      { baseUrl: model.baseUrl, apiKey: "test", model: "test/model", nearAiAttestation: true },
       context,
     );
     expect(product.label).toContain("TEE-signed");

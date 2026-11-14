@@ -10,7 +10,10 @@ import { z } from "zod";
 
 const configuration = z.object({
   BACKSTOP_WORKER_SEED: z.string().min(32),
-  BACKSTOP_WORKER_FLOOR_NEAR: z.string().regex(/^\d+(?:\.\d{1,24})?$/),
+  BACKSTOP_WORKER_FLOOR_NEAR: z
+    .string()
+    .regex(/^\d+(?:\.\d{1,24})?$/)
+    .optional(),
   BACKSTOP_WORKER_RISK_BPS: z.coerce.number().int().min(0).max(100_000).default(20_000),
   BACKSTOP_WORKER_CAPACITY: z.coerce.number().int().min(1).max(100).default(10),
   BACKSTOP_WORKER_MS_PER_UNIT: z.coerce.number().int().min(1).max(120_000).default(10_000),
@@ -19,6 +22,7 @@ const configuration = z.object({
 export function externalWorker(
   id: string,
   account: string,
+  fixedStandbyPrice?: bigint,
 ): {
   agent: FixtureAgent;
   profile: PricingProfile;
@@ -29,7 +33,7 @@ export function externalWorker(
       `Invalid worker configuration: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`,
     );
   const settings = parsed.data;
-  const floorPerUnitYocto = near(settings.BACKSTOP_WORKER_FLOOR_NEAR);
+  const floorPerUnitYocto = fixedStandbyPrice ?? near(settings.BACKSTOP_WORKER_FLOOR_NEAR ?? "0");
   if (floorPerUnitYocto <= 0n) throw new Error("The worker price floor must be positive");
   return {
     agent: {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { yoctoSchema } from "./amount.js";
 import { digestOf, digestSchema, type Digest } from "./canonical.js";
-import { nearAccountSchema, taskIdSchema } from "./ids.js";
+import { agentIdSchema, nearAccountSchema, taskIdSchema } from "./ids.js";
 
 export const manifestVersion = "backstop-manifest-1";
 
@@ -13,6 +13,15 @@ export const taskPolicySchema = z.strictObject({
   heartbeatGraceMs: z.int().min(0),
   bidWindowMs: z.int().min(1_000),
   challengeWindowMs: z.int().min(1_000),
+  recoveryOrder: z
+    .array(agentIdSchema)
+    .min(1)
+    .max(16)
+    .refine(
+      (order) => new Set(order).size === order.length,
+      "The fixed recovery order names each agent once",
+    )
+    .exactOptional(),
 });
 export type TaskPolicy = z.infer<typeof taskPolicySchema>;
 

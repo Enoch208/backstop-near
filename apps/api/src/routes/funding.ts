@@ -25,6 +25,7 @@ const createBody = z.strictObject({
   repairTask: repairTaskSchema.optional(),
 });
 const bidBody = z.strictObject({ bid: signedBidSchema });
+const readyBody = z.strictObject({ epoch: z.int().positive() });
 const endorseBody = z.strictObject({ bidHash: digestSchema, signature: signatureSchema });
 
 export function createTask(runtime: Runtime, request: Request): Promise<Response> {
@@ -101,6 +102,7 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
     const parsed = parseBody(bidBody, body);
     if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
     const signed = parsed.value.bid;
+    const standby = signed.bid.purpose === "standby";
     if (leadAgent(signed.bid) !== actor.id) {
       return refuse(
         runtime,
@@ -133,6 +135,16 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
     const builtIn = members.map((member) =>
       Object.values(roster).some((agent) => agent.agentId === member.agentId),
     );
+    if (standby && builtIn.includes(true)) {
+      return refuse(
+        runtime,
+        taskId,
+        failure(
+          "POLICY_VIOLATION",
+          "Standby workers must register their own key and payout account",
+        ),
+      );
+    }
     if (
       builtIn.includes(false) &&
       (record?.manifest.repairTaskHash === undefined || builtIn.includes(true))
@@ -181,6 +193,13 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
         failure("STALE_STATE", "A NEAR funding action is awaiting confirmation"),
       );
     const state = record?.state;
+    if (standby) {
+      return fromOutcome(
+        runtime,
+        taskId,
+        execute(runtime, taskId, actor.id, { kind: "reserveStandby", bid: signed }),
+      );
+    }
     if (signed.bid.epoch === 0 && (state === "FUNDED" || state === "BONDED")) {
       return fromOutcome(
         runtime,
@@ -207,6 +226,26 @@ export function endorse(runtime: Runtime, request: Request, taskId: string): Pro
         kind: "endorse",
         bidHash: parsed.value.bidHash,
         endorsement: { agentId: actor.id, signature: parsed.value.signature },
+      }),
+    );
+  });
+}
+
+export function readyStandby(
+  runtime: Runtime,
+  request: Request,
+  taskId: string,
+): Promise<Response> {
+  return signedWrite(runtime, request, ({ actor, body }) => {
+    const parsed = parseBody(readyBody, body);
+    if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
+    return fromOutcome(
+      runtime,
+      taskId,
+      execute(runtime, taskId, actor.id, {
+        kind: "confirmStandby",
+        agentId: actor.id,
+        epoch: parsed.value.epoch,
       }),
     );
   });

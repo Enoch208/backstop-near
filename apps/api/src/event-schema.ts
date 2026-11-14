@@ -89,6 +89,9 @@ const eventBody = z.discriminatedUnion("type", [
     endorsement: endorsementSchema,
   }),
   z.object({ type: z.literal("bid_submitted"), bid: signedBidSchema }),
+  z.object({ type: z.literal("standby_reserved"), bid: signedBidSchema }),
+  z.object({ type: z.literal("standby_ready"), bidHash: digestSchema, epoch: positive }),
+  z.object({ type: z.literal("standby_activated"), bidHash: digestSchema, epoch: positive }),
   z.object({
     type: z.literal("recovery_awarded"),
     epoch: positive,

@@ -40,7 +40,17 @@ export function dispatch(
       `Task is at version ${String(version)}, not ${String(request.expectedVersion)}`,
     );
   }
-  const decision = decide(record, request.command, context);
+  const checksCapacity =
+    request.command.kind === "reserveStandby" ||
+    request.command.kind === "closeAuction" ||
+    request.command.kind === "assignPrimary";
+  const decision = decide(
+    record,
+    request.command,
+    checksCapacity
+      ? { ...context, busyAgents: busyAgents(store, request.taskId, context.nowMs) }
+      : context,
+  );
   if (!decision.ok) return decision;
   const events = decision.value.map((body, index) => ({
     eventId: `${request.taskId}#${String(version + index + 1)}`,
@@ -62,4 +72,33 @@ export function dispatch(
     },
     events,
   });
+}
+
+function busyAgents(store: Store, taskId: string, nowMs: number): ReadonlySet<string> {
+  const busy = new Set<string>();
+  for (const record of Object.values(store.records)) {
+    if (record.taskId === taskId || record.manifest.deadlineMs < nowMs) continue;
+    const assigned = ["ASSIGNED", "RECOVERY_ASSIGNED", "EXECUTING"].includes(record.state);
+    if (assigned)
+      for (const member of record.assignment?.bid.bid.members ?? []) busy.add(member.agentId);
+    if (
+      [
+        "ACCEPTED",
+        "SETTLEMENT_PENDING",
+        "SETTLED",
+        "TERMINAL_FAILURE",
+        "FAILURE_SETTLEMENT_PENDING",
+        "FAILURE_SETTLED",
+      ].includes(record.state)
+    )
+      continue;
+    const open = record.state === "RECOVERY_OPEN";
+    for (const { bid } of record.standby) {
+      if (bid.epoch <= (open ? record.epoch - 1 : record.epoch) || bid.expiresAtMs < nowMs)
+        continue;
+      for (const { agentId } of bid.members)
+        if (!record.excludedAgents.includes(agentId)) busy.add(agentId);
+    }
+  }
+  return busy;
 }

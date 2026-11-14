@@ -73,6 +73,10 @@ export function decideAssignPrimary(
   }
   const checked = checkSignedBid(record, signed, context.registry);
   if (!checked.ok) return checked;
+  if (checked.value.bid.purpose === "standby")
+    return fail("POLICY_VIOLATION", "A standby bid cannot assign the primary");
+  if (signed.bid.members.some(({ agentId }) => context.busyAgents?.has(agentId)))
+    return fail("POLICY_VIOLATION", "A worker is committed to another task");
   if (checked.value.bid.epoch !== 0) return fail("POLICY_VIOLATION", "The primary bid is epoch 0");
   if (pendingEndorsers(checked.value).length > 0) {
     return fail("POLICY_VIOLATION", "Every member of a primary coalition must endorse it first");

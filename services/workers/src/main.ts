@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { asPrincipal, modelFromEnv, roster, type RosterName } from "@backstop/agents";
+import { near } from "@backstop/shared";
 import { agentLoop } from "./agent-loop.js";
 import { apiClient } from "./client.js";
 import { externalWorker, registerWorker } from "./external.js";
@@ -11,6 +12,8 @@ const { values } = parseArgs({
     api: { type: "string" },
     task: { type: "string" },
     account: { type: "string" },
+    "standby-price": { type: "string" },
+    "standby-ms": { type: "string" },
   },
 });
 if (values.account !== undefined && existsSync(".env")) process.loadEnvFile(".env");
@@ -24,12 +27,21 @@ function isRosterName(value: string): value is RosterName {
 
 if (name === "" || api === "" || taskId === "") {
   process.stderr.write(
-    "usage: worker --agent <name> --api <url> --task <id> [--account <payout-account>]\n",
+    "usage: worker --agent <name> --api <url> --task <id> [--account <payout-account>] [--standby-price <amount>]\n",
   );
   process.exit(2);
 }
 
-const outside = values.account === undefined ? null : externalWorker(name, values.account);
+const standbyPrice = values["standby-price"];
+const standby =
+  standbyPrice === undefined
+    ? undefined
+    : {
+        amount: near(standbyPrice),
+        durationMs: Number(values["standby-ms"] ?? "45000"),
+      };
+const outside =
+  values.account === undefined ? null : externalWorker(name, values.account, standby?.amount);
 const agent = outside?.agent ?? (isRosterName(name) ? roster[name] : null);
 if (agent === null || (outside !== null && isRosterName(name)))
   throw new Error(
@@ -39,6 +51,18 @@ const log = (line: string) =>
   process.stdout.write(`[${agent.agentId} pid ${String(process.pid)}] ${line}\n`);
 const client = apiClient(api, asPrincipal(agent));
 const model = modelFromEnv(process.env);
+if (
+  standby !== undefined &&
+  (outside === null ||
+    standby.amount <= 0n ||
+    !Number.isSafeInteger(standby.durationMs) ||
+    standby.durationMs <= 0)
+)
+  throw new Error(
+    "Standby needs an outside worker, positive --standby-price and positive --standby-ms",
+  );
+if (standby === undefined && values["standby-ms"] !== undefined)
+  throw new Error("--standby-ms requires --standby-price");
 if (outside !== null) {
   if (model === null) throw new Error("An outside repairer needs BACKSTOP_AI_API_KEY");
   await registerWorker(api, agent);
@@ -55,6 +79,7 @@ const onEvent = agentLoop(
   model,
   outside?.profile,
   process.env.BACKSTOP_WORKER_CURRENCY,
+  standby,
 );
 
 log(`started for ${taskId}${model === null ? "" : ` with live AI (${model.model})`}`);

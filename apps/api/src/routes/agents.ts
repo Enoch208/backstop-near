@@ -62,6 +62,13 @@ export async function register(runtime: Runtime, request: Request): Promise<Resp
       null,
     );
   }
+  if ([...runtime.identities.values()].some((identity) => identity.publicKey === claim.publicKey)) {
+    return errorResponse(
+      failure("DUPLICATE", "This signing key is already assigned to another identity"),
+      traceId,
+      null,
+    );
+  }
   atomic(runtime, () => {
     runtime.identities.set(claim.agentId, {
       id: claim.agentId,

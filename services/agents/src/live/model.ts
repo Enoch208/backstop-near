@@ -5,6 +5,7 @@ export type ModelConfig = {
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly model: string;
+  readonly nearAiAttestation?: boolean;
 };
 
 export const nearAiCloud = "https://cloud-api.near.ai/v1";
@@ -86,11 +87,13 @@ export async function complete(
   messages: readonly ChatMessage[],
   timeoutMs = 60_000,
 ): Promise<Completion> {
+  const attestedProvider =
+    config.nearAiAttestation ?? new URL(config.baseUrl).origin === new URL(nearAiCloud).origin;
   const requestBody = JSON.stringify({
     model: config.model,
     messages,
     temperature: 0,
-    chat_template_kwargs: { thinking: false },
+    ...(attestedProvider && { chat_template_kwargs: { thinking: false } }),
   });
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: "POST",
@@ -103,6 +106,7 @@ export async function complete(
   const parsed = completionSchema.parse(JSON.parse(responseBody));
   const [choice] = parsed.choices;
   if (choice === undefined) throw new Error("The model returned no choice");
+  if (!attestedProvider) return { content: choice.message.content, receipt: null, unsigned: null };
   const signed = await receiptFor(config, parsed.id, requestBody, responseBody, timeoutMs);
   return { content: choice.message.content, ...signed };
 }

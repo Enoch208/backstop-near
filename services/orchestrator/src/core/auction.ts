@@ -1,5 +1,5 @@
 import { recoveryCapacity, type Ledger } from "@backstop/ledger";
-import { fromYocto, type SignedBid } from "@backstop/shared";
+import { fromYocto, leadAgent, type SignedBid } from "@backstop/shared";
 import type { RejectedBid } from "./events.js";
 
 export type AuctionResult = {
@@ -33,21 +33,34 @@ export function runAuction(
   ledger: Ledger,
   nowMs: number,
   excluded: readonly string[],
+  fixedOrder?: readonly string[],
 ): AuctionResult {
   const capacity = recoveryCapacity(ledger);
   const verdicts = bids.map((signed) => ({
     signed,
-    reason: ineligibility(signed, capacity, nowMs, excluded),
+    reason:
+      fixedOrder !== undefined && !fixedOrder.includes(leadAgent(signed.bid))
+        ? "outside the fixed specialist roster"
+        : ineligibility(signed, capacity, nowMs, excluded),
   }));
   const eligible = verdicts.filter((entry) => entry.reason === null).map((entry) => entry.signed);
-  const [winner = null, ...outbid] = [...eligible].sort(cheaperFirst);
+  const [winner = null, ...outbid] = [...eligible].sort(
+    (a, b) =>
+      (fixedOrder === undefined
+        ? 0
+        : fixedOrder.indexOf(leadAgent(a.bid)) - fixedOrder.indexOf(leadAgent(b.bid))) ||
+      cheaperFirst(a, b),
+  );
   return {
     winner,
     rejected: [
       ...verdicts.flatMap((entry) =>
         entry.reason === null ? [] : [{ bidHash: entry.signed.bidHash, reason: entry.reason }],
       ),
-      ...outbid.map((signed) => ({ bidHash: signed.bidHash, reason: "outbid" })),
+      ...outbid.map((signed) => ({
+        bidHash: signed.bidHash,
+        reason: fixedOrder === undefined ? "outbid" : "later in fixed specialist order",
+      })),
     ],
   };
 }

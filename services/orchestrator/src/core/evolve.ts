@@ -166,6 +166,15 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
               ),
             },
           };
+    case "standby_reserved":
+      return { ...record, standby: [...record.standby, body.bid] };
+    case "standby_ready":
+      return {
+        ...record,
+        standbyAvailability: { ...record.standbyAvailability, [body.bidHash]: body.epoch },
+      };
+    case "standby_activated":
+      return record;
     case "recovery_awarded":
       return record;
     case "verification_recorded":

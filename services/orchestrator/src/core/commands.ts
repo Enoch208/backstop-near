@@ -34,6 +34,8 @@ export type Command =
     }
   | { kind: "expireLease" }
   | { kind: "bid"; bid: SignedBid }
+  | { kind: "reserveStandby"; bid: SignedBid }
+  | { kind: "confirmStandby"; agentId: string; epoch: number }
   | { kind: "endorse"; bidHash: Digest; endorsement: Endorsement }
   | { kind: "closeAuction" }
   | { kind: "recordVerification"; evidence: EvidenceBundle }
@@ -52,6 +54,10 @@ export type Registry = {
   readonly verifierPublicKey: string;
 };
 
-export type DecisionContext = { readonly nowMs: number; readonly registry: Registry };
+export type DecisionContext = {
+  readonly nowMs: number;
+  readonly registry: Registry;
+  readonly busyAgents?: ReadonlySet<string>;
+};
 
 export type Decision = Outcome<TaskEventBody[]>;

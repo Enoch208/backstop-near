@@ -70,7 +70,9 @@ const runtime = createRuntime(
   Date.now,
   true,
   options.usdcRoot === undefined
-    ? undefined
+    ? options.external
+      ? process.env.BACKSTOP_STATE_PATH
+      : undefined
     : (process.env.BACKSTOP_USDC_STATE_PATH ?? `.backstop/usdc-${taskId}.sqlite`),
 );
 if (process.argv.includes("--intents")) {
@@ -125,10 +127,9 @@ const customer = apiClient(api.url, principals.customer);
 const guarantor = apiClient(api.url, principals.guarantor);
 const coordinator = apiClient(api.url, principals.coordinator);
 const recorder = process.argv.includes("--capture") ? capture(customer, taskId, startedAt) : null;
-const tokenWorkers =
-  tokenDemo && chain !== null
-    ? tokenDemoWorkers(api.url, taskId, chain, (line) => out(`${stamp()}   ${line}`))
-    : [];
+const tokenWorkers = tokenDemo
+  ? tokenDemoWorkers(api.url, taskId, chain, (line) => out(`${stamp()}   ${line}`))
+  : [];
 
 out(`Backstop live demo: ${taskId} on ${api.url}`);
 const vaultMode =

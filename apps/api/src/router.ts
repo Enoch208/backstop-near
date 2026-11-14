@@ -2,7 +2,7 @@ import { errorResponse, type ApiError } from "./http.js";
 import { listTasks, register } from "./routes/agents.js";
 import { fault } from "./routes/demo.js";
 import { getFinding, postFinding } from "./routes/findings.js";
-import { bid, createTask, endorse } from "./routes/funding.js";
+import { bid, createTask, endorse, readyStandby } from "./routes/funding.js";
 import { fund } from "./routes/deposits.js";
 import {
   agentLines,
@@ -76,6 +76,9 @@ const routes: readonly Route[] = [
   ),
   route("POST", "/api/tasks/:task/bids", (runtime, request, params) =>
     bid(runtime, request, first(params)),
+  ),
+  route("POST", "/api/tasks/:task/standby/ready", (runtime, request, params) =>
+    readyStandby(runtime, request, first(params)),
   ),
   route("POST", "/api/tasks/:task/endorsements", (runtime, request, params) =>
     endorse(runtime, request, first(params)),

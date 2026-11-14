@@ -28,6 +28,7 @@ import {
 import type { ApiClient } from "./client.js";
 import { diagnose, fetchFinding, findingBoard, probeRepair } from "./diagnosis.js";
 import { produce, publicFailures, type Resume } from "./produce.js";
+import { reserveStandby, type StandbyTerms } from "./standby.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -49,12 +50,14 @@ export function agentLoop(
   model: ModelConfig | null = null,
   externalProfile?: PricingProfile,
   currency = "NEAR",
+  standby?: StandbyTerms,
 ) {
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
   const history: string[] = [];
   const board = findingBoard();
   let repairBrief: RepairTaskBrief | undefined;
+  let reservations: Promise<void> | undefined;
 
   const snapshot = async (): Promise<Snapshot> =>
     snapshotSchema.parse((await client.get(base)).body).task;
@@ -313,9 +316,39 @@ export function agentLoop(
     if (!parsed.success) return;
     const body = parsed.data.body;
     if (body.type === "guarantee_posted" && agent.role === "executor") run(bidPrimary());
+    if (body.type === "guarantee_posted" && standby !== undefined) {
+      reservations = snapshot().then(async (task) => {
+        if (
+          task.manifest.repairTaskHash === undefined ||
+          task.excludedAgents.includes(agent.agentId) ||
+          task.assignment?.bid.bid.members.some(({ agentId }) => agentId === agent.agentId) ===
+            true ||
+          !["BONDED", "ASSIGNED", "EXECUTING", "RECOVERY_ASSIGNED", "RECOVERY_OPEN"].includes(
+            task.state,
+          )
+        )
+          return;
+        await reserveStandby(client, agent, task, standby);
+        log(`reserved standby capacity at ${formatNear(standby.amount)} ${currency}`);
+      });
+      run(reservations);
+    }
     if (body.type === "recovery_opened" && !bidEpochs.has(body.epoch)) {
       bidEpochs.add(body.epoch);
-      run(bidRecovery(body.epoch));
+      if (standby === undefined) run(bidRecovery(body.epoch));
+      else
+        run(
+          (async () => {
+            await reservations;
+            const task = await snapshot();
+            if (task.state !== "RECOVERY_OPEN" || task.excludedAgents.includes(agent.agentId))
+              return;
+            const reply = await client.post(`${base}/standby/ready`, { epoch: body.epoch });
+            log(
+              `standby availability for epoch ${String(body.epoch)} (HTTP ${String(reply.status)})`,
+            );
+          })(),
+        );
     }
     if (body.type === "coalition_proposed" && pendingEndorsers(body.bid).includes(agent.agentId)) {
       run(join(body.bid));

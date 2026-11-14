@@ -55,6 +55,8 @@ export type TaskRecord = {
   readonly checkpoints: readonly { checkpoint: Checkpoint; hash: Digest }[];
   readonly findings: readonly RecordedFinding[];
   readonly auction: Auction | null;
+  readonly standby: readonly SignedBid[];
+  readonly standbyAvailability: Readonly<Record<string, number>>;
   readonly candidate: Candidate | null;
   readonly excludedAgents: readonly string[];
   readonly failures: readonly { attempt: number; reason: FailureReason }[];
@@ -76,6 +78,8 @@ export function newRecord(manifest: TaskManifest, manifestHash: Digest): TaskRec
     checkpoints: [],
     findings: [],
     auction: null,
+    standby: [],
+    standbyAvailability: {},
     candidate: null,
     excludedAgents: [],
     failures: [],

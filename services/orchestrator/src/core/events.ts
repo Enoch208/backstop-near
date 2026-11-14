@@ -61,6 +61,9 @@ export type TaskEventBody =
   | { type: "coalition_proposed"; bid: SignedBid }
   | { type: "coalition_endorsed"; bidHash: Digest; endorsement: Endorsement }
   | { type: "bid_submitted"; bid: SignedBid }
+  | { type: "standby_reserved"; bid: SignedBid }
+  | { type: "standby_ready"; bidHash: Digest; epoch: number }
+  | { type: "standby_activated"; bidHash: Digest; epoch: number }
   | { type: "recovery_awarded"; epoch: number; winner: Digest; rejected: readonly RejectedBid[] }
   | {
       type: "verification_recorded";

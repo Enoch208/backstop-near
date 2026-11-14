@@ -23,6 +23,7 @@ export const bidSchema = z
     planHash: digestSchema,
     committedAtMs: z.int().min(0),
     expiresAtMs: z.int().min(0),
+    purpose: z.literal("standby").exactOptional(),
   })
   .refine(
     (bid) =>

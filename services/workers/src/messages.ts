@@ -55,6 +55,8 @@ export const snapshotSchema = z.object({
     excludedAgents: z.array(z.string()),
     checkpoints: z.array(z.object({ checkpoint: checkpointSchema, hash: digestSchema })),
     failures: z.array(z.object({ attempt: z.int(), reason: z.enum(failureReasons) })),
+    standby: z.array(signedBidSchema).optional(),
+    assignment: z.object({ bid: signedBidSchema }).nullable().optional(),
     ledger: z.object({
       available: z.object({ escrow: yoctoSchema, bond: yoctoSchema }),
       maxBondLiability: yoctoSchema,
