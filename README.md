@@ -168,6 +168,8 @@ A follow-up paired 240 trials across eight new tasks with inference from NEAR AI
 
 A regression retest reached 79 of 80 correct with zero false accepts, ahead of fixed specialists at 78 of 80. On four fresh tasks both delivered 37 of 40, with three false accepts for Backstop and one for fixed specialists. The revised acceptance gate caught all four in offline replay. [Paired results, cost, and replay](benchmarks/LIVE.md#recovery-retest-and-fresh-tasks)
 
+The live standby benchmark ran 48 matched pairs through the persisted coordinator with team-run processes and two model providers. Both schedulers delivered 48 of 48 correctly. At the declared prices, Backstop paid 20% less in fixture settlement per correct result, with p95 latency of 18.11 seconds versus 17.04 seconds. A separate NEAR Sandbox run paid the standby 0.52 NEAR after it completed the killed worker’s task. [Benchmark and verification](benchmarks/LIVE.md#live-standby-benchmark) · [Standby settlement](docs/outside-workers.md#standby-settlement-on-near-sandbox)
+
 ## Track fit
 
 | Track                 | What the track asks for                                                                  | What Backstop does, and where to see it                                                                                                                                                                                                                                             |

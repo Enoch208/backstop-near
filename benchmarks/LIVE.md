@@ -105,3 +105,23 @@ pnpm benchmark:live --recovery-retest --repeats 2 --concurrency 8 --seed 738291 
 pnpm benchmark:live --fresh --repeats 2 --concurrency 8 --seed 511723 --out /tmp/backstop-fresh-recovery.json
 pnpm benchmark:live --fresh-retest --repeats 2 --concurrency 8 --seed 511723 --out /tmp/backstop-fresh-retest.json
 ```
+
+## Live standby benchmark
+
+On 14 November 2026, 48 pairs across six newly written tasks ran through the SQLite-backed coordinator over HTTP. Each pair shared its primary inference and initial checkpoint, had a 240-second wall limit and at most three inference calls per arm, and funded 0.40 NEAR escrow, 0.04 NEAR premium, and 0.25 NEAR bond. Each arm used the same workers, quote schedule, verifier tests, and fault. The fixed order was declared before the run. The auction chose among eligible bids by price. Audit cases and the oracle were withheld from workers. The task authors and operators were on the Backstop team.
+
+| Scope | Scheduler | Correct | False accepts | p95 seconds | Settlement cost per correct result | Total bond consumed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| All trials | Backstop | 48/48 | 0 | 18.112 | 0.380 NEAR | 1.44 NEAR |
+| All trials | Fixed specialists | 48/48 | 0 | 17.041 | 0.475 NEAR | 3.12 NEAR |
+| Primary provider outage | Backstop | 12/12 | 0 | 16.058 | 0.520 NEAR | 1.44 NEAR |
+| Primary provider outage | Fixed specialists | 12/12 | 0 | 17.041 | 0.580 NEAR | 2.16 NEAR |
+
+The four conditions were healthy execution, an actual SIGKILL after checkpoint, the same SIGKILL plus an injected outage that withheld both primary-provider specialists from bidding, and a known incorrect submission. NEAR AI Cloud and OpenAI served live inference. Two separately signed and registered team-run standby processes booked capacity before primary assignment, then signed readiness in each recovery window. The coordinator activated standby on all 24 outage trials. The fixture vault accounted for settlement, including consumed bonds. Cost covers escrow paid, earned premiums, and consumed bonds. The report also includes provider tokens per call. Real inference charges, gas, and any standby retainer are outside the reported cost. Latency covers primary inference plus elapsed time from first assignment through settlement.
+
+The market tied fixed specialists on correct delivery. Settlement cost was 20% lower at the declared worker prices. The cheaper quote schedule explains the cost difference, and the overall p95 was 1.071 seconds slower. The benchmark does not estimate operator prices or prove higher delivery reliability in production. A separate [NEAR Sandbox rehearsal](../docs/outside-workers.md#standby-settlement-on-near-sandbox) used the normal outside-worker CLI and verified the winning standby payout through the chain.
+
+```sh
+pnpm benchmark:standby --verify benchmarks/live-standby.json
+pnpm benchmark:standby --lanes 6 --repeats 2 --out /tmp/backstop-standby.json --state /tmp/backstop-standby-state
+```

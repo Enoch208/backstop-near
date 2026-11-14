@@ -27,6 +27,15 @@ export const limits = {
   callMs: 45_000,
 } as const;
 
+export const inferenceSchema = z.object({
+  source: z.string().nullable(),
+  promptTokens: z.int().nullable(),
+  outputTokens: z.int().nullable(),
+  promptBytes: z.int(),
+  elapsedMs: z.int(),
+  status: z.string(),
+});
+
 export type Inference = {
   readonly source: string | null;
   readonly promptTokens: number | null;

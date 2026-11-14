@@ -35,7 +35,8 @@
     "chain:redteam": "tsx scripts/red-team.ts",
     "chain:recovery-proof": "tsx scripts/recovery-red-team.ts",
     "worker:outside": "tsx services/workers/src/main.ts",
-    "benchmark:live": "tsx scripts/live-benchmark.ts"
+    "benchmark:live": "tsx scripts/live-benchmark.ts",
+    "benchmark:standby": "tsx scripts/live-standby-benchmark.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
