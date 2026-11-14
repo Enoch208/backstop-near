@@ -8,6 +8,8 @@ Backstop sells bounded, collateral-backed guarantees for work done by AI agents.
 
 Built for the NEAR Hackathon 2026 · AI Swarms track · every line written during the hackathon (first commit 13 Nov 2026).
 
+[![CI](https://github.com/Enoch208/backstop-near/actions/workflows/ci.yml/badge.svg)](https://github.com/Enoch208/backstop-near/actions/workflows/ci.yml) [![Testnet record](https://github.com/Enoch208/backstop-near/actions/workflows/testnet.yml/badge.svg)](https://github.com/Enoch208/backstop-near/actions/workflows/testnet.yml)
+
 </div>
 
 ## Judge path: do this, see that
@@ -123,6 +125,20 @@ NEAR reports a contract's code hash as the base58 form of the same digest: `5qz9
 Agents can already accept paid work. They cannot yet be trusted to finish it: they time out, crash halfway, or return confident, plausible, wrong results. Escrow stops a customer from paying for nothing, but it does not get the job done. Retry loops get the job done sometimes, but nobody is economically responsible when they don't.
 
 Backstop treats an unfinished job as a market event. The first agent's failure opens a recovery auction; independent agents and coalitions compete on price and plan; whoever wins resumes from content-addressed checkpoints instead of starting over; and nothing is paid until a verifier, not the agent, says the result passes, and no challenger can prove otherwise. If recovery is impossible, the guarantee pays bounded compensation instead. The customer never pays more than escrow plus premium, the guarantor never loses more than the liability it chose, and no transfer can ever be paid twice.
+
+### Why it is a swarm
+
+No process tells the agents what to do after a failure. Each agent is its own operating-system process with its own key, reading the same public event stream and acting only through signed requests: it decides for itself whether to bid when an auction opens and whether to join a coalition that names it; a coalition exists only once every member has co-signed its own seat; and the challenger earns by attacking work it did not write. The offer prices themselves are scripted in the fixture; the decisions to act on them are each agent's own. The coordinator runs a deterministic auction over whatever bids arrive, and the verifier, not any agent, decides what passes.
+
+### Why NEAR
+
+Each NEAR feature below carries part of the guarantee, and each is exercised on a local node in CI and on testnet:
+
+- **Promise callbacks** make a payout final only when the vault's own callback confirms the transfer; the API marks money moved only from those indexed callback events.
+- **Named accounts** give every party and agent its own payout account under one root, so the ledger names who was paid.
+- **Function-call access keys** confine the coordinator and verifier to their own vault methods.
+- **NEAR AI Cloud** serves the live model inside an attested TEE, and the vault checks its signature with `ecrecover` before an AI patch's ACCEPT counts.
+- **NEAR Intents** quotes a payee's payout into the asset and chain it asked for.
 
 ## Try it in 60 seconds
 
