@@ -4,6 +4,7 @@ import { fault } from "./routes/demo.js";
 import { getFinding, postFinding } from "./routes/findings.js";
 import { bid, createTask, endorse, fund } from "./routes/funding.js";
 import {
+  agentLines,
   chainSteps,
   events,
   getArtifact,
@@ -46,6 +47,9 @@ const routes: readonly Route[] = [
   route("GET", "/api/tasks/:task", (runtime, _request, params) => getTask(runtime, first(params))),
   route("GET", "/api/tasks/:task/payouts", (runtime, _request, params) =>
     payouts(runtime, first(params)),
+  ),
+  route("GET", "/api/tasks/:task/logs", (runtime, _request, params) =>
+    agentLines(runtime, first(params)),
   ),
   route("GET", "/api/tasks/:task/chain", (runtime, _request, params) =>
     chainSteps(runtime, first(params)),

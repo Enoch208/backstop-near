@@ -14,6 +14,14 @@ export function supervise(
 ): WorkerControl {
   const tracked = new Map<string, Tracked>();
   const keyOf = (taskId: string, agentId: string) => `${taskId}/${agentId}`;
+  const remember = (taskId: string, agentId: string, line: string) => {
+    const lines = runtime.agentLog.get(taskId) ?? [];
+    const text = line.replace(/^\[[a-z]+ pid \d+\] /, "");
+    runtime.agentLog.set(
+      taskId,
+      [...lines, { atMs: runtime.now(), agentId, line: text }].slice(-500),
+    );
+  };
 
   const launchOne = (taskId: string, agentId: string) => {
     const child = spawnWorker(agentId, apiUrl, taskId);
@@ -30,7 +38,11 @@ export function supervise(
     };
     tracked.set(keyOf(taskId, agentId), entry);
     for (const stream of [child.stdout, child.stderr]) {
-      if (stream !== null) createInterface({ input: stream }).on("line", onLine);
+      if (stream !== null)
+        createInterface({ input: stream }).on("line", (line) => {
+          remember(taskId, agentId, line);
+          onLine(line);
+        });
     }
     child.on("exit", (code, signal) => {
       entry.record = { ...entry.record, exitedAtMs: runtime.now(), exit: { code, signal } };

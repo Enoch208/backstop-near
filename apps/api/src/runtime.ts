@@ -28,6 +28,12 @@ export type WorkerProcess = {
   readonly exit: { code: number | null; signal: string | null } | null;
 };
 
+export type AgentLine = {
+  readonly atMs: number;
+  readonly agentId: string;
+  readonly line: string;
+};
+
 export type Identity = {
   readonly id: string;
   readonly account: string;
@@ -43,6 +49,7 @@ export type Runtime = {
   readonly artifacts: Map<Digest, string>;
   readonly findings: Map<Digest, Finding>;
   readonly teeSigners: Map<string, string>;
+  readonly agentLog: Map<string, AgentLine[]>;
   readonly inferences: Map<Digest, AttestedInference>;
   readonly replies: Map<string, { status: number; body: string }>;
   readonly inflight: Map<string, Promise<{ status: number; body: string }>>;
@@ -73,6 +80,7 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     artifacts: new Map(),
     findings: new Map(),
     teeSigners: new Map(),
+    agentLog: new Map(),
     inferences: new Map(),
     replies: new Map(),
     inflight: new Map(),

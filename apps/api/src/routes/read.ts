@@ -79,6 +79,11 @@ export function payouts(runtime: Runtime, taskId: string): Response {
   });
 }
 
+export function agentLines(runtime: Runtime, taskId: string): Response {
+  if (runtime.store.records[taskId] === undefined) return notFound(`No task ${taskId}`);
+  return json({ lines: runtime.agentLog.get(taskId) ?? [] });
+}
+
 export function chainSteps(runtime: Runtime, taskId: string): Response {
   if (runtime.store.records[taskId] === undefined) return notFound(`No task ${taskId}`);
   const bridge = runtime.chain;

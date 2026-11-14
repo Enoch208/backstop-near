@@ -84,6 +84,14 @@ describe("a live swarm of worker processes", () => {
         "customer.fixture.testnet": toYocto(near("0.04")),
         "guarantor.fixture.testnet": toYocto(near("0.11")),
       });
+      const logs = z
+        .object({ lines: z.array(z.object({ agentId: z.string(), line: z.string() })) })
+        .parse((await customer.get(`/api/tasks/${taskId}/logs`)).body);
+      const said = (agentId: string, start: string) =>
+        logs.lines.some((entry) => entry.agentId === agentId && entry.line.startsWith(start));
+      expect(said("alpha", "claimed attempt")).toBe(true);
+      expect(logs.lines.some((entry) => entry.line.startsWith("pricing: "))).toBe(true);
+      expect(logs.lines.every((entry) => !entry.line.startsWith("["))).toBe(true);
       const again = await coordinator.post("/api/demo/faults", {
         action: "repeat_settlement",
         taskId,
