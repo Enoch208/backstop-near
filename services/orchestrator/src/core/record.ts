@@ -27,6 +27,13 @@ export type Candidate = {
   readonly challengeDeadlineMs: number | null;
 };
 
+export type RecordedFinding = {
+  readonly attempt: number;
+  readonly agentId: string;
+  readonly findingHash: Digest;
+  readonly failingCases: readonly string[];
+};
+
 export type Auction = {
   readonly epoch: number;
   readonly closesAtMs: number;
@@ -46,6 +53,7 @@ export type TaskRecord = {
   readonly assignment: Assignment | null;
   readonly lease: Lease | null;
   readonly checkpoints: readonly { checkpoint: Checkpoint; hash: Digest }[];
+  readonly findings: readonly RecordedFinding[];
   readonly auction: Auction | null;
   readonly candidate: Candidate | null;
   readonly excludedAgents: readonly string[];
@@ -66,6 +74,7 @@ export function newRecord(manifest: TaskManifest, manifestHash: Digest): TaskRec
     assignment: null,
     lease: null,
     checkpoints: [],
+    findings: [],
     auction: null,
     candidate: null,
     excludedAgents: [],

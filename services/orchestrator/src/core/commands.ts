@@ -25,6 +25,13 @@ export type Command =
       artifactHash: Digest;
       checkpointHash: Digest | null;
     }
+  | {
+      kind: "recordFinding";
+      agentId: string;
+      attempt: number;
+      findingHash: Digest;
+      failingCases: readonly string[];
+    }
   | { kind: "expireLease" }
   | { kind: "bid"; bid: SignedBid }
   | { kind: "endorse"; bidHash: Digest; endorsement: Endorsement }
