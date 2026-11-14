@@ -23,6 +23,7 @@ export default defineConfig({
       workspace("api", "apps/api"),
       workspace("near", "packages/near"),
       workspace("tee", "packages/tee"),
+      workspace("web", "apps/web"),
       workspace("mcp", "apps/mcp"),
     ],
   },

@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import "@fontsource/instrument-serif";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@theme {
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --color-ink: #0b0b0b;
+  --color-coal: #141414;
+  --color-graphite: #1e1e1e;
+  --color-paper: #f4f4f2;
+  --color-tile: #ebebe7;
+  --color-ash: #8a8a87;
+  --color-line: #dcdcd7;
+  --color-ok: #3ddc84;
+  --color-refused: #ff5a3c;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.photo {
+  background-size: cover;
+  background-position: center;
+}
+
+.photo-hero {
+  background-image:
+    url("/images/hero.jpg"), radial-gradient(ellipse at 30% 40%, #3a2a1c 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 60%, #2a1f17 0%, transparent 50%),
+    linear-gradient(180deg, #0b0b0b, #151210);
+}
+
+.photo-recover {
+  background-image:
+    url("/images/recover.jpg"), linear-gradient(90deg, #6f6f6c, #3d3d3b 60%, #1b1b1a);
+}
+
+.photo-verify {
+  background-image:
+    url("/images/verify.jpg"), linear-gradient(180deg, #8d8780, #4a4642 55%, #2a2826);
+}
+
+.photo-closing {
+  background-image:
+    url("/images/backstop.jpg"), radial-gradient(ellipse at 35% 45%, #5e5e5b 0%, transparent 45%),
+    linear-gradient(180deg, #b9b9b4, #8f8f8b);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.35s ease-out both;
+}
