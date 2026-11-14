@@ -3,7 +3,8 @@ import { Pill } from "../components/Pill.js";
 export function Hero() {
   return (
     <section className="photo photo-hero relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 pt-14 text-center text-paper">
-      <div className="absolute inset-0 bg-black/35" />
+      <div className="absolute inset-0 bg-black/30" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_38%_at_center,rgba(0,0,0,0.6),transparent)]" />
       <div className="relative flex flex-col items-center">
         <span className="mb-10 h-24 w-px bg-white/30" />
         <h1 className="rise font-serif text-[44px] leading-[1.02] tracking-[-0.01em] sm:text-[72px] lg:text-[88px]">
