@@ -48,6 +48,13 @@ export type TaskEventBody =
       artifactHash: Digest;
       checkpointHash: Digest | null;
     }
+  | {
+      type: "finding_recorded";
+      attempt: number;
+      agentId: string;
+      findingHash: Digest;
+      failingCases: readonly string[];
+    }
   | { type: "lease_expired"; attempt: number; fencingToken: number | null }
   | { type: "attempt_failed"; attempt: number; reason: FailureReason; agents: readonly string[] }
   | { type: "recovery_opened"; epoch: number; reason: FailureReason; closesAtMs: number }

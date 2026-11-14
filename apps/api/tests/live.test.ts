@@ -66,6 +66,7 @@ describe("a live swarm of worker processes", () => {
         expect.arrayContaining([
           "lease_expired",
           "recovery_awarded",
+          "finding_recorded",
           "attempt_rejected",
           "task_accepted",
         ]),

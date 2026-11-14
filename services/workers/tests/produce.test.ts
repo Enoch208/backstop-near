@@ -6,6 +6,7 @@ import { sha256Hex } from "@backstop/shared";
 import { addressOfSecret, checkReceipt, signPersonal } from "@backstop/tee";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
+import { diagnose } from "../src/diagnosis.js";
 import { produce } from "../src/produce.js";
 
 let server: Server | null = null;
@@ -52,7 +53,13 @@ async function fakeModel(
 }
 
 const fenced = (source: string) => `\`\`\`js\n${source}\`\`\``;
-const context = { objective: "Repair checkoutTotal.", inherited: [], history: [], resume: null };
+const context = {
+  objective: "Repair checkoutTotal.",
+  inherited: [],
+  history: [],
+  resume: null,
+  diagnosis: null,
+};
 
 afterEach(() => {
   server?.close();
@@ -116,6 +123,23 @@ describe("live production", () => {
     expect(prompts[0]).toContain(
       JSON.stringify(candidate("alpha-partial").source.trim()).slice(1, 40),
     );
+  });
+
+  it("hands the coalition diagnostician's finding to the model", async () => {
+    const prompts: string[] = [];
+    const model = await fakeModel([fenced(candidate("gamma-integer").source)], prompts);
+    const resume = {
+      source: candidate("beta-boundary").source,
+      hash: candidate("beta-boundary").artifactHash,
+    };
+    const finding = diagnose("checkout-live", 3, "delta", resume);
+    await produce(
+      roster.gamma,
+      { baseUrl: model.baseUrl, apiKey: "test", model: "test/model" },
+      { ...context, resume, diagnosis: { from: "delta", finding } },
+    );
+    expect(prompts[0]).toContain("Diagnosis from delta");
+    expect(prompts[0]).toContain(finding.failingCases[0]?.id);
   });
 
   it("keeps fixture work, clearly labelled, when no model is configured", async () => {

@@ -101,6 +101,19 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
           challengeDeadlineMs: null,
         },
       };
+    case "finding_recorded":
+      return {
+        ...record,
+        findings: [
+          ...record.findings,
+          {
+            attempt: body.attempt,
+            agentId: body.agentId,
+            findingHash: body.findingHash,
+            failingCases: body.failingCases,
+          },
+        ],
+      };
     case "lease_expired":
       return { ...record, lease: null };
     case "attempt_failed":

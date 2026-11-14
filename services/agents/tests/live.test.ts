@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { checkoutRules, checkoutSuite, candidate } from "@backstop/fixture-checkout";
 import { canonicalJson } from "@backstop/shared";
-import { extractSource, modelFromEnv, repairPrompt } from "../src/index.js";
+import { extractSource, modelFromEnv, repairPrompt, type RepairBrief } from "../src/index.js";
 
-const brief = {
+const brief: RepairBrief = {
   objective: "Repair checkoutTotal.",
   rules: checkoutRules,
   brokenSource: candidate("original").source,
@@ -11,6 +11,14 @@ const brief = {
   suite: checkoutSuite,
   validatedSubtasks: ["discount-before-tax"],
   failureHistory: ["attempt 1 failed: LEASE_EXPIRED"],
+  diagnosis: null,
+};
+
+const boundary = {
+  id: "probe-8",
+  input: { lines: [{ sku: "edge", unitPriceCents: 5_000, quantity: 1 }] },
+  expected: { shippingCents: 0 },
+  actual: { shippingCents: 999 },
 };
 
 describe("the live repair prompt", () => {
@@ -30,6 +38,21 @@ describe("the live repair prompt", () => {
     expect(prompt).toContain(checkoutRules);
     expect(prompt).toContain("LEASE_EXPIRED");
     expect(prompt).toContain(candidate("original").source.trim());
+  });
+
+  it("adds a coalition partner's diagnosis only when one was consumed", () => {
+    const text = (diagnosis: RepairBrief["diagnosis"]) =>
+      repairPrompt({ ...brief, diagnosis })
+        .map((message) => message.content)
+        .join("\n");
+    expect(text(null)).not.toContain("Diagnosis from");
+    const diagnosed = text({
+      from: "delta",
+      finding: { failingCases: [boundary], notes: "3 of 4 public cases pass" },
+    });
+    expect(diagnosed).toContain("Diagnosis from delta");
+    expect(diagnosed).toContain("3 of 4 public cases pass");
+    expect(diagnosed).toContain(canonicalJson([boundary]));
   });
 
   it("takes only the fenced code from a reply", () => {

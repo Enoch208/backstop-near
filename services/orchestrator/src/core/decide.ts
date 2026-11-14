@@ -26,6 +26,7 @@ import {
   decideHeartbeat,
   decideSubmit,
 } from "./decide-work.js";
+import { decideFinding } from "./decide-finding.js";
 import type { TaskRecord } from "./record.js";
 
 export function decide(
@@ -69,6 +70,14 @@ export function decide(
         command.artifactHash,
         command.checkpointHash,
         context,
+      );
+    case "recordFinding":
+      return decideFinding(
+        record,
+        command.agentId,
+        command.attempt,
+        command.findingHash,
+        command.failingCases,
       );
     case "expireLease":
       return decideExpireLease(record, context);

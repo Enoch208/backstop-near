@@ -12,3 +12,4 @@ export * from "./task-state.js";
 export * from "./random.js";
 export * from "./attestation.js";
 export * from "./request.schema.js";
+export * from "./finding.schema.js";

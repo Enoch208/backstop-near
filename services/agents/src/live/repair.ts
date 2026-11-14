@@ -1,5 +1,7 @@
-import { canonicalJson, publicView, type TestSuite } from "@backstop/shared";
+import { canonicalJson, publicView, type Finding, type TestSuite } from "@backstop/shared";
 import { complete, type ChatMessage, type Completion, type ModelConfig } from "./model.js";
+
+export type Diagnosis = { readonly from: string; readonly finding: Finding };
 
 export type RepairBrief = {
   readonly objective: string;
@@ -9,7 +11,14 @@ export type RepairBrief = {
   readonly suite: TestSuite;
   readonly validatedSubtasks: readonly string[];
   readonly failureHistory: readonly string[];
+  readonly diagnosis: Diagnosis | null;
 };
+
+const diagnosisText = ({ from, finding }: Diagnosis) =>
+  [
+    `Diagnosis from ${from}, who ran the current source before you: ${finding.notes}`,
+    `Failing cases on the current source (input, expected, actual):\n${canonicalJson(finding.failingCases)}`,
+  ].join("\n");
 
 const system = [
   "You repair one JavaScript function for a paid task.",
@@ -39,6 +48,7 @@ export function repairPrompt(brief: RepairBrief): ChatMessage[] {
     brief.failureHistory.length > 0
       ? `Earlier attempts on this task failed because: ${brief.failureHistory.join("; ")}.`
       : "No earlier attempts failed.",
+    ...(brief.diagnosis === null ? [] : [diagnosisText(brief.diagnosis)]),
   ].join("\n\n");
   return [
     { role: "system", content: system },
