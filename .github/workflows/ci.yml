@@ -72,9 +72,10 @@ jobs:
         run: |
           rustup toolchain install 1.94.1 --profile minimal --target wasm32-unknown-unknown
           rustup default 1.94.1
-      - name: Build the contract
-        working-directory: contracts/outcome-vault
-        run: cargo build --target wasm32-unknown-unknown --release --locked
+      - name: Build the contract reproducibly
+        run: sh scripts/build-vault.sh | tee vault-build.txt
+      - name: Match the published wasm hash
+        run: test "$(tail -n 1 vault-build.txt)" = "$(cat contracts/outcome-vault/outcome_vault.wasm.sha256)"
       - name: Set up Node 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:

@@ -23,7 +23,8 @@
     "arena": "tsx scripts/arena.ts",
     "mcp": "tsx apps/mcp/src/main.ts",
     "market": "tsx scripts/market.ts",
-    "chain:account": "tsx scripts/testnet-account.ts"
+    "chain:account": "tsx scripts/testnet-account.ts",
+    "vault:build": "sh scripts/build-vault.sh"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
