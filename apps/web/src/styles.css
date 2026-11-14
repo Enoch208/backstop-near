@@ -16,6 +16,19 @@
   --color-line: #e7e7e5;
   --color-ok: #3ddc84;
   --color-refused: #ff5a3c;
+  --color-page: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-well: #f1f1f1;
+  --color-pass: #15803d;
+  --color-pass-bg: #e8f3ec;
+  --color-warn: #92400e;
+  --color-warn-bg: #fff7e6;
+  --color-fail: #b91c1c;
+  --color-fail-bg: #f8e8e8;
+  --color-info: #1d4ed8;
+  --color-info-bg: #e8edfb;
+  --color-live: #34c759;
+  --ease-calm: cubic-bezier(0.4, 0, 0, 1);
 }
 
 html {
@@ -91,6 +104,24 @@ body {
 
 .drift-reverse {
   animation: drift 70s linear infinite reverse;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.glass {
+  background: rgb(244 245 247 / 0.72);
+  backdrop-filter: blur(16px);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(24 24 24 / 0.2) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

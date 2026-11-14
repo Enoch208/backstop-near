@@ -36,6 +36,25 @@ export const runIndexSchema = z.array(
   z.object({ taskId: z.string(), network: z.string(), recordedAt: z.string() }),
 );
 
+export function useRecordings(): readonly string[] | null {
+  const [ids, setIds] = useState<readonly string[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetch(asset("runs/index.json"))
+      .then(async (response) => (response.ok ? runIndexSchema.parse(await response.json()) : []))
+      .then((runs) => {
+        if (live) setIds(runs.map((run) => run.taskId));
+      })
+      .catch(() => {
+        if (live) setIds([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return ids;
+}
+
 export type ReplayState = {
   readonly run: RecordedRun | null;
   readonly error: string | null;

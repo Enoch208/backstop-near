@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Footer } from "../components/Footer.js";
-import { Nav } from "../components/Nav.js";
+import { Icon } from "../app/icons.js";
+import { buttonClass, Chip, Kpi, PageHeader, Panel } from "../app/ui.js";
 import { record } from "../data/record.js";
 import { runChecks, type Check, type Tamper } from "./checks.js";
 
@@ -21,8 +21,49 @@ const groups: readonly Check["group"][] = [
   "Transactions",
 ];
 
+const machineDetail: ReadonlySet<Check["group"]> = new Set(["Code", "AI receipt", "Ledgers"]);
+
 const expected =
   1 + 1 + 1 + record.runs.length + record.runs.reduce((total, run) => total + run.steps.length, 0);
+
+function CheckRow({ check }: { readonly check: Check }) {
+  const mono = machineDetail.has(check.group);
+  return (
+    <li className="rise grid min-h-11 grid-cols-[72px_minmax(0,1fr)] items-start gap-3 py-3">
+      {check.ok ? (
+        <Chip tone="pass">Pass</Chip>
+      ) : check.unread === true ? (
+        <Chip tone="neutral">Unread</Chip>
+      ) : (
+        <Chip tone="fail">Fail</Chip>
+      )}
+      <div className="min-w-0 pt-0.5">
+        <p className="text-[14px] leading-[1.5] tracking-[-0.02em] text-ink">
+          {check.link === null ? (
+            check.label
+          ) : (
+            <a
+              href={check.link}
+              target="_blank"
+              rel="noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              {check.label}
+              <span className="ml-1 inline-block align-[-2px] text-ink/40">
+                <Icon name="external" size={14} />
+              </span>
+            </a>
+          )}
+        </p>
+        <p
+          className={`mt-0.5 text-[13px] leading-[1.5] wrap-anywhere text-ink/60 ${mono ? "font-mono tracking-normal" : "tracking-[-0.02em]"}`}
+        >
+          {check.detail}
+        </p>
+      </div>
+    </li>
+  );
+}
 
 export function VerifyPage() {
   const [tamper, setTamper] = useState<Tamper>("none");
@@ -56,108 +97,106 @@ export function VerifyPage() {
   const passed = checks.filter((check) => check.ok).length;
   const unread = checks.filter((check) => check.unread === true).length;
   const failed = checks.length - passed - unread;
+  const status = running
+    ? "checking…"
+    : error !== null
+      ? `stopped: ${error}`
+      : failed > 0
+        ? `${String(failed)} claim${failed === 1 ? "" : "s"} failed`
+        : unread > 0
+          ? `${String(unread)} could not be read from the RPC; run again`
+          : "every claim holds";
   return (
     <>
-      <Nav />
-      <main className="mx-auto max-w-[1100px] px-4 pt-28 pb-24 sm:px-10">
-        <p className="text-[13px] text-ash">Verify it yourself</p>
-        <h1 className="mt-3 max-w-2xl text-[30px] leading-tight font-medium tracking-tight text-balance">
-          Your browser is re-reading NEAR testnet now and checking every claim in the public record.
-        </h1>
-        <p className="mt-4 max-w-2xl text-[14px] leading-relaxed text-ash">
-          No backend and no wallet: the page calls a public NEAR RPC directly. Tamper with the
-          record to see a check catch the lie.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <select
-            value={tamper}
-            onChange={(event) => {
-              const next = tampers.find((item) => item.value === event.target.value);
-              if (next !== undefined) setTamper(next.value);
-            }}
-            className="rounded-full border border-ink/20 bg-white px-4 py-2 text-[13px]"
-          >
-            {tampers.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => {
-              run(tamper);
-            }}
-            className="rounded-full bg-ink px-4 py-2 text-[13px] font-medium text-white"
-          >
-            Run again
-          </button>
-        </div>
-        <div className="mt-12 flex items-end gap-6">
-          <p className="font-serif text-[96px] leading-none">
-            {passed}
-            <span className="text-ash"> / {expected}</span>
-          </p>
-          <p className="pb-3 text-[14px] text-ash">
-            {running
-              ? "checking…"
-              : error !== null
-                ? `stopped: ${error}`
-                : failed > 0
-                  ? `${String(failed)} claim${failed === 1 ? "" : "s"} failed`
-                  : unread > 0
-                    ? `${String(unread)} could not be read from the RPC; run again`
-                    : "every claim holds"}
-          </p>
-        </div>
-        <div className="mt-2 h-px bg-line">
-          <div
-            className={`h-px transition-all ${failed > 0 ? "bg-refused" : "bg-ok"}`}
-            style={{ width: `${String(Math.min(100, (checks.length / expected) * 100))}%` }}
-          />
-        </div>
+      <PageHeader
+        eyebrow="Verify"
+        title="Every claim, re-checked against NEAR."
+        subtitle="No backend and no wallet: the page calls a public NEAR RPC directly and re-reads every claim in the public record. Tamper with the record to watch a check catch the lie."
+        actions={
+          <>
+            <label className="relative inline-flex max-w-full">
+              <span className="sr-only">Record to check</span>
+              <select
+                value={tamper}
+                onChange={(event) => {
+                  const next = tampers.find((item) => item.value === event.target.value);
+                  if (next !== undefined) setTamper(next.value);
+                }}
+                className={`${buttonClass.secondary} max-w-full cursor-pointer appearance-none truncate border-0 pr-10`}
+              >
+                {tampers.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 rotate-90 text-ink/60">
+                <Icon name="forward" size={14} />
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                run(tamper);
+              }}
+              className={buttonClass.primary}
+            >
+              Run again
+            </button>
+          </>
+        }
+      />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Kpi
+          primary
+          label="Claims holding"
+          value={passed}
+          unit={`/ ${String(expected)}`}
+          note={<span title={status}>{status}</span>}
+        />
+        <Kpi label="Failed" value={failed} note="claims the chain contradicts" />
+        <Kpi label="Could not read" value={unread} note="RPC rate limits; run again" />
+        <Kpi label="Source" value="RPC" note="public NEAR testnet RPC" />
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Checks read"
+        aria-valuemin={0}
+        aria-valuemax={expected}
+        aria-valuenow={checks.length}
+        className="mt-4 h-1 overflow-hidden rounded-full bg-ink/[0.06]"
+      >
+        <div
+          className={`h-1 rounded-full transition-all ${failed > 0 ? "bg-fail" : "bg-pass"}`}
+          style={{ width: `${String(Math.min(100, (checks.length / expected) * 100))}%` }}
+        />
+      </div>
+      <div className="mt-4 flex flex-col gap-4 lg:mt-6 lg:gap-6">
+        {error !== null && (
+          <Panel title="Run stopped" meta="error">
+            <p className="font-mono text-[13px] leading-[1.5] wrap-anywhere text-ink/60">{error}</p>
+          </Panel>
+        )}
         {groups.map((group) => {
           const rows = checks.filter((check) => check.group === group);
           if (rows.length === 0) return null;
+          const holding = rows.filter((check) => check.ok).length;
           return (
-            <section key={group} className="mt-12">
-              <p className="mb-3 font-mono text-[11px] tracking-wider text-ash uppercase">
-                {group}
-              </p>
-              <ul className="divide-y divide-line border-y border-line">
+            <Panel
+              key={group}
+              title={group}
+              meta={`${String(holding)} of ${String(rows.length)}`}
+              flush
+            >
+              <ul className="divide-y divide-ink/[0.06] px-6 pb-3">
                 {rows.map((check) => (
-                  <li
-                    key={check.id}
-                    className="rise grid grid-cols-[18px_minmax(0,1fr)] gap-3 py-3"
-                  >
-                    <span
-                      className={`mt-1.5 h-2 w-2 rounded-full ${check.ok ? "bg-ok" : check.unread === true ? "bg-ash" : "bg-refused"}`}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-[14px]">
-                        {check.link === null ? (
-                          check.label
-                        ) : (
-                          <a
-                            href={check.link}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:underline"
-                          >
-                            {check.label}
-                          </a>
-                        )}
-                      </p>
-                      <p className="truncate font-mono text-[11px] text-ash">{check.detail}</p>
-                    </div>
-                  </li>
+                  <CheckRow key={check.id} check={check} />
                 ))}
               </ul>
-            </section>
+            </Panel>
           );
         })}
-      </main>
-      <Footer />
+      </div>
     </>
   );
 }

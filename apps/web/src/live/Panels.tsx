@@ -1,14 +1,12 @@
+import { Chip, Empty, Panel } from "../app/ui.js";
 import { nearAmount } from "../data/near.js";
 import { nearblocks, shortHash } from "../data/record.js";
 import type { ChainSteps, Snapshot, Worker } from "./api.js";
 
-const label =
-  "border-b border-white/10 px-4 py-3 font-mono text-[11px] tracking-wider text-white/40 uppercase";
-
-function workerState(worker: Worker) {
-  if (worker.exit === null) return { text: "running", tone: "text-ok" };
-  if (worker.exit.signal !== null) return { text: worker.exit.signal, tone: "text-refused" };
-  return { text: `exit ${String(worker.exit.code)}`, tone: "text-white/50" };
+function workerChip(worker: Worker) {
+  if (worker.exit === null) return <Chip tone="pass">Running</Chip>;
+  if (worker.exit.signal !== null) return <Chip tone="fail">{worker.exit.signal}</Chip>;
+  return <Chip>Exit {String(worker.exit.code)}</Chip>;
 }
 
 export function Agents({
@@ -19,113 +17,105 @@ export function Agents({
   readonly excluded: readonly string[];
 }) {
   return (
-    <section className="bg-coal">
-      <p className={label}>Agent processes</p>
-      {workers.length === 0 && (
-        <p className="px-4 py-4 text-[12px] text-white/40">No processes yet.</p>
-      )}
-      <ul className="divide-y divide-white/5">
-        {workers.map((worker) => {
-          const state = workerState(worker);
-          return (
-            <li
-              key={worker.agentId}
-              className="flex items-center justify-between px-4 py-2.5 text-[13px]"
-            >
-              <span>
-                {worker.agentId}
-                {excluded.includes(worker.agentId) && (
-                  <span className="ml-2 font-mono text-[10px] text-refused">excluded</span>
-                )}
-              </span>
-              <span className="font-mono text-[11px] text-white/40">
-                pid {String(worker.pid ?? "–")}
-              </span>
-              <span className={`font-mono text-[11px] ${state.tone}`}>{state.text}</span>
-            </li>
-          );
-        })}
+    <Panel title="Agent processes" meta={`${String(workers.length)} processes`}>
+      {workers.length === 0 && <Empty>No processes yet.</Empty>}
+      <ul className="divide-y divide-ink/[0.06]">
+        {workers.map((worker) => (
+          <li key={worker.agentId} className="flex min-h-11 items-center gap-3 py-2">
+            <span className="flex-1 text-[14px] font-medium tracking-[-0.02em]">
+              {worker.agentId}
+              {excluded.includes(worker.agentId) && (
+                <span className="ml-2 text-[12px] font-normal text-ink/50">excluded</span>
+              )}
+            </span>
+            <span className="font-mono text-[12px] text-ink/40 tabular-nums">
+              pid {String(worker.pid ?? "–")}
+            </span>
+            {workerChip(worker)}
+          </li>
+        ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
 
-export function Money({
+export function Payouts({
   snapshot,
   onChain,
 }: {
   readonly snapshot: Snapshot | null;
   readonly onChain: string | null;
 }) {
-  const statement = snapshot?.statement;
+  const rows = Object.entries(snapshot?.statement.confirmedByRecipient ?? {});
   return (
-    <section className="bg-coal">
-      <p className={label}>Ledger</p>
-      <div className="grid grid-cols-2 gap-px bg-white/5">
-        {[
-          { name: "Paid in", value: statement?.totalIn },
-          { name: "Confirmed out", value: statement?.byStatus.CONFIRMED },
-          { name: "Held", value: statement?.held },
-          { name: "Pending", value: statement?.byStatus.PENDING },
-        ].map((cell) => (
-          <div key={cell.name} className="bg-coal px-4 py-4">
-            <p className="text-[11px] text-white/40">{cell.name}</p>
-            <p className="mt-1 font-serif text-[34px] leading-none">
-              {cell.value === undefined ? "–" : nearAmount(cell.value)}
-            </p>
-          </div>
-        ))}
-      </div>
-      {onChain !== null && (
-        <p className="px-4 pt-3 text-[11px] leading-relaxed text-white/40">
-          Orchestrator ledger. On NEAR {onChain}, each payee is paid at its own sub-account; the
-          transactions are below.
-        </p>
-      )}
-      <ul className="divide-y divide-white/5 px-4 py-2">
-        {Object.entries(statement?.confirmedByRecipient ?? {}).map(([recipient, amount]) => (
-          <li key={recipient} className="flex justify-between py-1.5 text-[12px]">
-            <span className="truncate text-white/60">{recipient}</span>
-            <span className="font-mono">{nearAmount(amount)} NEAR</span>
+    <Panel title="Confirmed payouts" meta={onChain === null ? "fixture vault" : `NEAR ${onChain}`}>
+      {rows.length === 0 && <Empty>Nothing paid out yet.</Empty>}
+      <ul className="divide-y divide-ink/[0.06]">
+        {rows.map(([recipient, amount]) => (
+          <li key={recipient} className="flex min-h-11 items-center justify-between gap-3 py-2">
+            <span className="truncate text-[14px] tracking-[-0.02em] text-ink/70">
+              {recipient.split(".")[0]}
+            </span>
+            <span className="font-mono text-[13px] tabular-nums">{nearAmount(amount)} NEAR</span>
           </li>
         ))}
       </ul>
-    </section>
+      {onChain !== null && rows.length > 0 && (
+        <p className="mt-3 text-[12px] leading-[1.5] text-ink/50">
+          The orchestrator's ledger. On NEAR each payee is paid at its own sub-account; the
+          transactions are listed above.
+        </p>
+      )}
+    </Panel>
   );
 }
 
 export function Chain({ chain }: { readonly chain: ChainSteps | null }) {
-  const testnet = chain?.network === "testnet";
+  const network = chain?.network ?? null;
+  const steps = chain?.steps ?? [];
   return (
-    <section className="flex min-h-0 flex-col bg-coal">
-      <p className={label}>
-        {chain?.network === null || chain === null
-          ? "Vault · fixture mode, no NEAR moves"
-          : `NEAR ${chain.network} transactions`}
-      </p>
-      <ol className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
-        {(chain?.steps ?? []).map((step) => (
-          <li key={step.txHash} className="rise flex items-center gap-3 py-1.5 text-[12px]">
+    <Panel
+      title={network === null ? "Vault" : `NEAR ${network}`}
+      meta={network === null ? "fixture, no NEAR moves" : `${String(steps.length)} transactions`}
+      flush
+    >
+      <ol className="scroll-thin max-h-[360px] overflow-y-auto px-6 pb-5">
+        {steps.length === 0 && <Empty>No transactions yet.</Empty>}
+        {steps.map((step) => (
+          <li
+            key={step.txHash}
+            className="rise flex min-h-11 items-center gap-3 border-b border-ink/[0.05] py-2 last:border-0"
+          >
             <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${step.ok ? "bg-ok" : "bg-refused"}`}
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${step.ok ? "bg-pass" : "bg-fail"}`}
             />
-            <span className="min-w-0 flex-1 truncate text-white/80">{step.label}</span>
-            {testnet ? (
+            <span className="min-w-0 flex-1 text-[13px] leading-[1.4] tracking-[-0.01em]">
+              {step.label}
+              {!step.ok && (
+                <span className="mt-0.5 block font-mono text-[11px] text-fail">
+                  refused {step.errorCode ?? ""}
+                </span>
+              )}
+            </span>
+            {network === "testnet" ? (
               <a
                 href={nearblocks(step.txHash)}
                 target="_blank"
                 rel="noreferrer"
-                className="font-mono text-[11px] text-ok hover:underline"
+                className="font-mono text-[12px] text-info hover:underline"
               >
-                {shortHash(step.txHash)}
+                {shortHash(step.txHash).slice(0, 8)}
               </a>
             ) : (
-              <span className="font-mono text-[11px] text-white/40">{shortHash(step.txHash)}</span>
+              <span className="font-mono text-[12px] text-ink/40">
+                {shortHash(step.txHash).slice(0, 8)}
+              </span>
             )}
           </li>
         ))}
       </ol>
-    </section>
+    </Panel>
   );
 }
 
@@ -133,34 +123,36 @@ export function Evidence({ snapshot }: { readonly snapshot: Snapshot | null }) {
   const evidence = snapshot?.task.candidate?.evidence ?? null;
   const inference = evidence?.body.inference;
   return (
-    <section className="bg-coal">
-      <p className={label}>Verifier evidence</p>
+    <Panel
+      title="Verifier evidence"
+      meta={evidence === null ? undefined : `attempt ${String(evidence.body.attempt)}`}
+    >
       {evidence === null ? (
-        <p className="px-4 py-4 text-[12px] text-white/40">No submission under verification.</p>
+        <Empty>No submission under verification.</Empty>
       ) : (
-        <div className="space-y-2 px-4 py-4 text-[12px]">
-          <p>
-            <span className={evidence.body.verdict === "ACCEPT" ? "text-ok" : "text-refused"}>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip tone={evidence.body.verdict === "ACCEPT" ? "pass" : "fail"}>
               {evidence.body.verdict}
+            </Chip>
+            <span className="text-[13px] text-ink/60 tabular-nums">
+              {evidence.body.totals.passed} passed · {evidence.body.totals.failed} failed
             </span>
-            <span className="text-white/50">
-              {" "}
-              · attempt {evidence.body.attempt} · {evidence.body.totals.passed} passed,{" "}
-              {evidence.body.totals.failed} failed
-            </span>
-          </p>
-          <p className="truncate font-mono text-white/40">{evidence.body.artifactHash}</p>
+          </div>
+          <p className="truncate font-mono text-[12px] text-ink/50">{evidence.body.artifactHash}</p>
           {inference === undefined ? (
-            <p className="text-white/40">Scripted patch: no AI receipt.</p>
+            <p className="text-[13px] text-ink/60">Scripted patch, so no AI receipt.</p>
           ) : (
-            <p className="text-white/70">
-              TEE-signed by{" "}
-              <span className="font-mono">{inference.signingAddress.slice(0, 10)}…</span> for{" "}
-              {inference.model}
+            <p className="text-[13px] leading-[1.5] text-ink/80">
+              Signed in NEAR AI's enclave by{" "}
+              <span className="font-mono text-[12px]">
+                {inference.signingAddress.slice(0, 10)}…
+              </span>{" "}
+              for {inference.model}
             </p>
           )}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

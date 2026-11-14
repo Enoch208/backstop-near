@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useState } from "react";
+import { Link, Navigate } from "react-router";
+import { buttonClass, Chip, PageHeader, Panel, Segmented } from "../app/ui.js";
+import { whenUtc } from "../data/record.js";
 import {
   chainSchema,
   logsSchema,
@@ -9,63 +11,48 @@ import {
   usePolled,
   workersSchema,
 } from "./api.js";
-import { asset } from "../data/base.js";
-import { Board, Shell, TaskState } from "./Board.js";
-import { runIndexSchema, useReplay } from "./replay.js";
+import { Board } from "./Board.js";
+import { useRecordings, useReplay } from "./replay.js";
 
-function useLatestRecording() {
-  const [latest, setLatest] = useState<string | null>(null);
-  useEffect(() => {
-    fetch(asset("runs/index.json"))
-      .then(async (response) => (response.ok ? runIndexSchema.parse(await response.json()) : []))
-      .then((runs) => {
-        setLatest(runs.at(-1)?.taskId ?? null);
-      })
-      .catch(() => {
-        setLatest(null);
-      });
-  }, []);
-  return latest;
-}
-
-function Waiting({
-  reachable,
-  recording,
-}: {
-  readonly reachable: boolean;
-  readonly recording: string | null;
-}) {
+function Waiting({ recording }: { readonly recording: string | null }) {
   return (
-    <div className="mx-auto max-w-xl px-4 py-28 text-center">
-      <h1 className="font-serif text-[44px] leading-none">
-        {reachable ? "No run yet." : "Watch a real run."}
-      </h1>
-      {recording !== null && (
-        <div className="mt-8">
-          <Link
-            to={`/live?replay=${recording}`}
-            className="inline-flex rounded-full bg-white px-5 py-2.5 text-[14px] font-medium text-ink"
-          >
-            Replay the recorded NEAR testnet run
-          </Link>
-          <p className="mt-3 text-[13px] text-white/50">
-            The real event log and transactions of {recording}, played back. No install, no wallet.
-          </p>
-        </div>
-      )}
-      <p className="mt-10 text-[14px] leading-relaxed text-white/60">
-        Or run the swarm yourself and this page follows it live:
-      </p>
-      <pre className="mt-4 inline-block rounded bg-coal px-5 py-3 text-left font-mono text-[13px] text-ok">
-        pnpm web{"\n"}pnpm demo --hold
-      </pre>
-    </div>
+    <>
+      <PageHeader
+        eyebrow="Mission Control"
+        title="No live run on this machine."
+        subtitle="Replay a run recorded on NEAR testnet, or start the swarm locally and this page follows it as it happens."
+        actions={
+          recording !== null && (
+            <Link to={`/app/runs/${recording}`} className={buttonClass.primary}>
+              Replay the latest run
+            </Link>
+          )
+        }
+      />
+      <Panel title="Run it yourself" meta="two terminals">
+        <pre className="overflow-x-auto rounded-xl bg-page px-5 py-4 font-mono text-[13px] leading-[1.7]">
+          pnpm web{"\n"}pnpm demo --hold
+        </pre>
+        <p className="mt-3 text-[13px] leading-[1.5] text-ink/60">
+          Add <span className="font-mono text-[12px]">--chain testnet</span> to settle on NEAR, and
+          set <span className="font-mono text-[12px]">BACKSTOP_AI_API_KEY</span> for live,
+          TEE-signed repairs.
+        </p>
+      </Panel>
+    </>
   );
 }
 
-function LiveView({ preferred }: { readonly preferred: string | null }) {
-  const latest = useLatestTask(preferred);
-  const recording = useLatestRecording();
+export function LatestReplay() {
+  const recordings = useRecordings();
+  if (recordings === null) return null;
+  const latest = recordings.at(-1);
+  return <Navigate to={latest === undefined ? "/app/live" : `/app/runs/${latest}`} replace />;
+}
+
+export function LivePage() {
+  const latest = useLatestTask(null);
+  const recordings = useRecordings();
   const taskId = latest.taskId;
   const base = taskId === null ? null : `/api/tasks/${encodeURIComponent(taskId)}`;
   const snapshot = usePolled(base, snapshotSchema, 800);
@@ -73,14 +60,15 @@ function LiveView({ preferred }: { readonly preferred: string | null }) {
   const chain = usePolled(base === null ? null : `${base}/chain`, chainSchema, 1500);
   const logs = usePolled(base === null ? null : `${base}/logs`, logsSchema, 1000);
   const events = useEvents(taskId);
-  if (taskId === null)
-    return (
-      <Shell>
-        <Waiting reachable={latest.reachable} recording={recording} />
-      </Shell>
-    );
+  if (taskId === null) return <Waiting recording={recordings?.at(-1) ?? null} />;
   return (
-    <Shell right={<TaskState taskId={taskId} state={snapshot.value?.task.state ?? "–"} />}>
+    <>
+      <PageHeader
+        eyebrow="Mission Control · live"
+        title={`Following ${taskId}`}
+        subtitle="Read from the local API as it happens: the event log over SSE, the agents' own output, the verdict, the ledger and every NEAR transaction."
+        actions={<Chip tone="pass">Live</Chip>}
+      />
       <Board
         data={{
           taskId,
@@ -91,58 +79,57 @@ function LiveView({ preferred }: { readonly preferred: string | null }) {
           lines: logs.value?.lines ?? [],
         }}
       />
-    </Shell>
+    </>
   );
 }
 
-const speeds = [1, 2, 4];
+const speeds = [
+  { value: 1, label: "1×" },
+  { value: 2, label: "2×" },
+  { value: 4, label: "4×" },
+] as const;
 
-function ReplayView({ runId }: { readonly runId: string }) {
-  const [speed, setSpeed] = useState(2);
+export function ReplayView({ runId }: { readonly runId: string }) {
+  const [speed, setSpeed] = useState<1 | 2 | 4>(2);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const replay = useReplay(runId, speed, startedAt);
   const run = replay.run;
-  const right = (
-    <div className="flex items-center gap-3 font-mono text-[11px]">
-      <span className="rounded bg-[#e8c07a]/15 px-2 py-1 text-[#e8c07a]">REPLAY</span>
-      <span className="hidden text-white/50 lg:inline">
-        {run === null
-          ? runId
-          : `recorded ${run.recordedAt.slice(0, 10)} on NEAR ${run.network} · every tx link is real`}
-      </span>
-      {speeds.map((value) => (
-        <button
-          key={value}
-          type="button"
-          onClick={() => {
-            setStartedAt(Date.now());
-            setSpeed(value);
-          }}
-          className={value === speed ? "text-white" : "text-white/40 hover:text-white"}
-        >
-          {value}×
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={() => {
-          setStartedAt(Date.now());
-        }}
-        className="text-white/60 hover:text-white"
-      >
-        {replay.done ? "replay again" : "restart"}
-      </button>
-      <TaskState taskId={runId} state={replay.snapshot?.task.state ?? "–"} />
-    </div>
-  );
   if (replay.error !== null)
-    return (
-      <Shell right={right}>
-        <p className="px-8 py-20 font-mono text-[13px] text-refused">{replay.error}</p>
-      </Shell>
-    );
+    return <PageHeader eyebrow="Mission Control · replay" title={runId} subtitle={replay.error} />;
   return (
-    <Shell right={right}>
+    <>
+      <PageHeader
+        eyebrow="Mission Control · replay"
+        title={`Replay of ${runId}`}
+        subtitle={
+          run === null
+            ? "Loading the recorded frames."
+            : `Recorded on NEAR ${run.network} on ${whenUtc(run.recordedAt)}${run.model === null ? "" : ` with live AI (${run.model})`}. Every frame is the API's own response captured during the run, and every transaction link is real.`
+        }
+        actions={
+          <>
+            <Chip tone="info">Replay</Chip>
+            <Segmented
+              label="Playback speed"
+              options={speeds}
+              value={speed}
+              onChange={(next) => {
+                setStartedAt(Date.now());
+                setSpeed(next);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setStartedAt(Date.now());
+              }}
+              className={buttonClass.secondary}
+            >
+              {replay.done ? "Play again" : "Restart"}
+            </button>
+          </>
+        }
+      />
       <Board
         data={{
           taskId: runId,
@@ -153,16 +140,6 @@ function ReplayView({ runId }: { readonly runId: string }) {
           lines: replay.lines,
         }}
       />
-    </Shell>
-  );
-}
-
-export function Live() {
-  const [params] = useSearchParams();
-  const replay = params.get("replay");
-  return replay === null ? (
-    <LiveView preferred={params.get("task")} />
-  ) : (
-    <ReplayView runId={replay} />
+    </>
   );
 }

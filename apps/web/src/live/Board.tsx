@@ -1,10 +1,8 @@
-import type { ReactNode } from "react";
-import { Link } from "react-router";
-import { Mark } from "../components/Mark.js";
-import { Pill } from "../components/Pill.js";
+import { Kpi } from "../app/ui.js";
+import { nearAmount } from "../data/near.js";
 import type { AgentLine, ChainSteps, FeedEvent, Snapshot, Worker } from "./api.js";
-import { Feed, Reasoning } from "./Feed.js";
-import { Agents, Chain, Evidence, Money } from "./Panels.js";
+import { AgentLogs, Feed } from "./Feed.js";
+import { Agents, Chain, Evidence, Payouts } from "./Panels.js";
 
 export type BoardData = {
   readonly taskId: string;
@@ -15,60 +13,65 @@ export type BoardData = {
   readonly lines: readonly AgentLine[];
 };
 
-const stateTone = (state: string) =>
-  /SETTLED/.test(state) ? "text-ok" : /FAIL|REJECT/.test(state) ? "text-refused" : "text-[#e8c07a]";
+const sentence = (state: string) =>
+  state.charAt(0) + state.slice(1).toLowerCase().replaceAll("_", " ");
 
-export function Shell({
-  children,
-  right,
-}: {
-  readonly children: ReactNode;
-  readonly right?: ReactNode;
-}) {
-  return (
-    <div className="min-h-screen bg-ink text-white">
-      <header className="flex h-14 items-center justify-between gap-4 border-b border-white/10 px-4 sm:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <Mark className="h-5 w-5" />
-          <span className="font-serif text-[22px] leading-none">Backstop</span>
-          <span className="ml-3 hidden font-mono text-[11px] text-white/40 sm:inline">
-            mission control
-          </span>
-        </Link>
-        {right}
-        <Pill to="/" tone="ghost">
-          Overview
-        </Pill>
-      </header>
-      {children}
-    </div>
-  );
-}
-
-export function TaskState({ taskId, state }: { readonly taskId: string; readonly state: string }) {
-  return (
-    <div className="flex items-center gap-4 font-mono text-[12px]">
-      <span className="hidden text-white/50 md:inline">{taskId}</span>
-      <span className={stateTone(state)}>{state}</span>
-    </div>
-  );
-}
+const near = (yocto: string | undefined) => (yocto === undefined ? "–" : nearAmount(yocto));
 
 export function Board({ data }: { readonly data: BoardData }) {
+  const task = data.snapshot?.task;
+  const statement = data.snapshot?.statement;
+  const network = data.chain?.network ?? null;
   return (
-    <main className="grid grid-cols-[minmax(0,1fr)] gap-px bg-white/10 lg:h-[calc(100vh-3.5rem)] lg:grid-cols-[300px_minmax(0,1fr)_380px]">
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-px bg-white/10">
-        <Agents workers={data.workers} excluded={data.snapshot?.task.excludedAgents ?? []} />
-        <Evidence snapshot={data.snapshot} />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Kpi
+          primary
+          label="Task state"
+          value={
+            <span className="text-[20px] sm:text-[24px]">
+              {task === undefined ? "–" : sentence(task.state)}
+            </span>
+          }
+          note={
+            task === undefined
+              ? "waiting for the first event"
+              : `attempt ${String(task.attempt)} · ${task.state}`
+          }
+        />
+        <Kpi
+          label="Paid in"
+          value={near(statement?.totalIn)}
+          unit="NEAR"
+          note="escrow, premium and bond"
+        />
+        <Kpi
+          label="Confirmed out"
+          value={near(statement?.byStatus.CONFIRMED)}
+          unit="NEAR"
+          note={
+            network === null ? "fixture vault, no NEAR moves" : `after NEAR ${network} callbacks`
+          }
+        />
+        <Kpi
+          label="Still held"
+          value={near(statement?.held)}
+          unit="NEAR"
+          note={`${near(statement?.byStatus.PENDING)} NEAR pending`}
+        />
       </div>
-      <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] gap-px bg-white/10 lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Feed events={data.events} />
-        <Reasoning lines={data.lines} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-7 lg:gap-6 xl:col-span-8">
+          <Feed events={data.events} />
+          <AgentLogs lines={data.lines} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-5 lg:gap-6 xl:col-span-4">
+          <Agents workers={data.workers} excluded={task?.excludedAgents ?? []} />
+          <Evidence snapshot={data.snapshot} />
+          <Chain chain={data.chain} />
+          <Payouts snapshot={data.snapshot} onChain={network} />
+        </div>
       </div>
-      <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-px bg-white/10">
-        <Money snapshot={data.snapshot} onChain={data.chain?.network ?? null} />
-        <Chain chain={data.chain} />
-      </div>
-    </main>
+    </div>
   );
 }

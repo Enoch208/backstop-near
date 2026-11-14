@@ -22,10 +22,22 @@ const recordSchema = z.object({
       explorer: z.string(),
     }),
   ),
-  runs: z.array(z.object({ taskId: z.string(), steps: z.array(stepSchema) })),
+  runs: z.array(
+    z.object({
+      taskId: z.string(),
+      at: z.string(),
+      kind: z.string().optional(),
+      ledgerState: z.string().optional(),
+      primaryExit: z
+        .object({ code: z.number().nullable(), signal: z.string().nullable() })
+        .optional(),
+      steps: z.array(stepSchema),
+    }),
+  ),
 });
 
 export type RecordedStep = z.infer<typeof stepSchema>;
+export type RecordedRun = z.infer<typeof recordSchema>["runs"][number];
 
 export const record = recordSchema.parse(raw);
 export const liveRunId = "checkout-live-71193";
@@ -43,3 +55,17 @@ export const nearblocks = (hash: string) => `https://testnet.nearblocks.io/txns/
 export const nearblocksAccount = (account: string) =>
   `https://testnet.nearblocks.io/address/${account}`;
 export const shortHash = (hash: string) => `${hash.slice(0, 10)}…`;
+
+export const runKind = (run: RecordedRun) => run.kind ?? "replay";
+export const isRefusal = (step: RecordedStep) => step.outcome.startsWith("refused");
+export const attestedStep = (run: RecordedRun) =>
+  run.steps.find((step) => step.label.includes("TEE signature"));
+
+const stamp = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
+export const whenUtc = (iso: string) => `${stamp.format(new Date(iso))} UTC`;
