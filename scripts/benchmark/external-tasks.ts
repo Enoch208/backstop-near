@@ -113,7 +113,7 @@ function samples(
     const key = canonicalJson(input);
     if (
       key.length <= 1_500 &&
-      !/[^\x00-\x7f]/u.test(key) &&
+      Buffer.byteLength(key) === key.length &&
       (id !== 129 || (typeof input[1] === "number" && input[1] <= 80))
     )
       unique.set(key, input);

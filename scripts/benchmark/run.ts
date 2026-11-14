@@ -89,7 +89,7 @@ export async function runTrial(
     : undefined;
   const taskId = `bench-${task.id}-${fault}-${String(repeat)}`;
   const standby =
-    improved && matched?.secondary !== null && mode !== "single"
+    improved && matched.secondary !== null && mode !== "single"
       ? standbyBids(taskId, ledger, limits.calls - 1)
       : [];
   const attempts: Attempt[] = [];

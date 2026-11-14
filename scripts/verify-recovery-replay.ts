@@ -61,8 +61,8 @@ assert.equal(
 const artifact = digestText(read(`../apps/web/public/runs/${taskId}.js`));
 const submission = events.find((body) => body.type === "artifact_submitted");
 assert.equal(submission?.artifactHash, artifact);
-assert.equal(submission?.agentId, worker.agentId);
-assert.equal(submission?.checkpointHash, replacement.checkpointHash);
+assert.equal(submission.agentId, worker.agentId);
+assert.equal(submission.checkpointHash, replacement.checkpointHash);
 
 const provider = testnetProofProvider(process.env.BACKSTOP_TESTNET_RPC);
 const record = testnetRecordSchema.parse(JSON.parse(read("../deployments/testnet.json")));

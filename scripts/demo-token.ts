@@ -136,7 +136,7 @@ export async function setUpUsdcDemo(
         blockQuery: args,
       });
       assert(
-        balance !== undefined && balance !== null,
+        balance !== undefined,
         `Register ${accountId} on the ${metadata.symbol} contract first`,
       );
     }),
@@ -323,9 +323,15 @@ export function tokenDemoWorkers(
         },
       },
     );
-    child.stdout.on("data", (data: Buffer) => log(data.toString().trimEnd()));
-    child.stderr.on("data", (data: Buffer) => log(data.toString().trimEnd()));
-    child.on("error", (error) => log(`${id} failed to start: ${error.message}`));
+    child.stdout.on("data", (data: Buffer) => {
+      log(data.toString().trimEnd());
+    });
+    child.stderr.on("data", (data: Buffer) => {
+      log(data.toString().trimEnd());
+    });
+    child.on("error", (error) => {
+      log(`${id} failed to start: ${error.message}`);
+    });
     return child;
   });
 }

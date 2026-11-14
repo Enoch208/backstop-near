@@ -211,7 +211,7 @@ try {
     throw new Error(JSON.stringify(await getLedger(vault, customer, id)));
   };
   const failed = await ledgerWith((ledger) => ledger.pending_outflow === "0");
-  assert.equal(failed?.failed_outflow, amounts.payout.toString());
+  assert.equal(failed.failed_outflow, amounts.payout.toString());
   await register(worker);
   for (const id of [taskId + ":2:0", taskId + ":2:1"]) {
     assert.equal((await getTransfer(vault, customer, id))?.status, "FAILED");

@@ -141,7 +141,7 @@ if (values["resume-from"] !== undefined) {
             repeat: z.int(),
             mode: z.enum(["market", "fixed"]),
           })
-          .passthrough(),
+          .loose(),
       ),
     })
     .parse(JSON.parse(readFileSync(values["resume-from"], "utf8")));
