@@ -12,6 +12,16 @@ Built for the NEAR Hackathon 2026 · AI Swarms track · every line written durin
 
 </div>
 
+<p align="center"><img src="docs/media/replay.png" alt="Mission Control replaying a recorded NEAR testnet run: alpha killed with SIGKILL, the recovery auction, a TEE-verified ACCEPT and 0.69 NEAR settled" width="100%"></p>
+
+| Each agent prices its own recovery bid                                                                                          | Your browser re-checks every claim against NEAR                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| <img src="docs/media/agent-logs.png" alt="Agent logs: epsilon, gamma and beta pricing their recovery bids from the checkpoint"> | <img src="docs/media/verify.png" alt="Verify page: 105 of 105 claims re-read from NEAR testnet hold"> |
+| **32 seeded fault cases, six modes**                                                                                            | **Everything recorded on testnet**                                                                    |
+| <img src="docs/media/arena.png" alt="Reliability arena: Backstop against a single agent, retries and three ablations">          | <img src="docs/media/overview.png" alt="Overview of the testnet record and the vault">                |
+
+Screenshots of the dashboard (`pnpm web`, then http://localhost:5210/app) on 14 Nov 2026; the replay is the recorded testnet run `checkout-live-37143`.
+
 ## Judge path: do this, see that
 
 Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the first three rows.
