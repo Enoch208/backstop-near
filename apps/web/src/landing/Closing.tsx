@@ -3,8 +3,8 @@ import { repository } from "../data/record.js";
 
 export function Closing() {
   return (
-    <section className="photo photo-closing relative flex min-h-[80svh] flex-col items-center justify-end overflow-hidden px-4 pb-24 text-center">
-      <h2 className="font-serif text-[48px] leading-none text-paper sm:text-[84px]">
+    <section className="photo photo-closing relative mx-1.5 flex min-h-[85svh] flex-col items-center justify-end overflow-hidden px-4 pb-24 text-center sm:mx-2.5">
+      <h2 className="font-serif text-[44px] leading-none text-white sm:text-[72px]">
         Every commitment needs a backstop.
       </h2>
       <div className="mt-8 flex flex-wrap justify-center gap-2">

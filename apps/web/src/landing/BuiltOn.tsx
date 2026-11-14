@@ -1,29 +1,40 @@
-const pieces = [
-  { name: "NEAR Protocol", role: "settlement and callbacks" },
-  { name: "NEAR AI Cloud", role: "inference in a TEE" },
-  { name: "NEAR Intents", role: "cross-chain payouts" },
-  { name: "Intel TDX", role: "enclave quote, checked" },
-  { name: "NVIDIA NRAS", role: "GPU attestation, checked" },
-  { name: "near-sdk 5.29", role: "Rust vault contract" },
-  { name: "Function-call keys", role: "least privilege" },
-  { name: "MCP", role: "open challenger market" },
+const rows = [
+  [
+    "NEAR Protocol",
+    "NEAR AI Cloud",
+    "NEAR Intents",
+    "Intel TDX",
+    "NVIDIA NRAS",
+    "near-sdk",
+    "MCP",
+    "Rust",
+  ],
+  ["Function-call keys", "ecrecover", "EIP-191", "DCAP", "TypeScript", "zod", "Vitest", "neard"],
 ];
 
-export function BuiltOn() {
+function Row({ names, reverse }: { readonly names: readonly string[]; readonly reverse: boolean }) {
   return (
-    <section className="mx-auto max-w-[1440px] px-4 pt-3 sm:px-10">
-      <p className="mb-3 font-mono text-[11px] tracking-wider text-ash uppercase">Built on</p>
-      <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
-        {pieces.map((piece) => (
+    <div className="overflow-hidden">
+      <div className={`flex w-max gap-1.5 ${reverse ? "drift-reverse" : "drift"}`}>
+        {[...names, ...names].map((name, index) => (
           <div
-            key={piece.name}
-            className="flex h-24 flex-col items-center justify-center bg-tile px-3 text-center"
+            key={`${name}-${String(index)}`}
+            className="flex h-[104px] w-[180px] shrink-0 items-center justify-center bg-tile px-4 text-center text-[19px] font-semibold tracking-tight text-ink/80"
           >
-            <span className="text-[17px] font-semibold tracking-tight">{piece.name}</span>
-            <span className="mt-1 font-mono text-[11px] text-ash">{piece.role}</span>
+            {name}
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function BuiltOn() {
+  return (
+    <section className="space-y-1.5 py-1.5" aria-label="Built on">
+      {rows.map((names, index) => (
+        <Row key={names[0]} names={names} reverse={index === 1} />
+      ))}
     </section>
   );
 }

@@ -31,7 +31,7 @@ export function Recover() {
       </div>
       <div className="max-w-md">
         <p className="text-[13px] text-ash">Recover</p>
-        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight text-balance">
+        <h2 className="mt-4 text-[21px] leading-snug font-medium tracking-tight text-balance">
           Kill the agent. The swarm finishes the job.
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">

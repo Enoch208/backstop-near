@@ -65,7 +65,7 @@ export function Verify() {
     >
       <div className="max-w-md lg:order-1">
         <p className="text-[13px] text-ash">Verify</p>
-        <h2 className="mt-4 text-[26px] leading-tight font-medium tracking-tight text-balance">
+        <h2 className="mt-4 text-[21px] leading-snug font-medium tracking-tight text-balance">
           Paid only when the verifier, the enclave and the vault agree.
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">

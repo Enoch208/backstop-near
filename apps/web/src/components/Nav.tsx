@@ -12,13 +12,13 @@ const links = [
 
 export function Nav() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-line/60 bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:px-10">
+    <header className="fixed inset-x-0 top-0 z-50 bg-white">
+      <div className="relative flex h-14 items-center justify-between px-4 sm:px-10">
         <Link to="/" className="flex items-center gap-2 text-[20px] tracking-tight">
           <Mark className="h-5 w-5" />
           <span className="font-serif text-[24px] leading-none">Backstop</span>
         </Link>
-        <nav className="hidden items-center gap-7 text-[13px] md:flex">
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 text-[13px] md:flex">
           {links.map((link) =>
             link.to.startsWith("http") ? (
               <a key={link.label} href={link.to} target="_blank" rel="noreferrer">

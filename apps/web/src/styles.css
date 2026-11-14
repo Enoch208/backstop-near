@@ -10,10 +10,10 @@
   --color-ink: #0b0b0b;
   --color-coal: #141414;
   --color-graphite: #1e1e1e;
-  --color-paper: #f4f4f2;
-  --color-tile: #ebebe7;
+  --color-paper: #ffffff;
+  --color-tile: #f4f4f3;
   --color-ash: #8a8a87;
-  --color-line: #dcdcd7;
+  --color-line: #e7e7e5;
   --color-ok: #3ddc84;
   --color-refused: #ff5a3c;
 }
@@ -74,4 +74,29 @@ body {
 
 .rise {
   animation: rise 0.35s ease-out both;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.drift {
+  animation: drift 60s linear infinite;
+}
+
+.drift-reverse {
+  animation: drift 70s linear infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift,
+  .drift-reverse,
+  .rise {
+    animation: none;
+  }
 }

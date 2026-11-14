@@ -31,10 +31,10 @@ export function Attacks() {
   return (
     <section className="bg-ink text-paper">
       <div className="mx-auto grid max-w-[1440px] gap-10 px-4 pt-24 sm:px-10 lg:grid-cols-[1fr_2fr]">
-        <h2 className="text-[26px] tracking-tight">Attacks it refuses</h2>
+        <h2 className="text-[28px] tracking-tight">Attacks it refuses</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {attacks.map((attack) => (
-            <article key={attack.code} className="flex min-h-72 flex-col bg-coal p-7">
+            <article key={attack.code} className="flex min-h-80 flex-col bg-graphite p-7">
               <p className="font-mono text-[12px] text-refused">{attack.code}</p>
               <h3 className="mt-auto text-[17px]">{attack.title}</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-white/60">{attack.body}</p>
