@@ -73,7 +73,8 @@ jobs:
           rustup toolchain install 1.94.1 --profile minimal --target wasm32-unknown-unknown
           rustup default 1.94.1
       - name: Build the contract
-        run: cargo build --manifest-path contracts/outcome-vault/Cargo.toml --target wasm32-unknown-unknown --release --locked
+        working-directory: contracts/outcome-vault
+        run: cargo build --target wasm32-unknown-unknown --release --locked
       - name: Set up Node 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
