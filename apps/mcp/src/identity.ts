@@ -28,5 +28,5 @@ export async function register(
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ claim, proof: signValue(claim, agent.key) }),
   });
-  return { status: response.status, body: (await response.json()) };
+  return { status: response.status, body: await response.json() };
 }
