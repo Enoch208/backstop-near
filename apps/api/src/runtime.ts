@@ -2,6 +2,7 @@ import { identities, roster } from "@backstop/agents";
 import type { Digest, Outcome } from "@backstop/shared";
 import { react } from "./automations.js";
 import type { ChainBridge } from "./chain.js";
+import type { IntentsConfig, PayoutQuote } from "./payouts.js";
 import {
   dispatch,
   emptyStore,
@@ -47,6 +48,8 @@ export type Runtime = {
   store: Store;
   workers: WorkerControl | null;
   chain: ChainBridge | null;
+  intents: IntentsConfig | null;
+  readonly payouts: Map<string, readonly PayoutQuote[]>;
 };
 
 export function createRuntime(now: () => number, demo: boolean): Runtime {
@@ -72,6 +75,8 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     store: emptyStore,
     workers: null,
     chain: null,
+    intents: null,
+    payouts: new Map(),
   };
 }
 

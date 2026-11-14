@@ -70,3 +70,11 @@ export function events(runtime: Runtime, request: Request, taskId: string): Resp
     },
   });
 }
+
+export function payouts(runtime: Runtime, taskId: string): Response {
+  if (runtime.store.records[taskId] === undefined) return notFound(`No task ${taskId}`);
+  return json({
+    mode: "dry-run quotes from NEAR Intents 1Click at mainnet prices; nothing is swapped",
+    quotes: runtime.payouts.get(taskId) ?? [],
+  });
+}

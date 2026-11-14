@@ -4,6 +4,7 @@ import { maxTransferRetries } from "@backstop/ledger";
 import { dueCommands, type TaskEvent, type TaskRecord } from "@backstop/orchestrator";
 import { verifyArtifact } from "@backstop/verifier";
 import { mirrorEvents } from "./chain.js";
+import { quotePayouts } from "./payouts.js";
 import { execute, type Runtime } from "./runtime.js";
 
 function verifySubmission(runtime: Runtime, record: TaskRecord): void {
@@ -46,6 +47,8 @@ export function react(runtime: Runtime, events: readonly TaskEvent[]): void {
     const record = runtime.store.records[event.taskId];
     if (record === undefined) continue;
     if (event.body.type === "task_created") runtime.workers?.launch(event.taskId);
+    if (event.body.type === "task_settled" && event.body.kind === "success")
+      void quotePayouts(runtime, record);
     if (event.body.type === "artifact_submitted") verifySubmission(runtime, record);
     const settling =
       event.body.type === "settlement_started" || event.body.type === "transfer_retried";

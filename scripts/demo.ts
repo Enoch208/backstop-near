@@ -6,6 +6,7 @@ import {
   chainOptionsFromEnv,
   explorerTx,
   finalizeSuccess,
+  oneClickQuoter,
   getLedger,
   setUpChain,
 } from "@backstop/near";
@@ -27,6 +28,12 @@ const chain =
 const link = (hash: string) => (network === "testnet" ? explorerTx(hash) : hash);
 
 const runtime = createRuntime(Date.now, true);
+if (process.argv.includes("--intents")) {
+  runtime.intents = {
+    quote: oneClickQuoter(),
+    refundTo: chain?.contract.accountId ?? "backstop-vault.near",
+  };
+}
 if (chain !== null) {
   runtime.chain = chainBridge(chain.network, chain.parties, ({ step, diverged }) => {
     const outcome = step.call.ok ? "ok" : `refused ${step.call.errorCode ?? ""}`;
@@ -136,13 +143,31 @@ if (chain !== null) {
       kind: "live swarm",
       taskId,
       steps,
-      extra: { primaryExit: killedWorker?.exit ?? null, ledgerState: ledger?.state ?? null },
+      extra: {
+        primaryExit: killedWorker?.exit ?? null,
+        ledgerState: ledger?.state ?? null,
+        intentQuotes: runtime.payouts.get(taskId) ?? [],
+      },
     });
     out(`${stamp()}     recorded in deployments/testnet.json`);
   }
   out(
     `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
   );
+}
+
+if (runtime.intents !== null) {
+  for (let waited = 0; waited < 20_000 && !runtime.payouts.has(taskId); waited += 200) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  for (const payout of runtime.payouts.get(taskId) ?? []) {
+    const paid = formatNear(BigInt(payout.payoutYocto));
+    out(
+      payout.quote === null
+        ? `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout: no quote (${payout.error ?? "unknown"})`
+        : `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout -> ${payout.quote.quote.amountOutFormatted} ${payout.wants} to ${payout.recipient.slice(0, 10)}… in ~${String(payout.quote.quote.timeEstimate)} s (dry quote, signed ${payout.quote.signature.slice(0, 18)}…)`,
+    );
+  }
 }
 
 const workers = runtime.workers;
