@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { Mark } from "../components/Mark.js";
 import { Pill } from "../components/Pill.js";
 import type { ChainSteps, FeedEvent, Snapshot, Worker } from "./api.js";
@@ -26,13 +27,13 @@ export function Shell({
   return (
     <div className="min-h-screen bg-ink text-white">
       <header className="flex h-14 items-center justify-between gap-4 border-b border-white/10 px-4 sm:px-8">
-        <a href="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <Mark className="h-5 w-5" />
           <span className="font-serif text-[22px] leading-none">Backstop</span>
           <span className="ml-3 hidden font-mono text-[11px] text-white/40 sm:inline">
             mission control
           </span>
-        </a>
+        </Link>
         {right}
         <Pill to="/" tone="ghost">
           Overview

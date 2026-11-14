@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { enclaveKey, liveRun, nearblocksAccount, record, repository } from "../data/record.js";
+import { asset } from "../data/base.js";
 import { Bars } from "./Bars.js";
 import { BuiltOnNear } from "./BuiltOnNear.js";
 
@@ -13,9 +14,9 @@ const outside: readonly Item[] = [
 
 const inside: readonly Item[] = [
   { label: "Watch it live", to: "/live" },
-  { label: "How it works", to: "/#recover" },
-  { label: "Verify", to: "/#verify" },
-  { label: "Settlement", to: "/#settlement" },
+  { label: "How it works", to: asset("#recover") },
+  { label: "Verify", to: asset("#verify") },
+  { label: "Settlement", to: asset("#settlement") },
   { label: "Testnet record", to: `${repository}/blob/main/deployments/testnet.json` },
   { label: "Contract", to: `${repository}/tree/main/contracts/outcome-vault` },
 ];
@@ -30,7 +31,7 @@ function Links({ items }: { readonly items: readonly Item[] }) {
     <ul className="space-y-1 text-[16px]">
       {items.map((item) => (
         <li key={item.label}>
-          {item.to.startsWith("http") ? (
+          {item.to.startsWith("http") || item.to.includes("#") ? (
             <a href={item.to} target="_blank" rel="noreferrer" className="hover:text-white/70">
               {item.label}
             </a>

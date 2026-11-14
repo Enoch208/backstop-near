@@ -1,12 +1,13 @@
 import { Link } from "react-router";
+import { asset } from "../data/base.js";
 import { repository } from "../data/record.js";
 import { Mark } from "./Mark.js";
 import { Pill } from "./Pill.js";
 
 const links = [
-  { label: "How it works", to: "/#recover" },
-  { label: "Verify", to: "/#verify" },
-  { label: "Settlement", to: "/#settlement" },
+  { label: "How it works", to: asset("#recover") },
+  { label: "Verify", to: asset("#verify") },
+  { label: "Settlement", to: asset("#settlement") },
   { label: "GitHub", to: repository },
 ];
 

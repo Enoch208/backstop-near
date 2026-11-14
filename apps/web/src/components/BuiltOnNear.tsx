@@ -1,3 +1,5 @@
+import { asset } from "../data/base.js";
+
 export function BuiltOnNear({
   tone,
   className = "",
@@ -13,7 +15,9 @@ export function BuiltOnNear({
       className={`inline-block opacity-90 transition-opacity hover:opacity-100 ${className}`}
     >
       <img
-        src={tone === "light" ? "/images/built-on-near-white.png" : "/images/built-on-near.png"}
+        src={asset(
+          tone === "light" ? "images/built-on-near-white.png" : "images/built-on-near.png",
+        )}
         alt="Built on NEAR"
         width={1200}
         height={199}

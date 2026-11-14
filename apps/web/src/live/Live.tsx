@@ -8,13 +8,14 @@ import {
   usePolled,
   workersSchema,
 } from "./api.js";
+import { asset } from "../data/base.js";
 import { Board, Shell, TaskState } from "./Board.js";
 import { runIndexSchema, useReplay } from "./replay.js";
 
 function useLatestRecording() {
   const [latest, setLatest] = useState<string | null>(null);
   useEffect(() => {
-    fetch("/runs/index.json")
+    fetch(asset("runs/index.json"))
       .then(async (response) => (response.ok ? runIndexSchema.parse(await response.json()) : []))
       .then((runs) => {
         setLatest(runs.at(-1)?.taskId ?? null);

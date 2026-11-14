@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { asset } from "../data/base.js";
 import { z } from "zod";
 import {
   chainSchema,
@@ -64,7 +65,7 @@ export function useReplay(runId: string, speed: number, startedAt: number): Repl
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     let live = true;
-    fetch(`/runs/${encodeURIComponent(runId)}.json`)
+    fetch(asset(`runs/${encodeURIComponent(runId)}.json`))
       .then(async (response) => {
         if (!response.ok) throw new Error(`No recorded run ${runId}`);
         const parsed = runSchema.parse(await response.json());
