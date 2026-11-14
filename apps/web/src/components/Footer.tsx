@@ -13,9 +13,10 @@ const outside: readonly Item[] = [
 ];
 
 const inside: readonly Item[] = [
-  { label: "Watch it live", to: "/live" },
+  { label: "Open the app", to: "/app" },
+  { label: "Watch a recovery", to: "/app/replay" },
   { label: "How it works", to: asset("#recover") },
-  { label: "Verify it yourself", to: "/verify" },
+  { label: "Verify it yourself", to: "/app/verify" },
   { label: "Settlement", to: asset("#settlement") },
   { label: "Testnet record", to: `${repository}/blob/main/deployments/testnet.json` },
   { label: "Contract", to: `${repository}/tree/main/contracts/outcome-vault` },

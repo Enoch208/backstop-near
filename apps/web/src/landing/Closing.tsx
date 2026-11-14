@@ -8,7 +8,7 @@ export function Closing() {
         Every commitment needs a backstop.
       </h2>
       <div className="mt-8 flex flex-wrap justify-center gap-2">
-        <Pill to="/live" tone="light">
+        <Pill to="/app/replay" tone="light">
           Watch it live
         </Pill>
         <Pill to={repository} tone="ghost">

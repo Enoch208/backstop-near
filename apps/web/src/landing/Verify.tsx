@@ -70,7 +70,7 @@ export function Verify() {
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">
           <Pill to={enclaveKey.explorer}>See the enclave key on NEAR</Pill>
-          <Pill to="/verify" tone="ghost-dark">
+          <Pill to="/app/verify" tone="ghost-dark">
             Re-check every claim now
           </Pill>
         </div>

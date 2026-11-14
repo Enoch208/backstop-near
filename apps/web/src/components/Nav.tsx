@@ -6,7 +6,7 @@ import { Pill } from "./Pill.js";
 
 const links = [
   { label: "How it works", to: asset("#recover") },
-  { label: "Verify it yourself", to: asset("verify") },
+  { label: "Verify it yourself", to: asset("app/verify") },
   { label: "Settlement", to: asset("#settlement") },
   { label: "GitHub", to: repository },
 ];
@@ -32,7 +32,7 @@ export function Nav() {
             ),
           )}
         </nav>
-        <Pill to="/live">Watch it live</Pill>
+        <Pill to="/app">Open the app</Pill>
       </div>
     </header>
   );

@@ -35,7 +35,7 @@ export function Recover() {
           Kill the agent. The swarm finishes the job.
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">
-          <Pill to="/live">Watch it live</Pill>
+          <Pill to="/app/replay">Watch it live</Pill>
           <Pill to="#settlement" tone="ghost-dark">
             See the payout
           </Pill>

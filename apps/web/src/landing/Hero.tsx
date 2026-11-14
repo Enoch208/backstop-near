@@ -14,7 +14,7 @@ export function Hero() {
           Their commitments should not.
         </h1>
         <div className="mt-9 flex flex-wrap justify-center gap-2">
-          <Pill to="/live" tone="light">
+          <Pill to="/app/replay" tone="light">
             Watch a recovery
           </Pill>
           <Pill to="#verify" tone="ghost">
