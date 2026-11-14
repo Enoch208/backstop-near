@@ -17,6 +17,7 @@ import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { formatNear, near, toYocto } from "@backstop/shared";
 import { signerRecord, type Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
+import { capture } from "./capture.js";
 import { z } from "zod";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -77,6 +78,7 @@ const customer = apiClient(api.url, principals.customer);
 const guarantor = apiClient(api.url, principals.guarantor);
 const coordinator = apiClient(api.url, principals.coordinator);
 const taskId = `checkout-live-${String(startedAt % 100_000)}`;
+const recorder = process.argv.includes("--capture") ? capture(customer, taskId, startedAt) : null;
 
 out(`Backstop live demo: ${taskId} on ${api.url}`);
 const vaultMode =
@@ -125,6 +127,7 @@ let closing = false;
 const settled = new Promise<string>((resolve) => {
   const following = customer.follow(taskId, (raw) => {
     const event = eventSchema.parse(raw);
+    if (event.body.type !== "heartbeat_recorded") recorder?.record(raw);
     out(
       `${stamp()} v${String(event.version).padStart(2, "0")} ${event.actor.padEnd(26)} ${event.body.type}`,
     );
@@ -205,6 +208,15 @@ for (
   waited += 100
 ) {
   await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
+if (recorder !== null) {
+  const path = await recorder.finish({
+    network: chain?.network ?? "fixture",
+    model: model?.model ?? null,
+    recordedAt: new Date(startedAt).toISOString(),
+  });
+  out(`${stamp()}     captured the run for replay in ${path}`);
 }
 
 const view = z

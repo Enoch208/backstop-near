@@ -37,6 +37,19 @@
       "mrTd": "df4d77c857de652bd0fafa343a2026b51071ee03773d076d283abf1a7d36ff91ffa279ee4a617ac664f7e2a2c8d5891b",
       "nvidiaKeyId": "nv-eat-kid-prod-20261114123932683-704c3124-7244-4224-8dfc-14f96aee1aff",
       "explorer": "https://testnet.nearblocks.io/txns/JH82zfrL2t61xpDa6tgg5gc7uPx7Bbcdt8o2dMTsiZC"
+    },
+    {
+      "at": "2026-11-14T17:24:05.820Z",
+      "txHash": "8TVL25b3bYSADtqD3UYYrcRJp7ebYuTjrhmg8tJoGRVY",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "signingAddress": "0xfe0071895500a9755c18044948ab4f4e1a7f337e",
+      "attestationHash": "sha256:c8cd52f731a0b8b3bc3fed9bd789760ea97f64bb397770ad2664114da7d4b9a5",
+      "nonce": "7494843987b4631e24ba03410a23b9244846a684d353c597896a867b642de5bb",
+      "instances": 2,
+      "tcbStatus": "UpToDate",
+      "mrTd": "df4d77c857de652bd0fafa343a2026b51071ee03773d076d283abf1a7d36ff91ffa279ee4a617ac664f7e2a2c8d5891b",
+      "nvidiaKeyId": "nv-eat-kid-prod-20261114123902768-815abba7-96fc-47f0-b774-86b0e8bb4baa",
+      "explorer": "https://testnet.nearblocks.io/txns/8TVL25b3bYSADtqD3UYYrcRJp7ebYuTjrhmg8tJoGRVY"
     }
   ],
   "runs": [
@@ -456,6 +469,82 @@
           "signer": "coordinator.backstop-6501bb.testnet",
           "outcome": "refused ERR_ALREADY_SETTLED",
           "explorer": "https://testnet.nearblocks.io/txns/6Y2NfXNGQiJSqXBDiuMJ7gA2JMrBxEDLpxNoALXmb7Cf"
+        }
+      ],
+      "primaryExit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "ledgerState": "SETTLED",
+      "intentQuotes": []
+    },
+    {
+      "at": "2026-11-14T17:24:41.910Z",
+      "kind": "live swarm",
+      "taskId": "checkout-live-18964",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "3d5tArKZPjj9Y6z9b57hU4coBGDcqCf1NKZRJP2qNyKi",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/3d5tArKZPjj9Y6z9b57hU4coBGDcqCf1NKZRJP2qNyKi"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "J7GuVK5mbaz3KKtYPSjhuKvrGPF1XAe67WueBot833Yx",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/J7GuVK5mbaz3KKtYPSjhuKvrGPF1XAe67WueBot833Yx"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "D16kXu8Unbj8G2yUTJU8StAAYCF9CksMYyZ7RzpZ2bqm",
+          "signer": "guarantor.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/D16kXu8Unbj8G2yUTJU8StAAYCF9CksMYyZ7RzpZ2bqm"
+        },
+        {
+          "label": "Coordinator commits attempt 1 to alpha",
+          "txHash": "5omoiRP7NK1fAbXqQLmCfPgy8Gea9yY2mRmJYoUiycgi",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/5omoiRP7NK1fAbXqQLmCfPgy8Gea9yY2mRmJYoUiycgi"
+        },
+        {
+          "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+          "txHash": "Cend9DZMHx2U8BM8YbaKcHyx6Km8CywbdBRXHnsUPXYF",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/Cend9DZMHx2U8BM8YbaKcHyx6Km8CywbdBRXHnsUPXYF"
+        },
+        {
+          "label": "Coordinator commits attempt 2 to beta",
+          "txHash": "7bHvAzraPHc8mZ4G7NCzuvVCxmgBznBLotbPYd4PmuSJ",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/7bHvAzraPHc8mZ4G7NCzuvVCxmgBznBLotbPYd4PmuSJ"
+        },
+        {
+          "label": "Verifier records ACCEPT for attempt 2; the vault checks the TEE signature of deepseek-ai/DeepSeek-V4.1-Flash-1017",
+          "txHash": "7oTAVfh5TUMTutuPqbHv8zw1Z6hVnyw9SuwVwtEFSS6D",
+          "signer": "verifier.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/7oTAVfh5TUMTutuPqbHv8zw1Z6hVnyw9SuwVwtEFSS6D"
+        },
+        {
+          "label": "Coordinator finalizes the success settlement",
+          "txHash": "AmxSNgnBX1ELsZ4T36JAm1RY14Dv23pJU9qTcqah2516",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/AmxSNgnBX1ELsZ4T36JAm1RY14Dv23pJU9qTcqah2516"
+        },
+        {
+          "label": "A repeated settlement is refused",
+          "txHash": "9n2vW9YetWr6tmtm6SCzg1AEY6LVHAtvhkcfX7VUdAbC",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "refused ERR_ALREADY_SETTLED",
+          "explorer": "https://testnet.nearblocks.io/txns/9n2vW9YetWr6tmtm6SCzg1AEY6LVHAtvhkcfX7VUdAbC"
         }
       ],
       "primaryExit": {

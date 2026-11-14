@@ -50,7 +50,13 @@ export function Agents({
   );
 }
 
-export function Money({ snapshot }: { readonly snapshot: Snapshot | null }) {
+export function Money({
+  snapshot,
+  onChain,
+}: {
+  readonly snapshot: Snapshot | null;
+  readonly onChain: string | null;
+}) {
   const statement = snapshot?.statement;
   return (
     <section className="bg-coal">
@@ -70,6 +76,12 @@ export function Money({ snapshot }: { readonly snapshot: Snapshot | null }) {
           </div>
         ))}
       </div>
+      {onChain !== null && (
+        <p className="px-4 pt-3 text-[11px] leading-relaxed text-white/40">
+          Orchestrator ledger. On NEAR {onChain}, each payee is paid at its own sub-account; the
+          transactions are below.
+        </p>
+      )}
       <ul className="divide-y divide-white/5 px-4 py-2">
         {Object.entries(statement?.confirmedByRecipient ?? {}).map(([recipient, amount]) => (
           <li key={recipient} className="flex justify-between py-1.5 text-[12px]">
