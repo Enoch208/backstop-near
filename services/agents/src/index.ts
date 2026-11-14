@@ -3,4 +3,5 @@ export * from "./challenger.js";
 export * from "./roster.js";
 export * from "./work.js";
 export * from "./coalition.js";
+export * from "./pricing.js";
 export * from "./live/index.js";

@@ -9,7 +9,8 @@ import {
   type Endorsement,
   type SignedBid,
 } from "@backstop/shared";
-import { roster, type FixtureAgent } from "./roster.js";
+import type { PricedAgent, Quote } from "./pricing.js";
+import { pricingProfile, roster, type FixtureAgent } from "./roster.js";
 
 export type BidContext = {
   readonly taskId: string;
@@ -95,6 +96,46 @@ export function fixtureBids(context: BidContext): SignedBid[] {
         offer.lead,
       );
     });
+}
+
+export type RecoveryTeam = { readonly team: readonly PricedAgent[]; readonly plan: string };
+
+export function recoveryTeam(leadId: string): RecoveryTeam | null {
+  const offer = fixtureOffers.find((candidate) => candidate.lead.agentId === leadId);
+  if (offer === undefined) return null;
+  return {
+    plan: offer.plan,
+    team: offer.members.map(({ agent }) => ({ agent, profile: pricingProfile(agent.agentId) })),
+  };
+}
+
+export type PricedOffer = Extract<Quote, { kind: "offer" }>;
+
+export function pricedBid(
+  context: Omit<BidContext, "excludedAgents">,
+  plan: string,
+  offer: PricedOffer,
+): SignedBid {
+  const [lead] = offer.members;
+  if (lead === undefined) throw new RangeError("A priced offer has at least one member");
+  return signBid(
+    {
+      taskId: context.taskId,
+      epoch: context.epoch,
+      members: offer.members.map(({ agent, shareYocto }) => ({
+        agentId: agent.agentId,
+        account: agent.account,
+        role: agent.role,
+        shareYocto: toYocto(shareYocto),
+      })),
+      amountYocto: toYocto(offer.amountYocto),
+      estimatedDurationMs: offer.estimatedDurationMs,
+      planHash: digestOf(plan),
+      committedAtMs: context.nowMs,
+      expiresAtMs: context.nowMs + context.bidWindowMs + 60_000,
+    },
+    lead.agent,
+  );
 }
 
 export function primaryBid(

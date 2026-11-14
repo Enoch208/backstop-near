@@ -2,9 +2,11 @@ import {
   checkpointSchema,
   digestSchema,
   evidenceBundleSchema,
+  failureReasons,
   findingSchema,
   signedBidSchema,
   taskManifestSchema,
+  yoctoSchema,
 } from "@backstop/shared";
 import { z } from "zod";
 
@@ -52,6 +54,12 @@ export const snapshotSchema = z.object({
     manifest: taskManifestSchema,
     excludedAgents: z.array(z.string()),
     checkpoints: z.array(z.object({ checkpoint: checkpointSchema, hash: digestSchema })),
+    failures: z.array(z.object({ attempt: z.int(), reason: z.enum(failureReasons) })),
+    ledger: z.object({
+      available: z.object({ escrow: yoctoSchema, bond: yoctoSchema }),
+      maxBondLiability: yoctoSchema,
+      bondConsumed: yoctoSchema,
+    }),
   }),
 });
 export type Snapshot = z.infer<typeof snapshotSchema>["task"];

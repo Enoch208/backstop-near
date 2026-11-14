@@ -31,7 +31,7 @@ export type WorkContext = {
   readonly diagnosis: Diagnosis | null;
 };
 
-function publicFailures(source: string): { passed: string[]; failures: string[] } {
+export function publicFailures(source: string): { passed: string[]; failures: string[] } {
   const run = publicRun(source);
   return {
     passed: run.passed,

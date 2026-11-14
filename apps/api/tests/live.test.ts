@@ -79,10 +79,10 @@ describe("a live swarm of worker processes", () => {
         .parse((await customer.get(`/api/tasks/${taskId}`)).body);
       expect(view.task.state).toBe("SETTLED");
       expect(view.statement.confirmedByRecipient).toEqual({
-        "gamma.fixture.testnet": toYocto(near("0.40")),
-        "delta.fixture.testnet": toYocto(near("0.12")),
+        "gamma.fixture.testnet": toYocto(near("0.36")),
+        "delta.fixture.testnet": toYocto(near("0.18")),
         "customer.fixture.testnet": toYocto(near("0.04")),
-        "guarantor.fixture.testnet": toYocto(near("0.13")),
+        "guarantor.fixture.testnet": toYocto(near("0.11")),
       });
       const again = await coordinator.post("/api/demo/faults", {
         action: "repeat_settlement",
