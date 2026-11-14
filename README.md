@@ -18,8 +18,9 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm install && pnpm episode recovery`                                                                       | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`             | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
 | `pnpm demo`                                                                                                   | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`         | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
-| `pnpm test`                                                                                                   | `86 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `pnpm test`                                                                                                   | `90 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
 | `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox` | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED` | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
+| `pnpm arena`                                                                                                  | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                 | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
 | `(cd contracts/outcome-vault && cargo test)`                                                                  | `37 passed`                                                                                                                                       | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
 
 ## Contents
@@ -27,6 +28,7 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 - [Why Backstop](#why-backstop)
 - [Try it in 60 seconds](#try-it-in-60-seconds)
 - [How it works](#how-it-works)
+- [Reliability arena](#reliability-arena)
 - [The economics](#the-economics)
 - [The swarm](#the-swarm)
 - [What is real and what is a fixture](#what-is-real-and-what-is-a-fixture)
@@ -152,6 +154,20 @@ flowchart LR
 
 Run it on its own with `pnpm api` (port 8840), or with `BACKSTOP_DEMO=1 pnpm api` to have it spawn a worker swarm for every task it creates and accept faults.
 
+## Reliability arena
+
+`pnpm arena` draws 32 seeded fault-injection cases and runs each one twice through the real orchestrator, verifier, challenger and ledger: once as Backstop, once as a single agent with the same guarantee but no recovery market and no challenger. Each case varies the primary's fate (killed, a correct patch, or a patch that passes the pinned suite but is wrong), which bidders show up, whether the diagnostician is willing to join, the attempt cap, a failing transfer, and whether a challenger is present. Ground truth is the reference oracle on the suite plus the free-shipping boundary, not the suite alone. Recorded on 14 Nov 2026:
+
+| Outcome                    | Backstop | Single agent |
+| -------------------------- | -------- | ------------ |
+| Delivered a correct patch  | 19       | 15           |
+| Delivered a wrong patch    | 1        | 8            |
+| Compensated from the bond  | 12       | 9            |
+| Ledger checks / violations | 154 / 0  | 119 / 0      |
+| Replay mismatches          | 0        | 0            |
+
+Backstop's one wrong delivery is a case with no challenger present: the pinned suite alone cannot catch the boundary bug, which is exactly what the challenger is paid for. The tests pin these properties for every seed, including that Backstop is never worse than the single agent on the same faults. This is a fault-injection matrix over scripted agents, not a measurement of AI quality; the per-case rows are in `benchmarks/arena.csv` and `benchmarks/arena.json`.
+
 ## The economics
 
 Each task holds three separate pools: customer **escrow (E)**, customer **premium (P)**, and guarantor **bond (B)** with a chosen **liability cap (L ≤ B)**. The recovery budget is `E + L`.
@@ -228,6 +244,8 @@ packages/near/            vault client, wire formats and events, deploy, local n
 scripts/episode.ts        replays an episode from the command line
 scripts/demo.ts           the live swarm with a real kill
 scripts/chain.ts          the recovery episode as real transactions on a local node or testnet
+scripts/arena.ts          seeded fault-injection cases, Backstop versus a single agent
+benchmarks/               the arena's raw per-case results
 ```
 
 The core packages are pure TypeScript: no IO, no clock, no randomness except an injected seed. Lint rules enforce it.
@@ -238,7 +256,7 @@ TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curv
 
 ## Status and limitations
 
-This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface, the API driving the contract directly (today the chain run replays a finished episode), live AI agents through NEAR AI Cloud, and the reliability benchmark. The API keeps its state in memory; a restart replays nothing yet.
+This is the protocol foundation with its API, live agent processes and the contract running on NEAR. Not built yet: the web interface, the API driving the contract directly (today the chain run replays a finished episode), and live AI agents through NEAR AI Cloud. The API keeps its state in memory; a restart replays nothing yet.
 
 Known trust boundaries, stated plainly:
 
