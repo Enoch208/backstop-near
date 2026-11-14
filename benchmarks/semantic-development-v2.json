@@ -1,0 +1,58 @@
+[
+  {
+    "id": "he-132",
+    "provider": "cloud-api.near.ai",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const s = args[0];\n  const pat = \"[[ ]]\".replace(\" \", \"\");\n  let k = 0;\n  for (let i = 0; i < s.length && k < 4; i++) {\n    if (s[i] === pat[k]) k++;\n  }\n  return k === 4;\n}\n",
+      "promptTokens": 1148,
+      "outputTokens": 463,
+      "promptBytes": 5755,
+      "elapsedMs": 12855
+    },
+    "failures": [],
+    "audit": []
+  },
+  {
+    "id": "he-132",
+    "provider": "api.openai.com",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const s = args[0];\n  const n = s.length;\n  // We want to find indices i<j<k<l with s[i]=='[' s[j]=='[' s[k]==']' s[l]==']'\n  // so that the subsequence s[i], s[j], s[k], s[l] forms \"[[]]\"\n  // i<j<k<l ensures nesting: the inner pair [j,k] is inside outer pair [i,l].\n  // We scan to find such indices.\n\n  // Collect all '[' indices\n  const openIndices = [];\n  for (let i = 0; i < n; i++) {\n    if (s[i] === '[') openIndices.push(i);\n  }\n  // Collect all ']' indices\n  const closeIndices = [];\n  for (let i = 0; i < n; i++) {\n    if (s[i] === ']') closeIndices.push(i);\n  }\n\n  // For each possible outer '[' index i\n  // find inner '[' index j > i\n  // then find inner ']' index k > j\n  // then find outer ']' index l > k\n  // If such quadruple exists, return true.\n\n  // To speed up, we use binary search on sorted arrays openIndices and closeIndices.\n\n  function upperBound(arr, x) {\n    // returns smallest index in arr with arr[idx] > x, or arr.length if none\n    let left = 0, right = arr.length;\n    while (left < right) {\n      let mid = (left + right) >> 1;\n      if (arr[mid] > x) right = mid;\n      else left = mid + 1;\n    }\n    return left;\n  }\n\n  for (let oi = 0; oi < openIndices.length; oi++) {\n    let i = openIndices[oi];\n    // find j > i\n    let jpos = upperBound(openIndices, i);\n    if (jpos === openIndices.length) continue;\n    let j = openIndices[jpos];\n    // find k > j\n    let kpos = upperBound(closeIndices, j);\n    if (kpos === closeIndices.length) continue;\n    let k = closeIndices[kpos];\n    // find l > k\n    let lpos = upperBound(closeIndices, k);\n    if (lpos === closeIndices.length) continue;\n    let l = closeIndices[lpos];\n    // found i<j<k<l with s[i]=='[' s[j]=='[' s[k]==']' s[l]==']'\n    return true;\n  }\n  return false;\n}\n",
+      "promptTokens": 1124,
+      "outputTokens": 668,
+      "promptBytes": 5755,
+      "elapsedMs": 5253
+    },
+    "failures": [],
+    "audit": []
+  },
+  {
+    "id": "he-81",
+    "provider": "cloud-api.near.ai",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const gpas = args[0];\n  const thresholds = [\n    [3.7, \"A\"],\n    [3.3, \"A-\"],\n    [3.0, \"B+\"],\n    [2.7, \"B\"],\n    [2.3, \"B-\"],\n    [2.0, \"C+\"],\n    [1.7, \"C\"],\n    [1.3, \"C-\"],\n    [1.0, \"D+\"],\n    [0.7, \"D\"],\n    [0.0, \"D-\"]\n  ];\n  const result = [];\n  for (let i = 0; i < gpas.length; i++) {\n    const g = gpas[i];\n    if (g === 4) {\n      result.push(\"A+\");\n    } else if (g === 0) {\n      result.push(\"E\");\n    } else {\n      let grade = \"E\";\n      for (let j = 0; j < thresholds.length; j++) {\n        if (g > thresholds[j][0]) {\n          grade = thresholds[j][1];\n          break;\n        }\n      }\n      result.push(grade);\n    }\n  }\n  return result;\n}\n",
+      "promptTokens": 1564,
+      "outputTokens": 392,
+      "promptBytes": 6188,
+      "elapsedMs": 7203
+    },
+    "failures": [],
+    "audit": []
+  },
+  {
+    "id": "he-81",
+    "provider": "api.openai.com",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const gpas = args[0];\n  const thresholds = [\n    {limit: 3.7, grade: \"A\"},\n    {limit: 3.3, grade: \"A-\"},\n    {limit: 3.0, grade: \"B+\"},\n    {limit: 2.7, grade: \"B\"},\n    {limit: 2.3, grade: \"B-\"},\n    {limit: 2.0, grade: \"C+\"},\n    {limit: 1.7, grade: \"C\"},\n    {limit: 1.3, grade: \"C-\"},\n    {limit: 1.0, grade: \"D+\"},\n    {limit: 0.7, grade: \"D\"},\n    {limit: 0.0, grade: \"D-\"}\n  ];\n  const result = [];\n  for (let gpa of gpas) {\n    if (gpa === 4) {\n      result.push(\"A+\");\n    } else if (gpa === 0) {\n      result.push(\"E\");\n    } else {\n      let assigned = false;\n      for (let {limit, grade} of thresholds) {\n        if (gpa > limit) {\n          result.push(grade);\n          assigned = true;\n          break;\n        }\n      }\n      if (!assigned) {\n        // If no threshold strictly exceeded, gpa must be 0 < gpa <= 0.0, assign D- (lowest)\n        result.push(\"D-\");\n      }\n    }\n  }\n  return result;\n}\n",
+      "promptTokens": 1548,
+      "outputTokens": 420,
+      "promptBytes": 6188,
+      "elapsedMs": 3550
+    },
+    "failures": [],
+    "audit": []
+  }
+]

@@ -7,6 +7,7 @@ import type {
   SignedBid,
   SignedChallengeRuling,
   TaskManifest,
+  WorkerFailureReason,
 } from "@backstop/shared";
 import type { TaskEventBody } from "./events.js";
 
@@ -17,6 +18,7 @@ export type Command =
   | { kind: "assignPrimary"; bid: SignedBid }
   | { kind: "claim"; agentId: string }
   | { kind: "heartbeat"; agentId: string; fencingToken: number }
+  | { kind: "reportFailure"; agentId: string; fencingToken: number; reason: WorkerFailureReason }
   | { kind: "checkpoint"; agentId: string; fencingToken: number; checkpoint: Checkpoint }
   | {
       kind: "submit";
@@ -52,6 +54,7 @@ export type CommandKind = Command["kind"];
 export type Registry = {
   readonly agentKeys: Readonly<Record<string, string>>;
   readonly verifierPublicKey: string;
+  readonly agentFailureDomains?: Readonly<Record<string, string>>;
 };
 
 export type DecisionContext = {

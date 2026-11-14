@@ -6,6 +6,8 @@ import { digestOf, seededRandom } from "@backstop/shared";
 import { blindTasks } from "./benchmark/blind-tasks.js";
 import { prepare } from "./benchmark/evaluate.js";
 import { loadExternalTasks } from "./benchmark/external-tasks.js";
+import { combineDiversityTasks } from "./benchmark/composite-external-tasks.js";
+import { combineBoundedTasks } from "./benchmark/bounded-module-tasks.js";
 import { limits, type Inference } from "./benchmark/inference.js";
 import { benchmarkFaults, createBenchLane } from "./benchmark/live-pair.js";
 import { operatorSpecs } from "./benchmark/operator-process.js";
@@ -22,14 +24,92 @@ const { values } = parseArgs({
     pilot: { type: "boolean", default: false },
     external: { type: "boolean", default: false },
     routed: { type: "boolean", default: false },
+    hardened: { type: "boolean", default: false },
+    "fresh-external": { type: "boolean", default: false },
+    regression: { type: "boolean", default: false },
+    "contract-checks": { type: "boolean", default: false },
+    "fresh-contracts": { type: "boolean", default: false },
+    "semantic-regression": { type: "boolean", default: false },
+    "fresh-semantic": { type: "boolean", default: false },
+    diversify: { type: "boolean", default: false },
+    "fresh-diversity": { type: "boolean", default: false },
+    "composite-diversity": { type: "boolean", default: false },
+    bounded: { type: "boolean", default: false },
+    "fresh-bounded": { type: "boolean", default: false },
     "resume-from": { type: "string" },
   },
 });
+if (values.diversify && !values.hardened) throw new Error("--diversify requires --hardened");
+if (values.bounded && (!values.hardened || !values.diversify))
+  throw new Error("--bounded requires --hardened --diversify");
+if (
+  values["fresh-bounded"] &&
+  (!values.bounded ||
+    !values["contract-checks"] ||
+    values.regression ||
+    values["fresh-diversity"] ||
+    values["composite-diversity"] ||
+    values["fresh-external"] ||
+    values["fresh-contracts"] ||
+    values["fresh-semantic"] ||
+    values["semantic-regression"])
+)
+  throw new Error("--fresh-bounded requires --bounded --contract-checks and cannot mix corpora");
+if (values["composite-diversity"] && !values["fresh-diversity"])
+  throw new Error("--composite-diversity requires --fresh-diversity");
+if (
+  values["fresh-diversity"] &&
+  (!values["contract-checks"] ||
+    values.regression ||
+    values["fresh-external"] ||
+    values["fresh-contracts"] ||
+    values["fresh-semantic"] ||
+    values["semantic-regression"])
+)
+  throw new Error("--fresh-diversity requires --contract-checks and cannot mix corpora");
+if (values.hardened && (!values.external || !values.routed))
+  throw new Error("--hardened requires --external --routed");
+if (values["fresh-external"] && (!values.hardened || values.regression))
+  throw new Error("--fresh-external requires --hardened and cannot use --regression");
+if (values.regression && !values.hardened) throw new Error("--regression requires --hardened");
+if (values["contract-checks"] && !values.hardened)
+  throw new Error("--contract-checks requires --hardened");
+if (
+  (values["semantic-regression"] || values["fresh-semantic"]) &&
+  (!values["contract-checks"] ||
+    values.regression ||
+    values["fresh-external"] ||
+    values["fresh-contracts"] ||
+    (values["semantic-regression"] && values["fresh-semantic"]))
+)
+  throw new Error("Semantic corpora require --contract-checks and cannot mix corpora");
+if (
+  values["fresh-contracts"] &&
+  (!values["contract-checks"] || values.regression || values["fresh-external"])
+)
+  throw new Error("--fresh-contracts requires --contract-checks and cannot mix corpora");
+const loaded = values.external
+  ? await loadExternalTasks(
+      values["fresh-external"],
+      values.hardened,
+      values["contract-checks"],
+      values["fresh-contracts"],
+      values["semantic-regression"] ? "regression" : values["fresh-semantic"] ? "fresh" : undefined,
+      values["fresh-diversity"],
+      values["fresh-bounded"],
+    )
+  : blindTasks;
+const definitions = values.regression
+  ? loaded.filter(({ id }) =>
+      ["he-119", "he-129", "he-132", ...(values["contract-checks"] ? ["he-1"] : [])].includes(id),
+    )
+  : values["fresh-bounded"]
+    ? combineBoundedTasks(loaded)
+    : values["composite-diversity"]
+      ? combineDiversityTasks(loaded)
+      : loaded;
 if (values.verify !== undefined) {
-  const result = verifyStandbyRun(
-    values.verify,
-    values.external ? await loadExternalTasks() : blindTasks,
-  );
+  const result = verifyStandbyRun(values.verify, definitions);
   process.stdout.write(`${JSON.stringify(result)}\n`);
   process.exit(0);
 }
@@ -66,7 +146,6 @@ if (
 )
   throw new Error("Configure two distinct inference providers");
 
-const definitions = values.external ? await loadExternalTasks() : blindTasks;
 const tasks = definitions.map(prepare);
 const seed = 560_831;
 const random = seededRandom(seed);
@@ -90,7 +169,89 @@ type Trial = Awaited<ReturnType<Lane["trial"]>>;
 const trials: Trial[] = [];
 const metadata = {
   startedAt,
+  lanes: laneCount,
+  implementationHash: digestOf(
+    [
+      "services/agents/src/live/repair.ts",
+      "services/agents/src/live/repair-budget.ts",
+      "services/agents/src/live/propose.ts",
+      "services/agents/src/pricing.ts",
+      "services/workers/src/agent-loop.ts",
+      "packages/shared/src/task-state.ts",
+      "services/orchestrator/src/core/decide-work.ts",
+      "services/orchestrator/src/core/decide.ts",
+      "services/orchestrator/src/core/events.ts",
+      "apps/api/src/event-schema.ts",
+      "apps/api/src/routes/work.ts",
+      "apps/api/src/router.ts",
+      "services/workers/src/recovery-feedback.ts",
+      "services/workers/src/diagnosis.ts",
+      "services/orchestrator/src/core/auction.ts",
+      "services/orchestrator/src/core/decide-market.ts",
+      "services/orchestrator/src/core/recovery-routing.ts",
+      "services/orchestrator/src/core/evolve.ts",
+      "services/orchestrator/src/core/record.ts",
+      "services/orchestrator/src/core/commands.ts",
+      "apps/api/src/runtime.ts",
+      "scripts/live-standby-benchmark.ts",
+      "scripts/benchmark/verify-standby.ts",
+      "scripts/benchmark/live-operator.ts",
+      "scripts/benchmark/live-pair.ts",
+      "scripts/benchmark/operator-process.ts",
+      "scripts/benchmark/inference.ts",
+      "scripts/benchmark/external-tasks.ts",
+      "scripts/benchmark/fresh-external-tasks.ts",
+      "scripts/benchmark/contract-external-tasks.ts",
+      "scripts/benchmark/semantic-external-tasks.ts",
+      "scripts/benchmark/diversity-external-tasks.ts",
+      "scripts/benchmark/composite-external-tasks.ts",
+      "scripts/benchmark/bounded-external-tasks.ts",
+      "scripts/benchmark/bounded-module-tasks.ts",
+      "fixtures/checkout/src/manifest.ts",
+    ].map((path) => [path, readFileSync(path, "utf8")]),
+  ),
   routed: values.routed,
+  hardened: values.hardened,
+  freshExternal: values["fresh-external"],
+  regression: values.regression,
+  contractChecks: values["contract-checks"],
+  freshContracts: values["fresh-contracts"],
+  semanticRegression: values["semantic-regression"],
+  freshSemantic: values["fresh-semantic"],
+  freshDiversity: values["fresh-diversity"],
+  compositeDiversity: values["composite-diversity"],
+  diversify: values.diversify,
+  bounded: values.bounded,
+  freshBounded: values["fresh-bounded"],
+  ...(values.bounded
+    ? {
+        timeoutRouting:
+          "prefer independent eligible provider after active worker-reported provider timeout; never infer a provider timeout from lease expiry",
+        promptPolicy:
+          "budgeted full specification and public tests; compact optional guidance then rebuild without rejected source; code-only output; no cap increase",
+      }
+    : {}),
+  ...(values.diversify
+    ? {
+        diversificationPolicy:
+          "final attempt after a verified recovery rejection; cheapest eligible ready offer from a different configured provider domain; unchanged fallback",
+        agentFailureDomains: Object.fromEntries([
+          ["alpha", new URL(primary.baseUrl).hostname],
+          ...operatorSpecs.map(
+            (spec) =>
+              [spec.id, new URL((spec.secondary ? secondary : primary).baseUrl).hostname] as const,
+          ),
+        ]),
+      }
+    : {}),
+  auctionPolicy: "lowest eligible quote; strategy breaks price ties only",
+  bidWindowMs: 1_000,
+  primaryTimeAccounting:
+    "cached primary waits out the same inference elapsed time before execution in the second arm",
+  standbyHoldMs: 1_950,
+  feedbackPolicy: values.hardened
+    ? "same public preflight, contract examples and verifier summaries in both arms; rejected source omitted for rebuild; initial routing patch for every task"
+    : "legacy",
   seed,
   corpusHash: digestOf(definitions),
   repeats,
@@ -133,6 +294,12 @@ if (values["resume-from"] !== undefined) {
       fixedPolicy: z.literal("ascending quoted price in each tier").optional(),
       startedAt: z.iso.datetime(),
       routed: z.boolean().default(false),
+      hardened: z.boolean().default(false),
+      diversify: z.boolean().default(false),
+      bounded: z.boolean().default(false),
+      agentFailureDomains: z.record(z.string(), z.string()).optional(),
+      providers: z.array(z.object({ host: z.string(), model: z.string() })),
+      implementationHash: z.string().optional(),
       trials: z.array(
         z
           .object({
@@ -150,7 +317,14 @@ if (values["resume-from"] !== undefined) {
     previous.seed !== seed ||
     previous.expectedTrials !== expectedTrials ||
     previous.fixedPolicy !== metadata.fixedPolicy ||
-    previous.routed !== metadata.routed
+    previous.routed !== metadata.routed ||
+    previous.hardened !== metadata.hardened ||
+    previous.diversify !== metadata.diversify ||
+    previous.bounded !== metadata.bounded ||
+    digestOf(previous.agentFailureDomains ?? null) !==
+      digestOf(metadata.agentFailureDomains ?? null) ||
+    digestOf(previous.providers) !== digestOf(metadata.providers) ||
+    (values.hardened && previous.implementationHash !== metadata.implementationHash)
   )
     throw new Error("Resume requires the same corpus, seed, run size, and fixed policy");
   Object.assign(metadata, { resumedFromStartedAt: previous.startedAt, lanes: laneCount });
@@ -182,6 +356,9 @@ const lanes = await Promise.allSettled(
       secondary,
       values.external,
       values.routed,
+      values.hardened,
+      values.diversify,
+      values.bounded,
     ),
   ),
 );

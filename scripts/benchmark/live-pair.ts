@@ -43,8 +43,18 @@ export async function createBenchLane(
   secondary: ModelConfig,
   priceAwareFixed = false,
   routed = false,
+  hardened = false,
+  diversify = false,
+  bounded = false,
 ) {
-  const runtime = createRuntime(Date.now, false, statePath);
+  const failureDomains = Object.fromEntries([
+    [roster.alpha.agentId, new URL(primary.baseUrl).hostname],
+    ...operatorSpecs.map(
+      (spec) =>
+        [spec.id, new URL((spec.secondary ? secondary : primary).baseUrl).hostname] as const,
+    ),
+  ]);
+  const runtime = createRuntime(Date.now, false, statePath, diversify ? failureDomains : undefined);
   const api = await startApi(runtime, "127.0.0.1", 0, 30);
   const all = await Promise.allSettled(
     operatorSpecs.map((spec) =>
@@ -57,6 +67,8 @@ export async function createBenchLane(
             ? "patch"
             : "rebuild"
           : undefined,
+        hardened,
+        bounded,
       ),
     ),
   );
@@ -129,7 +141,10 @@ export async function createBenchLane(
         bidWindowMs: 1_000,
         challengeWindowMs: 1_000,
         ...(mode === "fixed" ? { recoveryOrder: fixedOrder } : {}),
-        ...(routed && mode === "market" && { recoveryStrategy: preferredStrategy(task.id) }),
+        ...(routed &&
+          mode === "market" && {
+            recoveryStrategy: hardened ? "patch" : preferredStrategy(task.id),
+          }),
       },
     };
     await requireOk(customer.post("/api/tasks", { manifest, repairTask }));
@@ -157,10 +172,23 @@ export async function createBenchLane(
     await Promise.all(standby.map((operator) => operator.send({ taskId, action: "reserve" })));
     if (record(taskId).standby.length !== standby.length * (limits.calls - 1))
       throw new Error("Missing signed standby commitments before assignment");
+    const generationStartedAt = Date.now();
     const initial = await sharedPrimary(taskId);
+    const cachedPrimaryDelayMs = Math.max(
+      0,
+      initial.elapsedMs - (Date.now() - generationStartedAt),
+    );
+    if (cachedPrimaryDelayMs > 0) await wait(cachedPrimaryDelayMs);
     const available = new Map(operators.map((operator) => [operator.id, operator]));
     const attempts = [{ agent: roster.alpha.agentId, provider: main.host, inference: initial }];
-    const execution = await startOperator(api.url, { ...main, id: "alpha" }, primary);
+    const execution = await startOperator(
+      api.url,
+      { ...main, id: "alpha" },
+      primary,
+      undefined,
+      false,
+      bounded,
+    );
     try {
       const ready = await execution.send({ action: "primary-bid", taskId });
       z.object({ assigned: z.literal(true) }).parse(ready);
@@ -170,6 +198,12 @@ export async function createBenchLane(
         taskId,
         source: first,
         submit: fault !== "worker-crash" && fault !== "primary-provider-outage",
+        ...(bounded &&
+        fault === "healthy" &&
+        initial.source === null &&
+        initial.status === "provider-timeout"
+          ? { failureReason: "PROVIDER_TIMEOUT" }
+          : {}),
       });
       if (fault === "worker-crash" || fault === "primary-provider-outage") {
         const exit = await execution.stop("SIGKILL");
@@ -205,7 +239,18 @@ export async function createBenchLane(
             ),
         );
         for (const reply of statuses)
-          if (!z.object({ status: z.literal(200) }).safeParse(reply).success)
+          if (
+            !z.object({ status: z.literal(200) }).safeParse(reply).success &&
+            !z
+              .object({ status: z.literal(409), code: z.literal("BID_WINDOW_CLOSED") })
+              .safeParse(reply).success &&
+            !(
+              z.object({ status: z.literal(409) }).safeParse(reply).success &&
+              ["TERMINAL_FAILURE", "FAILURE_SETTLEMENT_PENDING", "FAILURE_SETTLED"].includes(
+                record(taskId).state,
+              )
+            )
+          )
             throw new Error(`Benchmark bid refused: ${JSON.stringify(reply)}`);
       } else if (body.type === "attempt_assigned") {
         const selected = available.get(body.bid.bid.members[0]?.agentId ?? "");
@@ -239,6 +284,7 @@ export async function createBenchLane(
         "attempt_assigned",
         "attempt_failed",
         "attempt_rejected",
+        "recovery_opened",
         ...(routed ? ["bid_submitted", "recovery_awarded"] : []),
         "checkpoint_recorded",
         "settlement_started",
@@ -250,10 +296,12 @@ export async function createBenchLane(
     return {
       taskId,
       task: task.id,
+      deadlineMs: manifest.deadlineMs,
+      cachedPrimaryDelayMs,
       mode,
       ...(mode === "fixed" && { fixedOrder }),
       ...(routed && {
-        routingStrategy: preferredStrategy(task.id),
+        routingStrategy: hardened ? "patch" : preferredStrategy(task.id),
         feedback: final.recoveryFeedback,
       }),
       fault,

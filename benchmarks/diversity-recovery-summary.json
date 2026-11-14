@@ -1,0 +1,428 @@
+{
+  "rawReport": "diversity-recovery-fresh.json",
+  "implementationHash": "sha256:f008101e71ea801502addca928ff8c1993d2fcf5a27f2e45cb666b9e6c0ee740",
+  "corpusHash": "sha256:037641648a467f13222d36d322e5bd0de48a359d8f3e8310dbfdbae53f67ee4a",
+  "verification": {
+    "trials": 160,
+    "pairs": 80,
+    "deliveries": 149,
+    "standby": 56,
+    "matchingAssignments": 70,
+    "matchingFirstRecovery": 80,
+    "differentFirstRecovery": 0,
+    "verifiedFeedback": 68,
+    "diversificationAwards": 6,
+    "diversificationOpportunities": 7,
+    "marketWins": 0,
+    "fixedWins": 5,
+    "byMode": {
+      "market": {
+        "overall": {
+          "trials": 80,
+          "correct": 72,
+          "falseAccepts": 0,
+          "p95Ms": 66976,
+          "totalSettlementNear": "29.22",
+          "settlementNearPerCorrect": "0.405833333333333333333333",
+          "bondConsumedNear": "3.9"
+        },
+        "byFault": {
+          "healthy": {
+            "trials": 20,
+            "correct": 19,
+            "falseAccepts": 0,
+            "p95Ms": 57389,
+            "totalSettlementNear": "8.35",
+            "settlementNearPerCorrect": "0.439473684210526315789473",
+            "bondConsumedNear": "0.39"
+          },
+          "worker-crash": {
+            "trials": 20,
+            "correct": 18,
+            "falseAccepts": 0,
+            "p95Ms": 66976,
+            "totalSettlementNear": "5.5",
+            "settlementNearPerCorrect": "0.305555555555555555555555",
+            "bondConsumedNear": "0.34"
+          },
+          "primary-provider-outage": {
+            "trials": 20,
+            "correct": 18,
+            "falseAccepts": 0,
+            "p95Ms": 41653,
+            "totalSettlementNear": "9.84",
+            "settlementNearPerCorrect": "0.546666666666666666666666",
+            "bondConsumedNear": "2.64"
+          },
+          "rejected-output": {
+            "trials": 20,
+            "correct": 17,
+            "falseAccepts": 0,
+            "p95Ms": 69184,
+            "totalSettlementNear": "5.53",
+            "settlementNearPerCorrect": "0.325294117647058823529411",
+            "bondConsumedNear": "0.53"
+          }
+        }
+      },
+      "fixed": {
+        "overall": {
+          "trials": 80,
+          "correct": 77,
+          "falseAccepts": 0,
+          "p95Ms": 70090,
+          "totalSettlementNear": "30.51",
+          "settlementNearPerCorrect": "0.396233766233766233766233",
+          "bondConsumedNear": "3.19"
+        },
+        "byFault": {
+          "healthy": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 70090,
+            "totalSettlementNear": "8.64",
+            "settlementNearPerCorrect": "0.432",
+            "bondConsumedNear": "0.16"
+          },
+          "worker-crash": {
+            "trials": 20,
+            "correct": 19,
+            "falseAccepts": 0,
+            "p95Ms": 80539,
+            "totalSettlementNear": "5.95",
+            "settlementNearPerCorrect": "0.313157894736842105263157",
+            "bondConsumedNear": "0.27"
+          },
+          "primary-provider-outage": {
+            "trials": 20,
+            "correct": 18,
+            "falseAccepts": 0,
+            "p95Ms": 42121,
+            "totalSettlementNear": "9.84",
+            "settlementNearPerCorrect": "0.546666666666666666666666",
+            "bondConsumedNear": "2.64"
+          },
+          "rejected-output": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 46410,
+            "totalSettlementNear": "6.08",
+            "settlementNearPerCorrect": "0.304",
+            "bondConsumedNear": "0.12"
+          }
+        }
+      }
+    }
+  },
+  "analysis": {
+    "market": {
+      "trials": 80,
+      "correct": 72,
+      "lastAttemptCount": 16,
+      "lastAttemptCorrect": 8,
+      "lastAttemptAfterVerifiedRecoveryRejection": 7,
+      "correctAfterVerifiedRecoveryRejection": 3,
+      "crossProviderAfterVerifiedRecoveryRejection": 6,
+      "crossProviderCorrect": 2,
+      "callsCharged": 161,
+      "promptTokens": 252100,
+      "outputTokens": 84569,
+      "callsMissingUsage": 12,
+      "callStatuses": {
+        "ok": 141,
+        "provider-timeout": 7,
+        "prompt-too-large": 5,
+        "invalid-or-truncated-code": 8
+      },
+      "providerCalls": {
+        "cloud-api.near.ai": 130,
+        "api.openai.com": 31
+      },
+      "maxChargedElapsedMs": 138713,
+      "rows": [
+        {
+          "taskId": "module-17-125-76-worker-crash-1-market",
+          "correct": false,
+          "elapsedMs": 32943
+        },
+        {
+          "taskId": "module-6-76-130-rejected-output-2-market",
+          "correct": false,
+          "elapsedMs": 44670
+        },
+        {
+          "taskId": "module-17-125-76-rejected-output-2-market",
+          "correct": false,
+          "elapsedMs": 26034
+        },
+        {
+          "taskId": "module-6-76-130-worker-crash-1-market",
+          "correct": false,
+          "elapsedMs": 25365
+        },
+        {
+          "taskId": "module-17-125-76-healthy-1-market",
+          "correct": true,
+          "elapsedMs": 23594
+        },
+        {
+          "taskId": "module-17-125-76-healthy-2-market",
+          "correct": true,
+          "elapsedMs": 47599
+        }
+      ]
+    },
+    "fixed": {
+      "trials": 80,
+      "correct": 77,
+      "lastAttemptCount": 16,
+      "lastAttemptCorrect": 13,
+      "lastAttemptAfterVerifiedRecoveryRejection": 10,
+      "correctAfterVerifiedRecoveryRejection": 9,
+      "crossProviderAfterVerifiedRecoveryRejection": 0,
+      "crossProviderCorrect": 0,
+      "callsCharged": 161,
+      "promptTokens": 260135,
+      "outputTokens": 85656,
+      "callsMissingUsage": 7,
+      "callStatuses": {
+        "ok": 150,
+        "provider-timeout": 4,
+        "invalid-or-truncated-code": 4,
+        "prompt-too-large": 3
+      },
+      "providerCalls": {
+        "cloud-api.near.ai": 136,
+        "api.openai.com": 25
+      },
+      "maxChargedElapsedMs": 88645,
+      "rows": []
+    },
+    "discordantPairs": [
+      {
+        "task": "module-6-76-130",
+        "fault": "healthy",
+        "repeat": 2,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      },
+      {
+        "task": "module-17-125-76",
+        "fault": "worker-crash",
+        "repeat": 1,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      },
+      {
+        "task": "module-6-76-130",
+        "fault": "rejected-output",
+        "repeat": 2,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      },
+      {
+        "task": "module-17-125-76",
+        "fault": "rejected-output",
+        "repeat": 2,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      },
+      {
+        "task": "module-95-124-125",
+        "fault": "rejected-output",
+        "repeat": 1,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      }
+    ],
+    "byTask": {
+      "module-111-130-31": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-124-56-95": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-125-95-17": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-130-6-111": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-17-125-76": {
+        "market": 6,
+        "fixed": 8
+      },
+      "module-31-111-56": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-56-31-124": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-6-76-130": {
+        "market": 3,
+        "fixed": 5
+      },
+      "module-76-17-6": {
+        "market": 8,
+        "fixed": 8
+      },
+      "module-95-124-125": {
+        "market": 7,
+        "fixed": 8
+      }
+    }
+  },
+  "crossProviderAwards": [
+    {
+      "taskId": "module-17-125-76-worker-crash-1-market",
+      "correct": false,
+      "elapsedMs": 32943,
+      "lastStatus": "prompt-too-large",
+      "lastPromptBytes": 8301,
+      "fixedCorrect": true,
+      "fixedLastAgent": "blind-fixed-first",
+      "fixedAttempts": 3
+    },
+    {
+      "taskId": "module-6-76-130-rejected-output-2-market",
+      "correct": false,
+      "elapsedMs": 44670,
+      "lastStatus": "invalid-or-truncated-code",
+      "lastPromptBytes": 7929,
+      "fixedCorrect": true,
+      "fixedLastAgent": "blind-low-bid",
+      "fixedAttempts": 2
+    },
+    {
+      "taskId": "module-17-125-76-rejected-output-2-market",
+      "correct": false,
+      "elapsedMs": 26034,
+      "lastStatus": "prompt-too-large",
+      "lastPromptBytes": 8943,
+      "fixedCorrect": true,
+      "fixedLastAgent": "blind-low-bid",
+      "fixedAttempts": 2
+    },
+    {
+      "taskId": "module-6-76-130-worker-crash-1-market",
+      "correct": false,
+      "elapsedMs": 25365,
+      "lastStatus": "ok",
+      "lastPromptBytes": 7874,
+      "fixedCorrect": false,
+      "fixedLastAgent": "blind-fixed-first",
+      "fixedAttempts": 3
+    },
+    {
+      "taskId": "module-17-125-76-healthy-1-market",
+      "correct": true,
+      "elapsedMs": 23594,
+      "lastStatus": "ok",
+      "lastPromptBytes": 7835,
+      "fixedCorrect": true,
+      "fixedLastAgent": "blind-fixed-first",
+      "fixedAttempts": 3
+    },
+    {
+      "taskId": "module-17-125-76-healthy-2-market",
+      "correct": true,
+      "elapsedMs": 47599,
+      "lastStatus": "ok",
+      "lastPromptBytes": 6980,
+      "fixedCorrect": true,
+      "fixedLastAgent": "blind-fixed-first",
+      "fixedAttempts": 3
+    }
+  ],
+  "renderLoad": {
+    "samples": 1600,
+    "firstSample": "2026-11-14T22:23:25.773774+00:00",
+    "lastSample": "2026-11-14T22:51:53.531139+00:00",
+    "activeSamples": 31,
+    "firstActive": "2026-11-14T22:49:52.026984+00:00",
+    "lastActive": "2026-11-14T22:51:50.333685+00:00",
+    "overlappingTrials": [
+      {
+        "taskId": "module-130-6-111-healthy-2-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 1
+      },
+      {
+        "taskId": "module-95-124-125-healthy-1-market",
+        "mode": "market",
+        "correct": true,
+        "samples": 1
+      },
+      {
+        "taskId": "module-17-125-76-worker-crash-2-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 13
+      },
+      {
+        "taskId": "module-95-124-125-healthy-1-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 23
+      },
+      {
+        "taskId": "module-130-6-111-rejected-output-1-market",
+        "mode": "market",
+        "correct": true,
+        "samples": 11
+      },
+      {
+        "taskId": "module-130-6-111-healthy-2-market",
+        "mode": "market",
+        "correct": true,
+        "samples": 25
+      },
+      {
+        "taskId": "module-130-6-111-rejected-output-1-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 2
+      },
+      {
+        "taskId": "module-124-56-95-rejected-output-1-market",
+        "mode": "market",
+        "correct": true,
+        "samples": 2
+      },
+      {
+        "taskId": "module-76-17-6-primary-provider-outage-1-market",
+        "mode": "market",
+        "correct": true,
+        "samples": 1
+      },
+      {
+        "taskId": "module-124-56-95-rejected-output-1-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 2
+      },
+      {
+        "taskId": "module-17-125-76-rejected-output-1-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 2
+      },
+      {
+        "taskId": "module-76-17-6-primary-provider-outage-1-fixed",
+        "mode": "fixed",
+        "correct": true,
+        "samples": 1
+      }
+    ],
+    "overlappingFailures": 0
+  }
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "id": "he-132",
+    "provider": "cloud-api.near.ai",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const s = args[0];\n  let state = 0;\n  for (let i = 0; i < s.length; i++) {\n    const c = s[i];\n    if (state === 0) {\n      if (c === '[') state = 1;\n    } else if (state === 1) {\n      if (c === '[') state = 2;\n    } else if (state === 2) {\n      if (c === ']') state = 3;\n    } else if (state === 3) {\n      if (c === ']') return true;\n    }\n  }\n  return false;\n}\n",
+      "promptTokens": 1032,
+      "outputTokens": 567,
+      "promptBytes": 5089,
+      "elapsedMs": 10310
+    },
+    "failures": [],
+    "audit": []
+  },
+  {
+    "id": "he-132",
+    "provider": "api.openai.com",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const s = args[0];\n  let open = 0, maxDepth = 0;\n  for (let c of s) {\n    if (c === '[') open++;\n    else if (c === ']' && open > 0) {\n      maxDepth = Math.max(maxDepth, open);\n      open--;\n    }\n  }\n  return maxDepth >= 2;\n}\n",
+      "promptTokens": 1007,
+      "outputTokens": 237,
+      "promptBytes": 5089,
+      "elapsedMs": 3071
+    },
+    "failures": [
+      {
+        "id": "public-2",
+        "input": [
+          "[]]]]]]][[[[[]"
+        ],
+        "expected": false,
+        "actual": true
+      },
+      {
+        "id": "public-3",
+        "input": [
+          "[][[]"
+        ],
+        "expected": false,
+        "actual": true
+      },
+      {
+        "id": "public-5",
+        "input": [
+          "[][]]"
+        ],
+        "expected": true,
+        "actual": false
+      },
+      {
+        "id": "acceptance-6",
+        "input": [
+          "[[]"
+        ],
+        "expected": false,
+        "actual": true
+      }
+    ],
+    "audit": [
+      {
+        "id": "audit-9",
+        "input": [
+          "[][]]]]"
+        ],
+        "expected": true,
+        "actual": false
+      }
+    ]
+  },
+  {
+    "id": "he-81",
+    "provider": "cloud-api.near.ai",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const gpas = args[0];\n  const thresholds = [3.7, 3.3, 3.0, 2.7, 2.3, 2.0, 1.7, 1.3, 1.0, 0.7, 0.0];\n  const letters = [\"A\", \"A-\", \"B+\", \"B\", \"B-\", \"C+\", \"C\", \"C-\", \"D+\", \"D\", \"D-\"];\n  const result = [];\n  for (let i = 0; i < gpas.length; i++) {\n    const g = gpas[i];\n    if (g === 4) {\n      result.push(\"A+\");\n    } else if (g === 0) {\n      result.push(\"E\");\n    } else {\n      let grade = \"E\";\n      for (let j = 0; j < thresholds.length; j++) {\n        if (g > thresholds[j]) {\n          grade = letters[j];\n          break;\n        }\n      }\n      result.push(grade);\n    }\n  }\n  return result;\n}\n",
+      "promptTokens": 1521,
+      "outputTokens": 416,
+      "promptBytes": 5943,
+      "elapsedMs": 6550
+    },
+    "failures": [],
+    "audit": []
+  },
+  {
+    "id": "he-81",
+    "provider": "api.openai.com",
+    "response": {
+      "status": "ok",
+      "source": "function solve(args) {\n  const gpas = args[0];\n  const thresholds = [\n    [3.7, \"A\"],\n    [3.3, \"A-\"],\n    [3.0, \"B+\"],\n    [2.7, \"B\"],\n    [2.3, \"B-\"],\n    [2.0, \"C+\"],\n    [1.7, \"C\"],\n    [1.3, \"C-\"],\n    [1.0, \"D+\"],\n    [0.7, \"D\"],\n    [0.0, \"D-\"]\n  ];\n  return gpas.map(gpa => {\n    if (gpa === 4) return \"A+\";\n    if (gpa === 0) return \"E\";\n    for (let i = 0; i < thresholds.length; i++) {\n      if (gpa > thresholds[i][0]) return thresholds[i][1];\n    }\n    return \"D-\";\n  });\n}\n",
+      "promptTokens": 1505,
+      "outputTokens": 322,
+      "promptBytes": 5943,
+      "elapsedMs": 3334
+    },
+    "failures": [],
+    "audit": []
+  }
+]

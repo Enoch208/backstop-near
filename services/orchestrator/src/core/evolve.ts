@@ -120,7 +120,10 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
       return {
         ...record,
         state: "FAILED_ATTEMPT",
-        failures: [...record.failures, { attempt: body.attempt, reason: body.reason }],
+        failures: [
+          ...record.failures,
+          { attempt: body.attempt, reason: body.reason, agents: body.agents },
+        ],
         excludedAgents: exclude(record, body.agents),
       };
     case "recovery_opened":
@@ -198,7 +201,10 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
       return {
         ...record,
         state: "REJECTED",
-        failures: [...record.failures, { attempt: body.attempt, reason: body.reason }],
+        failures: [
+          ...record.failures,
+          { attempt: body.attempt, reason: body.reason, agents: body.agents },
+        ],
         excludedAgents: exclude(record, body.agents),
       };
     case "task_accepted":

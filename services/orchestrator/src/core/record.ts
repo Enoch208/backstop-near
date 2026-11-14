@@ -60,7 +60,11 @@ export type TaskRecord = {
   readonly standbyAvailability: Readonly<Record<string, number>>;
   readonly candidate: Candidate | null;
   readonly excludedAgents: readonly string[];
-  readonly failures: readonly { attempt: number; reason: FailureReason }[];
+  readonly failures: readonly {
+    attempt: number;
+    reason: FailureReason;
+    agents?: readonly string[];
+  }[];
   readonly recoveryFeedback: readonly RecoveryFeedback[];
   readonly ledger: Ledger;
 };

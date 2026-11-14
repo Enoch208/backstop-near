@@ -2,6 +2,16 @@ import { gunzipSync } from "node:zlib";
 import { canonicalJson, seededRandom, sha256Hex } from "@backstop/shared";
 import { z } from "zod";
 import type { TaskDefinition, Value } from "./tasks.js";
+import { boundedExternalAdaptations, boundedInputAllowed } from "./bounded-external-tasks.js";
+import { diversityExternalAdaptations, diversityInputAllowed } from "./diversity-external-tasks.js";
+import { freshExternalAdaptations } from "./fresh-external-tasks.js";
+import { runIsolated } from "@backstop/verifier";
+import { semanticExternalAdaptations, semanticInputAllowed } from "./semantic-external-tasks.js";
+import {
+  contractExternalAdaptations,
+  recoveryContractInputs,
+  contractInputAllowed,
+} from "./contract-external-tasks.js";
 
 const humanEvalSource = {
   url: "https://raw.githubusercontent.com/zai-org/CodeGeeX/2838420b7b4492cf3d16bce5320e26e65960c9e2/codegeex/benchmark/humaneval-x/js/data/humaneval_js.jsonl.gz",
@@ -107,19 +117,41 @@ function samples(
   data: z.infer<typeof evalPlusRow>,
   reference: string,
   id: number,
+  fresh = false,
+  contractInputs: readonly Value[] = [],
+  diversity = false,
+  bounded = false,
 ): Pick<TaskDefinition, "visible" | "acceptance" | "audit" | "mutant"> {
   const unique = new Map<string, Value[]>();
   const add = (input: Value[]) => {
     const key = canonicalJson(input);
     if (
       key.length <= 1_500 &&
-      Buffer.byteLength(key) === key.length &&
-      (id !== 129 || (typeof input[1] === "number" && input[1] <= 80))
+      !/[\u0080-\u{10ffff}]/u.test(key) &&
+      (id !== 129 || (typeof input[1] === "number" && input[1] <= 80)) &&
+      (id !== 46 || (typeof input[0] === "number" && input[0] <= 53)) &&
+      contractInputAllowed(id, input) &&
+      semanticInputAllowed(id, input) &&
+      (!diversity || diversityInputAllowed(id, input)) &&
+      (!bounded || boundedInputAllowed(id, input))
     )
       unique.set(key, input);
   };
   for (const item of data.base_input) add(item);
-  const visible = [...unique.values()].slice(0, 2);
+  const visible = [
+    ...new Map(
+      [...unique.values()]
+        .slice(0, 2)
+        .concat(
+          contractInputs.map((input) => {
+            if (!Array.isArray(input))
+              throw new Error("External inputs must contain positional arguments");
+            return input;
+          }),
+        )
+        .map((input) => [canonicalJson(input), input]),
+    ).values(),
+  ];
   const visibleKeys = new Set(visible.map(canonicalJson));
   const random = seededRandom(7109 + id);
   const shuffled = data.plus_input
@@ -134,28 +166,93 @@ function samples(
   if (visible.length < 2 || acceptance.length < 4 || audit.length < 8)
     throw new Error(`Too few cases for HumanEval/${String(id)}`);
   const target = canonicalJson(acceptance[0]);
-  const mutant = `function solve(args) { if (JSON.stringify(args) === ${JSON.stringify(target)}) return { invalid: true }; return upstream(...args); }\n${reference}`;
+  const outputs = fresh
+    ? runIsolated(
+        `function solve(args) {return upstream(...args);}\n${reference}`,
+        "solve",
+        visible,
+        5_000,
+      )
+    : [];
+  const publicTable = visible.map((input, index) => {
+    const result = outputs[index];
+    if (fresh && result?.ok !== true) throw new Error("Public reference failed");
+    return [canonicalJson(input), result?.ok === true ? result.value : null];
+  });
+  const mutant =
+    fresh && (diversity || bounded)
+      ? `function solve(args) {const examples=${JSON.stringify(publicTable)};const encode=x=>x===null||typeof x!=='object'?JSON.stringify(x):Array.isArray(x)?'['+x.map(encode).join(',')+']':'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+encode(x[k])).join(',')+'}';const found=examples.find(([key])=>key===encode(args));return found?found[1]:null;}`
+      : fresh
+        ? `function solve(args) { const examples = ${JSON.stringify(publicTable)}; const found = examples.find(([key]) => key === JSON.stringify(args)); return found ? found[1] : null; }`
+        : `function solve(args) { if (JSON.stringify(args) === ${JSON.stringify(target)}) return { invalid: true }; return upstream(...args); }\n${reference}`;
   return { visible, acceptance, audit, mutant };
 }
 
-export async function loadExternalTasks(): Promise<readonly TaskDefinition[]> {
+export async function loadExternalTasks(
+  fresh = false,
+  safeFault = fresh,
+  contractChecks = false,
+  freshContracts = false,
+  semantic?: "regression" | "fresh",
+  diversity = false,
+  bounded = false,
+): Promise<readonly TaskDefinition[]> {
   const [js, inputs] = await Promise.all([
     rows(humanEvalSource, humanEvalRow),
     rows(evalPlusSource, evalPlusRow),
   ]);
-  return adaptations.map(({ id, rules, defective }) => {
+  const selected = bounded
+    ? boundedExternalAdaptations
+    : diversity
+      ? diversityExternalAdaptations
+      : semantic === "fresh"
+        ? semanticExternalAdaptations
+        : semantic === "regression"
+          ? [
+              ...adaptations.filter(({ id }) => id === 132),
+              ...contractExternalAdaptations.filter(({ id }) => id === 81),
+            ]
+          : freshContracts
+            ? contractExternalAdaptations
+            : contractChecks && !fresh
+              ? [...adaptations, ...freshExternalAdaptations.filter(({ id }) => id === 1)]
+              : fresh
+                ? freshExternalAdaptations
+                : adaptations;
+  return selected.map((adaptation) => {
+    const { id, rules, defective } = adaptation;
     const suffix = String(id);
     const problem = js.find((row) => row.task_id === `JavaScript/${suffix}`);
     const examples = inputs.find((row) => row.task_id === `HumanEval/${suffix}`);
     if (problem === undefined || examples === undefined)
       throw new Error(`Missing upstream task ${suffix}`);
-    const body = problem.canonical_solution.replace(/^\s*p = \[\]/u, "  let p = []");
+    const body = problem.canonical_solution
+      .replace(/^\s*p = \[\]/u, "  let p = []")
+      .replace("t.push((i, j))", "t.push([i, j])");
     const reference =
-      id === 154
-        ? "function upstream(a,b) { if (!b.length) return true; for(let i=0;i<b.length;i++) if(a.includes(b.slice(i)+b.slice(0,i))) return true; return false; }"
-        : problem.declaration.replace(/const \w+/u, "const upstream") + body;
+      "reference" in adaptation && typeof adaptation.reference === "string"
+        ? adaptation.reference
+        : id === 44
+          ? "function upstream(x,base) {if(x===0)return '0';let out='';while(x>0){out=String(x%base)+out;x=Math.floor(x/base);}return out;}"
+          : id === 147
+            ? "function upstream(n) {const zero=Math.floor((n+1)/3),one=n-zero;const triples=x=>x<3?0:x*(x-1)*(x-2)/6;return triples(zero)+triples(one);}"
+            : id === 154
+              ? "function upstream(a,b) { if (!b.length) return true; for(let i=0;i<b.length;i++) if(a.includes(b.slice(i)+b.slice(0,i))) return true; return false; }"
+              : problem.declaration.replace(/const \w+/u, "const upstream") + body;
     return {
-      ...samples(examples, reference, id),
+      ...samples(
+        examples,
+        reference,
+        id,
+        safeFault,
+        contractChecks
+          ? "contractInputs" in adaptation
+            ? adaptation.contractInputs
+            : recoveryContractInputs(id)
+          : [],
+        diversity,
+        bounded,
+      ),
       id: `he-${suffix}`,
       entry: "solve",
       starter: defective,

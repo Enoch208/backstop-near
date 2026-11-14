@@ -43,6 +43,29 @@ export function publicRun(source: string, repairTask?: RepairTaskBrief): PublicR
   return { passed, failing };
 }
 
+export function publicDiagnosis(source: string, task: RepairTaskBrief): Diagnosis {
+  const result = publicRun(source, task);
+  const sorted = result.failing
+    .filter(({ actual }) => actual !== "The runner time limit was reached")
+    .toSorted((a, b) => canonicalJson(a.input).length - canonicalJson(b.input).length);
+  let bytes = 0;
+  const failingCases = sorted
+    .filter((item) => {
+      const size = canonicalJson(item).length;
+      if (bytes + size > 2_000) return false;
+      bytes += size;
+      return true;
+    })
+    .slice(0, 3);
+  return {
+    from: "public-preflight",
+    finding: {
+      failingCases,
+      notes: `${String(result.passed.length)} public cases passed and ${String(result.failing.length)} failed on the current source. The isolated runner allows 1000 ms for the suite, 8 MiB of memory and a bounded stack. Interrupted or timed-out code must be replaced with an algorithm whose work scales within that limit. Use the smallest failing public examples below to locate the semantic error. No hidden inputs were inspected.`,
+    },
+  };
+}
+
 export function probeRepair(source: string, task: RepairTaskBrief) {
   const results = runIsolated(
     source,

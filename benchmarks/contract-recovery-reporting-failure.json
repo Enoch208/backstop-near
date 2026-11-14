@@ -1,0 +1,473 @@
+{
+  "taskId": "he-78-worker-crash-2-market",
+  "events": [
+    {
+      "eventId": "he-78-worker-crash-2-market#1",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 1,
+      "atMs": 1794692083291,
+      "actor": "customer",
+      "body": {
+        "type": "task_created",
+        "manifest": {
+          "version": "backstop-manifest-1",
+          "taskId": "he-78-worker-crash-2-market",
+          "owner": "customer.fixture.testnet",
+          "objective": "Repair the supplied JavaScript function.",
+          "repairTaskHash": "sha256:6c4ffa95ff21488158c0bfd60f3a77beab04bd2f95948ff8afb684c30e10b828",
+          "suite": {
+            "suiteId": "he-78",
+            "suiteHash": "sha256:10e4d48945a50b842998320b9cc2f3a0c230348baf7d9575464a4c818b314a9d",
+            "runnerId": "quickjs-wasm-0.32.0-json-v1"
+          },
+          "allowedTools": [
+            "read_workspace",
+            "write_patch",
+            "run_public_tests"
+          ],
+          "deadlineMs": 1794692323215,
+          "budget": {
+            "escrowYocto": "400000000000000000000000",
+            "premiumYocto": "40000000000000000000000"
+          },
+          "guarantee": {
+            "maxLiabilityYocto": "250000000000000000000000",
+            "compensationCapYocto": "150000000000000000000000"
+          },
+          "policy": {
+            "maxAttempts": 3,
+            "leaseMs": 1200,
+            "heartbeatGraceMs": 750,
+            "bidWindowMs": 1000,
+            "challengeWindowMs": 1000,
+            "recoveryStrategy": "patch"
+          }
+        },
+        "manifestHash": "sha256:e1fe205ba5e223fc555f377f40a66086dc6777a019302afd484a5018a267fb34"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#2",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 2,
+      "atMs": 1794692083470,
+      "actor": "customer",
+      "body": {
+        "type": "funds_deposited",
+        "pool": "escrow",
+        "amountYocto": "400000000000000000000000",
+        "reference": "fixture-vault:customer:escrow"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#3",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 3,
+      "atMs": 1794692083537,
+      "actor": "customer",
+      "body": {
+        "type": "funds_deposited",
+        "pool": "premium",
+        "amountYocto": "40000000000000000000000",
+        "reference": "fixture-vault:customer:premium"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#4",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 4,
+      "atMs": 1794692083542,
+      "actor": "guarantor",
+      "body": {
+        "type": "guarantee_posted",
+        "guarantor": "guarantor.fixture.testnet",
+        "bondYocto": "250000000000000000000000",
+        "liabilityYocto": "250000000000000000000000",
+        "reference": "fixture-vault:guarantor:bond"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#5",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 5,
+      "atMs": 1794692083636,
+      "actor": "blind-standby-low",
+      "body": {
+        "type": "standby_reserved",
+        "bid": {
+          "bid": {
+            "taskId": "he-78-worker-crash-2-market",
+            "epoch": 1,
+            "members": [
+              {
+                "agentId": "blind-standby-low",
+                "account": "blind-standby-low.fixture.testnet",
+                "role": "repairer",
+                "shareYocto": "520000000000000000000000"
+              }
+            ],
+            "amountYocto": "520000000000000000000000",
+            "estimatedDurationMs": 45000,
+            "planHash": "sha256:ac6caf2ff2dff253862019e60806b1bf1315814306c60073aa8eac37cbdea2eb",
+            "committedAtMs": 1794692083556,
+            "expiresAtMs": 1794692323215,
+            "purpose": "standby",
+            "strategy": "patch"
+          },
+          "bidHash": "sha256:526b0736bbc752432367940b6f36fb9cb0c61714e2b424f767990d3fb3ca863b",
+          "signature": {
+            "scheme": "ed25519",
+            "publicKey": "24c0f18de071b252e1a4c32ebfe71b22f851bd4486cf7b186d690b89637da122",
+            "signature": "fb177e6853f4d03c35c3b5be35f489e80a5052386537083265cad45afa810376862f416f26692cd91dd50fecfbca1961615161bea3f3a5e7bfafb76747a1410b"
+          },
+          "endorsements": []
+        }
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#6",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 6,
+      "atMs": 1794692083644,
+      "actor": "blind-standby-first",
+      "body": {
+        "type": "standby_reserved",
+        "bid": {
+          "bid": {
+            "taskId": "he-78-worker-crash-2-market",
+            "epoch": 1,
+            "members": [
+              {
+                "agentId": "blind-standby-first",
+                "account": "blind-standby-first.fixture.testnet",
+                "role": "repairer",
+                "shareYocto": "580000000000000000000000"
+              }
+            ],
+            "amountYocto": "580000000000000000000000",
+            "estimatedDurationMs": 45000,
+            "planHash": "sha256:ac6caf2ff2dff253862019e60806b1bf1315814306c60073aa8eac37cbdea2eb",
+            "committedAtMs": 1794692083555,
+            "expiresAtMs": 1794692323215,
+            "purpose": "standby",
+            "strategy": "rebuild"
+          },
+          "bidHash": "sha256:e1c9195828bf7e39e47dfb7563f06bd7609a8a184ab5fb1c621087c9b2beab5c",
+          "signature": {
+            "scheme": "ed25519",
+            "publicKey": "a48f4f8b7b64177ebfe77cbcedf950183443b97ca88cd8b505372cbbc664a11c",
+            "signature": "47044096f7cc1bd5c8849b8987db1a943d3ebb3ff378a48a5fb89390ba9c5677f7e610c1069b36abd64a913e138971edac48d3c2c02af472b795afd31a855a02"
+          },
+          "endorsements": []
+        }
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#7",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 7,
+      "atMs": 1794692083649,
+      "actor": "blind-standby-low",
+      "body": {
+        "type": "standby_reserved",
+        "bid": {
+          "bid": {
+            "taskId": "he-78-worker-crash-2-market",
+            "epoch": 2,
+            "members": [
+              {
+                "agentId": "blind-standby-low",
+                "account": "blind-standby-low.fixture.testnet",
+                "role": "repairer",
+                "shareYocto": "520000000000000000000000"
+              }
+            ],
+            "amountYocto": "520000000000000000000000",
+            "estimatedDurationMs": 45000,
+            "planHash": "sha256:ac6caf2ff2dff253862019e60806b1bf1315814306c60073aa8eac37cbdea2eb",
+            "committedAtMs": 1794692083556,
+            "expiresAtMs": 1794692323215,
+            "purpose": "standby",
+            "strategy": "patch"
+          },
+          "bidHash": "sha256:b1cdbfea3dbf68b7fc62d986cf83e251e9945e2e4ed8e608a761f21c420a15a0",
+          "signature": {
+            "scheme": "ed25519",
+            "publicKey": "24c0f18de071b252e1a4c32ebfe71b22f851bd4486cf7b186d690b89637da122",
+            "signature": "1dbc872f6414fbed906ad338c20e42585a1f836a87cf91103926ca775ed1baf002ccdd3d07d147ec714a689b24152d20bbdeceb1a20fc1825c53ac478c7f380b"
+          },
+          "endorsements": []
+        }
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#8",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 8,
+      "atMs": 1794692083653,
+      "actor": "blind-standby-first",
+      "body": {
+        "type": "standby_reserved",
+        "bid": {
+          "bid": {
+            "taskId": "he-78-worker-crash-2-market",
+            "epoch": 2,
+            "members": [
+              {
+                "agentId": "blind-standby-first",
+                "account": "blind-standby-first.fixture.testnet",
+                "role": "repairer",
+                "shareYocto": "580000000000000000000000"
+              }
+            ],
+            "amountYocto": "580000000000000000000000",
+            "estimatedDurationMs": 45000,
+            "planHash": "sha256:ac6caf2ff2dff253862019e60806b1bf1315814306c60073aa8eac37cbdea2eb",
+            "committedAtMs": 1794692083555,
+            "expiresAtMs": 1794692323215,
+            "purpose": "standby",
+            "strategy": "rebuild"
+          },
+          "bidHash": "sha256:3f2de00213455e8de73a0afa5a5484718c41278ac528af1f4ae138e3f9a75246",
+          "signature": {
+            "scheme": "ed25519",
+            "publicKey": "a48f4f8b7b64177ebfe77cbcedf950183443b97ca88cd8b505372cbbc664a11c",
+            "signature": "21c1b710b9a901d12e77727740b024e30bf7894efedb907ad339a5a60ec501cadafb88c9a22f70dea5a33dcd365c85b1441147b7fdb4c54cf072b9176ebce60f"
+          },
+          "endorsements": []
+        }
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#9",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 9,
+      "atMs": 1794692085630,
+      "actor": "coordinator",
+      "body": {
+        "type": "attempt_assigned",
+        "attempt": 1,
+        "epoch": 0,
+        "bid": {
+          "bid": {
+            "taskId": "he-78-worker-crash-2-market",
+            "epoch": 0,
+            "members": [
+              {
+                "agentId": "alpha",
+                "account": "alpha.fixture.testnet",
+                "role": "executor",
+                "shareYocto": "400000000000000000000000"
+              }
+            ],
+            "amountYocto": "400000000000000000000000",
+            "estimatedDurationMs": 60000,
+            "planHash": "sha256:13c16e5f15d9ec234992bd6f0ef846449381ec5be2e8166d3a7be6e2db04ec3e",
+            "committedAtMs": 1794692085568,
+            "expiresAtMs": 1794692145568
+          },
+          "bidHash": "sha256:bf5aa2808ad611e2d9424fa3e7c661ae6e9e757d813b3e98590e4033e306f42b",
+          "signature": {
+            "scheme": "ed25519",
+            "publicKey": "9c422d386e49203880ec4be5ae9fb6de1067b0ab3484b3337e309e954b7b55b5",
+            "signature": "8577405751585ef6991840d561dd8c2c92f323b105865b048d55f0b2d8cf1e9999ebce6494d2ec0d1686a6416947a48d901ec3a7a01be57443ed89976d35250b"
+          },
+          "endorsements": []
+        },
+        "claimByMs": 1794692086830
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#10",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 10,
+      "atMs": 1794692085856,
+      "actor": "alpha",
+      "body": {
+        "type": "lease_granted",
+        "lease": {
+          "taskId": "he-78-worker-crash-2-market",
+          "attempt": 1,
+          "epoch": 0,
+          "agentId": "alpha",
+          "fencingToken": 1,
+          "grantedAtMs": 1794692085856,
+          "expiresAtMs": 1794692087056
+        }
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#11",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 11,
+      "atMs": 1794692085895,
+      "actor": "alpha",
+      "body": {
+        "type": "checkpoint_recorded",
+        "checkpoint": {
+          "taskId": "he-78-worker-crash-2-market",
+          "attempt": 1,
+          "stateVersion": 9,
+          "contentHash": "sha256:c053dd6856cab75c8dd0d9c70ffd3e389b65fa5c6423834ebdb7a8bf2b18d7e6",
+          "artifactUri": "benchmark://signed-operator",
+          "validatedSubtasks": [],
+          "provenanceEventIds": [
+            "he-78-worker-crash-2-market#9"
+          ],
+          "parentCheckpointHash": null
+        },
+        "checkpointHash": "sha256:a19c081504b2804ad1a042e5883b79d19e77bcfb20800df8cb51173f4e1b25b0"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#12",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 12,
+      "atMs": 1794692088420,
+      "actor": "keeper",
+      "body": {
+        "type": "lease_expired",
+        "attempt": 1,
+        "fencingToken": 1
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#13",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 13,
+      "atMs": 1794692088420,
+      "actor": "keeper",
+      "body": {
+        "type": "attempt_failed",
+        "attempt": 1,
+        "reason": "LEASE_EXPIRED",
+        "agents": [
+          "alpha"
+        ]
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#14",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 14,
+      "atMs": 1794692088420,
+      "actor": "keeper",
+      "body": {
+        "type": "recovery_opened",
+        "epoch": 1,
+        "reason": "LEASE_EXPIRED",
+        "closesAtMs": 1794692089420
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#15",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 15,
+      "atMs": 1794692089654,
+      "actor": "keeper",
+      "body": {
+        "type": "terminal_failure",
+        "reason": "NO_ELIGIBLE_BIDS"
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#16",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 16,
+      "atMs": 1794692090007,
+      "actor": "keeper",
+      "body": {
+        "type": "settlement_started",
+        "kind": "failure",
+        "attempt": 1,
+        "settlementKey": "sha256:271a5fb96ce5024834838cb1f1aec31198cf14d5eed92e2500eab33adca54fd2",
+        "legs": [
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "400000000000000000000000",
+            "pool": "escrow",
+            "purpose": "escrow_refund"
+          },
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "150000000000000000000000",
+            "pool": "bond",
+            "purpose": "compensation"
+          },
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "40000000000000000000000",
+            "pool": "premium",
+            "purpose": "premium_refund"
+          },
+          {
+            "recipient": "guarantor.fixture.testnet",
+            "amountYocto": "100000000000000000000000",
+            "pool": "bond",
+            "purpose": "bond_release"
+          }
+        ]
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#17",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 17,
+      "atMs": 1794692090036,
+      "actor": "fixture-vault",
+      "body": {
+        "type": "transfer_resolved",
+        "transferId": "he-78-worker-crash-2-market:f:0",
+        "succeeded": true
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#18",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 18,
+      "atMs": 1794692090036,
+      "actor": "fixture-vault",
+      "body": {
+        "type": "transfer_resolved",
+        "transferId": "he-78-worker-crash-2-market:f:1",
+        "succeeded": true
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#19",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 19,
+      "atMs": 1794692090037,
+      "actor": "fixture-vault",
+      "body": {
+        "type": "transfer_resolved",
+        "transferId": "he-78-worker-crash-2-market:f:2",
+        "succeeded": true
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#20",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 20,
+      "atMs": 1794692090038,
+      "actor": "fixture-vault",
+      "body": {
+        "type": "transfer_resolved",
+        "transferId": "he-78-worker-crash-2-market:f:3",
+        "succeeded": true
+      }
+    },
+    {
+      "eventId": "he-78-worker-crash-2-market#21",
+      "taskId": "he-78-worker-crash-2-market",
+      "version": 21,
+      "atMs": 1794692090038,
+      "actor": "fixture-vault",
+      "body": {
+        "type": "task_settled",
+        "kind": "failure",
+        "ledgerHash": "sha256:887f41cb937bc06021f735d49cb6ff89c5e2d8e25649ba7e802ff03eb51f177a"
+      }
+    }
+  ]
+}

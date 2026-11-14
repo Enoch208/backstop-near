@@ -8,7 +8,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { diagnose } from "../src/diagnosis.js";
 import { produce } from "../src/produce.js";
-import { repairFeedback } from "../src/recovery-feedback.js";
+import { repairFeedback, recoveryStrategyFor } from "../src/recovery-feedback.js";
 
 let server: Server | null = null;
 
@@ -68,6 +68,50 @@ afterEach(() => {
 });
 
 describe("live production", () => {
+  it("abandons rejected algorithms on hidden-only failures, execution errors, or repeats", () => {
+    const source = "function solve(x) {return x;}";
+    const rejection = {
+      attempt: 1,
+      artifactHash: digestText(source),
+      publicFailedCaseIds: [],
+      heldOutFailures: 1,
+      executionErrors: 0,
+    };
+    expect(recoveryStrategyFor(source, [rejection], "patch")).toBe("rebuild");
+    expect(
+      recoveryStrategyFor(
+        source,
+        [{ ...rejection, publicFailedCaseIds: ["public"], executionErrors: 1 }],
+        "patch",
+      ),
+    ).toBe("rebuild");
+    const publicFailure = { ...rejection, publicFailedCaseIds: ["public"], heldOutFailures: 0 };
+    expect(recoveryStrategyFor(source, [publicFailure], "patch")).toBe("patch");
+    expect(
+      recoveryStrategyFor(source, [publicFailure, { ...publicFailure, attempt: 2 }], "patch"),
+    ).toBe("rebuild");
+    expect(recoveryStrategyFor(source + "\n", [rejection], "patch")).toBe("patch");
+    const changed = source + "\n";
+    const semanticRepeat = { ...publicFailure, attempt: 2, artifactHash: digestText(changed) };
+    expect(recoveryStrategyFor(changed, [publicFailure, semanticRepeat], "patch")).toBe("rebuild");
+  });
+
+  it("retries the actual failed result and refuses a result that still fails public cases", async () => {
+    const prompts: string[] = [];
+    const failed = "function checkoutTotal(input) { return { failedRetryMarker: true }; }\n";
+    const model = await fakeModel([fenced(failed), fenced(failed)], prompts);
+    await expect(
+      produce(
+        roster.beta,
+        { baseUrl: model.baseUrl, apiKey: "test", model: "test/model" },
+        context,
+      ),
+    ).rejects.toThrow("still fails public verification");
+    expect(model.calls()).toBe(2);
+    expect(prompts[1]).toContain("failedRetryMarker");
+    expect(prompts[1]).toContain(digestText(failed));
+    expect(prompts[1]).toContain("input");
+  });
   it("explains public failures only for the artifact the verifier rejected", () => {
     const source = "function increment(n) { return n; }";
     const brief = {

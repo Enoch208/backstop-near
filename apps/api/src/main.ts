@@ -20,6 +20,7 @@ const env = z
     BACKSTOP_TESTNET_RPC: z.string().min(1).default(defaultTestnetRpc),
     BACKSTOP_STATE_PATH: z.string().min(1).default(".backstop/state.sqlite"),
     BACKSTOP_DEMO: z.enum(["0", "1"]).default("0"),
+    BACKSTOP_AGENT_FAILURE_DOMAINS: z.string().optional(),
   })
   .parse(process.env);
 
@@ -29,7 +30,18 @@ if (!["127.0.0.1", "localhost"].includes(env.HOST)) {
   );
 }
 
-const runtime = createRuntime(Date.now, env.BACKSTOP_DEMO === "1", env.BACKSTOP_STATE_PATH);
+const agentFailureDomains =
+  env.BACKSTOP_AGENT_FAILURE_DOMAINS === undefined
+    ? undefined
+    : z
+        .record(z.string().min(1), z.string().trim().min(1).max(256))
+        .parse(JSON.parse(env.BACKSTOP_AGENT_FAILURE_DOMAINS));
+const runtime = createRuntime(
+  Date.now,
+  env.BACKSTOP_DEMO === "1",
+  env.BACKSTOP_STATE_PATH,
+  agentFailureDomains,
+);
 if (env.BACKSTOP_API_VAULT === "testnet") {
   const keys = z
     .object({

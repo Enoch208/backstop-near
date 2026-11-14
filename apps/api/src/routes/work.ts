@@ -1,5 +1,5 @@
 import { extractSource } from "@backstop/agents";
-import { checkpointSchema, digestSchema, digestText } from "@backstop/shared";
+import { checkpointSchema, digestSchema, digestText, workerFailureReasons } from "@backstop/shared";
 import { checkReceipt, inferenceReceiptSchema, type InferenceReceipt } from "@backstop/tee";
 import { z } from "zod";
 import { signedWrite } from "../auth.js";
@@ -10,6 +10,7 @@ import { fromOutcome, parseBody, refuse } from "./outcome.js";
 const token = z.int().min(1);
 const claimBody = z.strictObject({});
 const heartbeatBody = z.strictObject({ fencingToken: token });
+const failureBody = z.strictObject({ fencingToken: token, reason: z.enum(workerFailureReasons) });
 const checkpointBody = z.strictObject({
   fencingToken: token,
   checkpoint: checkpointSchema,
@@ -45,6 +46,26 @@ export function heartbeat(runtime: Runtime, request: Request, taskId: string): P
         kind: "heartbeat",
         agentId: actor.id,
         fencingToken: parsed.value.fencingToken,
+      }),
+    );
+  });
+}
+
+export function reportFailure(
+  runtime: Runtime,
+  request: Request,
+  taskId: string,
+): Promise<Response> {
+  return signedWrite(runtime, request, ({ actor, body }) => {
+    const parsed = parseBody(failureBody, body);
+    if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
+    return fromOutcome(
+      runtime,
+      taskId,
+      execute(runtime, taskId, actor.id, {
+        kind: "reportFailure",
+        agentId: actor.id,
+        ...parsed.value,
       }),
     );
   });

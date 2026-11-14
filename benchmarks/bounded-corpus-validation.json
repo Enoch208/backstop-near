@@ -1,0 +1,1258 @@
+{
+  "createdAt": "2026-11-14T23:02:54.850Z",
+  "inferenceCalls": 0,
+  "selection": {
+    "seed": 314159,
+    "excluded": [
+      1,
+      3,
+      6,
+      11,
+      12,
+      17,
+      25,
+      29,
+      31,
+      34,
+      37,
+      44,
+      46,
+      48,
+      52,
+      54,
+      56,
+      59,
+      61,
+      62,
+      68,
+      69,
+      76,
+      78,
+      81,
+      85,
+      86,
+      87,
+      95,
+      100,
+      105,
+      108,
+      109,
+      111,
+      119,
+      124,
+      125,
+      127,
+      129,
+      130,
+      132,
+      138,
+      145,
+      146,
+      147,
+      152,
+      154,
+      156,
+      157,
+      158
+    ],
+    "pool": [
+      [
+        10,
+        3,
+        "make_palindrome"
+      ],
+      [
+        26,
+        3,
+        "remove_duplicates"
+      ],
+      [
+        32,
+        3,
+        "find_zero"
+      ],
+      [
+        33,
+        3,
+        "sort_third"
+      ],
+      [
+        38,
+        3,
+        "decode_cyclic"
+      ],
+      [
+        39,
+        10,
+        "prime_fib"
+      ],
+      [
+        40,
+        4,
+        "triples_sum_to_zero"
+      ],
+      [
+        43,
+        3,
+        "pairs_sum_to_zero"
+      ],
+      [
+        55,
+        3,
+        "fib"
+      ],
+      [
+        57,
+        3,
+        "monotonic"
+      ],
+      [
+        63,
+        3,
+        "fibfib"
+      ],
+      [
+        75,
+        6,
+        "is_multiply_prime"
+      ],
+      [
+        80,
+        3,
+        "is_happy"
+      ],
+      [
+        90,
+        3,
+        "next_smallest"
+      ],
+      [
+        93,
+        3,
+        "encode"
+      ],
+      [
+        94,
+        3,
+        "skjkasdkd"
+      ],
+      [
+        96,
+        3,
+        "count_up_to"
+      ],
+      [
+        102,
+        4,
+        "choose_num"
+      ],
+      [
+        106,
+        5,
+        "f"
+      ],
+      [
+        107,
+        3,
+        "even_odd_palindrome"
+      ],
+      [
+        114,
+        4,
+        "minSubArraySum"
+      ],
+      [
+        117,
+        3,
+        "select_words"
+      ],
+      [
+        123,
+        3,
+        "get_odd_collatz"
+      ],
+      [
+        126,
+        3,
+        "is_sorted"
+      ],
+      [
+        128,
+        3,
+        "prod_signs"
+      ],
+      [
+        131,
+        3,
+        "digits"
+      ],
+      [
+        141,
+        5,
+        "file_name_check"
+      ],
+      [
+        142,
+        3,
+        "sum_squares"
+      ],
+      [
+        153,
+        5,
+        "Strongest_Extension"
+      ],
+      [
+        155,
+        3,
+        "even_odd_count"
+      ],
+      [
+        161,
+        3,
+        "solve"
+      ]
+    ],
+    "priority": [
+      [
+        40,
+        4,
+        "triples_sum_to_zero"
+      ],
+      [
+        55,
+        3,
+        "fib"
+      ],
+      [
+        57,
+        3,
+        "monotonic"
+      ],
+      [
+        33,
+        3,
+        "sort_third"
+      ],
+      [
+        142,
+        3,
+        "sum_squares"
+      ],
+      [
+        106,
+        5,
+        "f"
+      ],
+      [
+        153,
+        5,
+        "Strongest_Extension"
+      ],
+      [
+        107,
+        3,
+        "even_odd_palindrome"
+      ],
+      [
+        128,
+        3,
+        "prod_signs"
+      ],
+      [
+        96,
+        3,
+        "count_up_to"
+      ],
+      [
+        39,
+        10,
+        "prime_fib"
+      ],
+      [
+        114,
+        4,
+        "minSubArraySum"
+      ],
+      [
+        131,
+        3,
+        "digits"
+      ],
+      [
+        26,
+        3,
+        "remove_duplicates"
+      ],
+      [
+        161,
+        3,
+        "solve"
+      ],
+      [
+        38,
+        3,
+        "decode_cyclic"
+      ],
+      [
+        32,
+        3,
+        "find_zero"
+      ],
+      [
+        80,
+        3,
+        "is_happy"
+      ],
+      [
+        126,
+        3,
+        "is_sorted"
+      ],
+      [
+        10,
+        3,
+        "make_palindrome"
+      ],
+      [
+        155,
+        3,
+        "even_odd_count"
+      ],
+      [
+        93,
+        3,
+        "encode"
+      ],
+      [
+        94,
+        3,
+        "skjkasdkd"
+      ],
+      [
+        90,
+        3,
+        "next_smallest"
+      ],
+      [
+        123,
+        3,
+        "get_odd_collatz"
+      ],
+      [
+        141,
+        5,
+        "file_name_check"
+      ],
+      [
+        117,
+        3,
+        "select_words"
+      ],
+      [
+        63,
+        3,
+        "fibfib"
+      ],
+      [
+        75,
+        6,
+        "is_multiply_prime"
+      ],
+      [
+        43,
+        3,
+        "pairs_sum_to_zero"
+      ],
+      [
+        102,
+        4,
+        "choose_num"
+      ]
+    ],
+    "algorithm": "Python random.Random(314159).sample(pool,len(pool)); pool ordered by upstream numeric taskID; entry-function AST count If/IfExp/For/While/comprehension including nested helpers >=3; take first10compatible after 50prior IDs excluded.",
+    "selected": [
+      40,
+      57,
+      33,
+      142,
+      153,
+      107,
+      128,
+      96,
+      114,
+      131
+    ],
+    "skipped": [
+      {
+        "id": 55,
+        "reason": "Only5base+45plus inputs before deduplication; fewer than64."
+      },
+      {
+        "id": 106,
+        "reason": "Factorial sequence exceeds exact JavaScript-safe integers above18; insufficient distinct valid cases belowthreshold."
+      },
+      {
+        "id": 39,
+        "reason": "Only10base+2plus inputs beforededuplication; insufficient distinctcases."
+      }
+    ]
+  },
+  "composition": "Fixed offsets[0,1,3,6,8] modulo10; ten distinctsets, eachcomponent fiveappearances. Choice made before anylive inference. Components unused in all50previous tasks; modules correlated and outside-source-derived, not independent originalHumanEvaltasks.",
+  "difficulty": {
+    "componentMeanComplexity": 3.4,
+    "functionsPerModule": 5,
+    "moduleMeanComplexity": 17,
+    "previousFunctionsPerModule": 3,
+    "previousModuleMeanComplexity": 14.1,
+    "limitation": "Higherfunctioncount andaggregateASTbranchproxy, not empirically proven modeldifficulty; constituentfunctions individuallysimpler."
+  },
+  "corpusHash": "sha256:cd3fc8d3ffe6d9da43bb096834e5c41c983106d9f78904c3336faf273ce13150",
+  "componentValidation": "/tmp/backstop-bounded-python-validation.json",
+  "componentCanonicalDigests": [
+    {
+      "id": "he-40",
+      "canonicalSha256": "7817b5d996bdfead1510f30e7ee6c7460c589078782ad15410cbe382f587feaf"
+    },
+    {
+      "id": "he-57",
+      "canonicalSha256": "572edc41f3035909727778a8c51812f02b026de666d2a23a9030f4c67e4ee2b9"
+    },
+    {
+      "id": "he-33",
+      "canonicalSha256": "b319e2cf8b992b7d98ad1b7f3c2bb55a36dcb119b342c7cd76bcc226b7e327c3"
+    },
+    {
+      "id": "he-142",
+      "canonicalSha256": "f6d14ac1a31cbc47fccf16b5a5f4f4f222763585b0ceaaf81d0038902876b4b9"
+    },
+    {
+      "id": "he-153",
+      "canonicalSha256": "dabbedaeb788cf51af8eeb91c7dace6189e99c10f6f4fb23b4da32892f756dea"
+    },
+    {
+      "id": "he-107",
+      "canonicalSha256": "36ddb74e4ab50e4d11d4f9b9703693d7d7256549649e7a5844d88de504019e5b"
+    },
+    {
+      "id": "he-128",
+      "canonicalSha256": "4dcfbcadf335d7dad4cba2ec19029701b0451f134147b6aa0dc90efc87bbdd72"
+    },
+    {
+      "id": "he-96",
+      "canonicalSha256": "eb7bacfdec12246e185faf55d386fad38c1cb1729e8009704190618cb9354504"
+    },
+    {
+      "id": "he-114",
+      "canonicalSha256": "b9e4874d7de946541627e39c9ce804b31c293a9ff61d2080a6365a5d8f68f7cf"
+    },
+    {
+      "id": "he-131",
+      "canonicalSha256": "b792018946e0b2083e4c5458ebb1783819a029a75a966fb365fb88d4d8049601"
+    }
+  ],
+  "sourceDigests": {
+    "python": "sha256:42526ec0e7d5f3ee0b06d6ced98f8c8bae3d76519151bfb3d36f79010645bd7f",
+    "javascript": "sha256:da529500a73fcbc86bc8f6c7855c0f2c0fc7af1c4dc530e26a54bbfd17f97cef"
+  },
+  "inputs": "Eachcomponent andmodule:4public,12acceptance,48audit; componentcase seed7109+ID; modulecases zip sameindex; public-onlylookupmutants contain no reference/hiddeninputs.",
+  "componentOracleComparisons": 640,
+  "moduleOracleComparisons": 640,
+  "oracleMismatches": 0,
+  "referenceTimeLimitMs": 1000,
+  "maxPromptBytes": 8192,
+  "maxSourceBytes": 4096,
+  "maxOutputTokens": 960,
+  "standalonePreparePassed": 10,
+  "tasks": [
+    {
+      "id": "bounded-40-57-142-128-114",
+      "components": [
+        "he-40",
+        "he-57",
+        "he-142",
+        "he-128",
+        "he-114"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1564,
+      "starterBytes": 719,
+      "mutantBytes": 646,
+      "prompts": [
+        {
+          "sourceBytes": 719,
+          "strategy": "patch",
+          "bytes": 7997,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 719,
+          "strategy": "rebuild",
+          "bytes": 7475,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 646,
+          "strategy": "patch",
+          "bytes": 7036,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 646,
+          "strategy": "rebuild",
+          "bytes": 6584,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7060,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7221,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:f5374a1a830bae56de4556d96c01c3a21228bd3c11c36d360380d8a7037a017e"
+    },
+    {
+      "id": "bounded-57-33-153-96-131",
+      "components": [
+        "he-57",
+        "he-33",
+        "he-153",
+        "he-96",
+        "he-131"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1767,
+      "starterBytes": 617,
+      "mutantBytes": 827,
+      "prompts": [
+        {
+          "sourceBytes": 617,
+          "strategy": "patch",
+          "bytes": 3909,
+          "compaction": "guidance",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 617,
+          "strategy": "rebuild",
+          "bytes": 7798,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 827,
+          "strategy": "patch",
+          "bytes": 7445,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 827,
+          "strategy": "rebuild",
+          "bytes": 6740,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7349,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7510,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:7670f31b18adce8e324c2be71381dde694f9808ccf5525f428b50095d7749c2a"
+    },
+    {
+      "id": "bounded-33-142-107-114-40",
+      "components": [
+        "he-33",
+        "he-142",
+        "he-107",
+        "he-114",
+        "he-40"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1598,
+      "starterBytes": 797,
+      "mutantBytes": 702,
+      "prompts": [
+        {
+          "sourceBytes": 797,
+          "strategy": "patch",
+          "bytes": 8160,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 797,
+          "strategy": "rebuild",
+          "bytes": 7560,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 702,
+          "strategy": "patch",
+          "bytes": 7118,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 702,
+          "strategy": "rebuild",
+          "bytes": 6610,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7123,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7284,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:4d4177964a9a96b5f966a2132d5cd183b11dc53c698ffb9f68847c10392bebfc"
+    },
+    {
+      "id": "bounded-142-153-128-131-57",
+      "components": [
+        "he-142",
+        "he-153",
+        "he-128",
+        "he-131",
+        "he-57"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1834,
+      "starterBytes": 573,
+      "mutantBytes": 764,
+      "prompts": [
+        {
+          "sourceBytes": 573,
+          "strategy": "patch",
+          "bytes": 8156,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 573,
+          "strategy": "rebuild",
+          "bytes": 7780,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 764,
+          "strategy": "patch",
+          "bytes": 7444,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 764,
+          "strategy": "rebuild",
+          "bytes": 6802,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7371,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7532,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:313d13289fa26f6e1950e3096e424d6ad26978d3fcd62cb3a7449a9ffc21f114"
+    },
+    {
+      "id": "bounded-153-107-96-40-33",
+      "components": [
+        "he-153",
+        "he-107",
+        "he-96",
+        "he-40",
+        "he-33"
+      ],
+      "complexity": 18,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1880,
+      "starterBytes": 807,
+      "mutantBytes": 846,
+      "prompts": [
+        {
+          "sourceBytes": 807,
+          "strategy": "patch",
+          "bytes": 4220,
+          "compaction": "guidance",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 807,
+          "strategy": "rebuild",
+          "bytes": 7878,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 846,
+          "strategy": "patch",
+          "bytes": 7522,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 846,
+          "strategy": "rebuild",
+          "bytes": 6798,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7435,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7596,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:201538a399b805677124f1606b7e55e2d24e2b77f533482147e838d6c9ec1972"
+    },
+    {
+      "id": "bounded-107-128-114-57-142",
+      "components": [
+        "he-107",
+        "he-128",
+        "he-114",
+        "he-57",
+        "he-142"
+      ],
+      "complexity": 16,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1678,
+      "starterBytes": 688,
+      "mutantBytes": 624,
+      "prompts": [
+        {
+          "sourceBytes": 688,
+          "strategy": "patch",
+          "bytes": 7843,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 688,
+          "strategy": "rebuild",
+          "bytes": 7352,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 624,
+          "strategy": "patch",
+          "bytes": 6903,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 624,
+          "strategy": "rebuild",
+          "bytes": 6473,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 6933,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7094,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:583a7a0d8d29aafb7a17c4acbb683023463f49bb763d61af2eb5097b9f28f667"
+    },
+    {
+      "id": "bounded-128-96-131-33-153",
+      "components": [
+        "he-128",
+        "he-96",
+        "he-131",
+        "he-33",
+        "he-153"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1765,
+      "starterBytes": 618,
+      "mutantBytes": 816,
+      "prompts": [
+        {
+          "sourceBytes": 618,
+          "strategy": "patch",
+          "bytes": 8094,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 618,
+          "strategy": "rebuild",
+          "bytes": 7673,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 816,
+          "strategy": "patch",
+          "bytes": 7352,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 816,
+          "strategy": "rebuild",
+          "bytes": 6658,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7259,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7420,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:f353e3de25e3081996f92225a8824e804dfae952715a753d16ea8ef39d4598af"
+    },
+    {
+      "id": "bounded-96-114-40-142-107",
+      "components": [
+        "he-96",
+        "he-114",
+        "he-40",
+        "he-142",
+        "he-107"
+      ],
+      "complexity": 17,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1619,
+      "starterBytes": 874,
+      "mutantBytes": 624,
+      "prompts": [
+        {
+          "sourceBytes": 874,
+          "strategy": "patch",
+          "bytes": 8081,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 874,
+          "strategy": "rebuild",
+          "bytes": 7404,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 624,
+          "strategy": "patch",
+          "bytes": 6914,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 624,
+          "strategy": "rebuild",
+          "bytes": 6484,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 6949,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7110,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 13,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:a6a4f68c19a78a3d020da934080e2ec4ab60d9b6e523bb6cf86083bc14004d87"
+    },
+    {
+      "id": "bounded-114-131-57-153-128",
+      "components": [
+        "he-114",
+        "he-131",
+        "he-57",
+        "he-153",
+        "he-128"
+      ],
+      "complexity": 18,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1744,
+      "starterBytes": 623,
+      "mutantBytes": 776,
+      "prompts": [
+        {
+          "sourceBytes": 623,
+          "strategy": "patch",
+          "bytes": 8139,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 623,
+          "strategy": "rebuild",
+          "bytes": 7713,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 776,
+          "strategy": "patch",
+          "bytes": 7384,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 776,
+          "strategy": "rebuild",
+          "bytes": 6730,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 7307,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 7468,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:e23cd888825d6c64c35c5e462b43ba895f61c09d9736aee7e7be4b7ac33a81b6"
+    },
+    {
+      "id": "bounded-131-40-33-107-96",
+      "components": [
+        "he-131",
+        "he-40",
+        "he-33",
+        "he-107",
+        "he-96"
+      ],
+      "complexity": 16,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 1656,
+      "starterBytes": 789,
+      "mutantBytes": 660,
+      "prompts": [
+        {
+          "sourceBytes": 789,
+          "strategy": "patch",
+          "bytes": 7845,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 789,
+          "strategy": "rebuild",
+          "bytes": 7253,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 660,
+          "strategy": "patch",
+          "bytes": 6802,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 660,
+          "strategy": "rebuild",
+          "bytes": 6336,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "patch",
+          "bytes": 6828,
+          "compaction": "none",
+          "effectiveStrategy": "patch"
+        },
+        {
+          "sourceBytes": 4095,
+          "strategy": "rebuild",
+          "bytes": 6989,
+          "compaction": "none",
+          "effectiveStrategy": "rebuild"
+        }
+      ],
+      "oracleComparisons": 64,
+      "oracleMismatches": [],
+      "resourceErrors": [],
+      "starterFailures": 16,
+      "mutantPublicFailures": 0,
+      "mutantPrivateFailures": 60,
+      "taskHash": "sha256:16b32d27353196be2e01534b0d1739afb7797e1d66fd05a97f91c899f69a1da4"
+    }
+  ],
+  "components": [
+    {
+      "id": "he-40",
+      "complexity": 4,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 282,
+      "canonicalSourceSha256": "7817b5d996bdfead1510f30e7ee6c7460c589078782ad15410cbe382f587feaf",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-57",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 306,
+      "canonicalSourceSha256": "572edc41f3035909727778a8c51812f02b026de666d2a23a9030f4c67e4ee2b9",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-33",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 248,
+      "canonicalSourceSha256": "b319e2cf8b992b7d98ad1b7f3c2bb55a36dcb119b342c7cd76bcc226b7e327c3",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-142",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 280,
+      "canonicalSourceSha256": "f6d14ac1a31cbc47fccf16b5a5f4f4f222763585b0ceaaf81d0038902876b4b9",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-153",
+      "complexity": 5,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 483,
+      "canonicalSourceSha256": "dabbedaeb788cf51af8eeb91c7dace6189e99c10f6f4fb23b4da32892f756dea",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-107",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 396,
+      "canonicalSourceSha256": "36ddb74e4ab50e4d11d4f9b9703693d7d7256549649e7a5844d88de504019e5b",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-128",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 304,
+      "canonicalSourceSha256": "4dcfbcadf335d7dad4cba2ec19029701b0451f134147b6aa0dc90efc87bbdd72",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-96",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 269,
+      "canonicalSourceSha256": "eb7bacfdec12246e185faf55d386fad38c1cb1729e8009704190618cb9354504",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-114",
+      "complexity": 4,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 190,
+      "canonicalSourceSha256": "b9e4874d7de946541627e39c9ce804b31c293a9ff61d2080a6365a5d8f68f7cf",
+      "distinctInputs": 64
+    },
+    {
+      "id": "he-131",
+      "complexity": 3,
+      "visible": 4,
+      "acceptance": 12,
+      "audit": 48,
+      "referenceBytes": 259,
+      "canonicalSourceSha256": "b792018946e0b2083e4c5458ebb1783819a029a75a966fb365fb88d4d8049601",
+      "distinctInputs": 64
+    }
+  ],
+  "safeIntegerAsciiInputsAndOutputs": true,
+  "publicAcceptanceAuditDisjoint": true,
+  "promptValidationLimitations": "Checks starter, public-only mutant and synthetic4095-byte throw-source under patch/rebuild; runtime profile-style checks delegated to prompt agent. Reference source <=1880bytes makes960outputtokens plausible but not a guarantee of model brevity.",
+  "sourceFiles": {
+    "bounded-external-tasks.ts": "366d96ab78908a02f5279c50d8cde013971c520a71fb03cd95102ae022556788",
+    "bounded-module-tasks.ts": "62971a66d962b664483082a64b6e0fff47b914c44435babd4ffaaf381918df83",
+    "external-tasks.ts": "2e4701b1f760b0aa107f7b8d0d1eb018a930e498ccaabc6d5f43adcc57362da7"
+  }
+}

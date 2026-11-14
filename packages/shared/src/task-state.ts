@@ -35,6 +35,9 @@ export type AgentRole = (typeof agentRoles)[number];
 
 export const failureReasons = [
   "LEASE_EXPIRED",
+  "PROVIDER_TIMEOUT",
+  "PROMPT_LIMIT",
+  "INVALID_OUTPUT",
   "VERDICT_REJECTED",
   "CHALLENGE_UPHELD",
   "NO_ELIGIBLE_BIDS",
@@ -42,3 +45,6 @@ export const failureReasons = [
   "DEADLINE_PASSED",
 ] as const;
 export type FailureReason = (typeof failureReasons)[number];
+
+export const workerFailureReasons = ["PROVIDER_TIMEOUT", "PROMPT_LIMIT", "INVALID_OUTPUT"] as const;
+export type WorkerFailureReason = (typeof workerFailureReasons)[number];

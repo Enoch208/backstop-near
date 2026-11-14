@@ -6,6 +6,8 @@ import {
   primaryBid,
   recoveryTeam,
   searchCounterexample,
+  PromptBudgetError,
+  InvalidRepairOutputError,
   type Diagnosis,
   type FixtureAgent,
   type ModelConfig,
@@ -26,10 +28,10 @@ import {
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
-import { diagnose, fetchFinding, findingBoard, probeRepair } from "./diagnosis.js";
+import { diagnose, fetchFinding, findingBoard, probeRepair, publicDiagnosis } from "./diagnosis.js";
 import { produce, publicFailures, type Resume } from "./produce.js";
 import { reserveStandby, type StandbyTerms } from "./standby.js";
-import { rebuildInstruction, repairFeedback } from "./recovery-feedback.js";
+import { rebuildInstruction, repairFeedback, recoveryStrategyFor } from "./recovery-feedback.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -223,7 +225,15 @@ export function agentLoop(
       log(
         `resumed from checkpoint ${resume.hash.slice(0, 19)}… (hash verified), which passes ${inherited.join(", ") || "nothing yet"}`,
       );
-    const diagnosis = await awaitDiagnosis(task.attempt, assigned, task.manifest.policy.leaseMs);
+    const diagnosis =
+      (await awaitDiagnosis(task.attempt, assigned, task.manifest.policy.leaseMs)) ??
+      (repairTask === undefined
+        ? null
+        : publicDiagnosis(resume?.source ?? repairTask.source, repairTask));
+    const recoveryStrategy =
+      resume === null
+        ? assigned.bid.strategy
+        : recoveryStrategyFor(resume.source, task.recoveryFeedback ?? [], assigned.bid.strategy);
     const product = await produce(agent, model, {
       objective: task.manifest.objective,
       inherited,
@@ -231,15 +241,38 @@ export function agentLoop(
         ...history,
         ...(repairTask === undefined || resume === null
           ? []
-          : repairFeedback(resume.source, repairTask, task.recoveryFeedback ?? [])),
+          : repairFeedback(
+              resume.source,
+              repairTask,
+              task.recoveryFeedback ?? [],
+              diagnosis?.finding.failingCases,
+            )),
         ...rebuildInstruction(assigned.bid.strategy),
       ],
       resume,
       diagnosis,
+      ...(recoveryStrategy === undefined ? {} : { recoveryStrategy }),
       ...(repairTask === undefined ? {} : { repairTask }),
-    }).catch((error: unknown) => {
+    }).catch(async (error: unknown) => {
       clearInterval(beat);
-      log("stopped heartbeats so the lease expires and the work is re-auctioned");
+      const reason =
+        error instanceof DOMException && error.name === "TimeoutError"
+          ? "PROVIDER_TIMEOUT"
+          : error instanceof PromptBudgetError
+            ? "PROMPT_LIMIT"
+            : error instanceof InvalidRepairOutputError
+              ? "INVALID_OUTPUT"
+              : undefined;
+      if (reason === undefined)
+        log("stopped heartbeats so the lease expires and the work is re-auctioned");
+      else {
+        const reply = await client.post(`${base}/failures`, { fencingToken: token, reason });
+        log(`reported ${reason} for the active attempt (HTTP ${String(reply.status)})`);
+        if (reply.status >= 300)
+          throw new Error(`Failure report refused (HTTP ${String(reply.status)})`, {
+            cause: error,
+          });
+      }
       throw error;
     });
     await wait(step);

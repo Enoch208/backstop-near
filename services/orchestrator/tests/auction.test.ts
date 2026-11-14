@@ -27,7 +27,7 @@ const bidsFor = (driver: ReturnType<typeof recoveryOpen>) =>
   );
 
 describe("the recovery auction", () => {
-  it("routes a held-out rejection to an eligible rebuild bid without bypassing fixed order or budget", () => {
+  it("does not pay a rebuild premium based on a strategy label, even after rejection", () => {
     const driver = recoveryOpen();
     const task = record(driver);
     const [patch, coalition, overBudget] = bidsFor(driver);
@@ -62,9 +62,28 @@ describe("the recovery auction", () => {
     const quotes = [patch, rebuild, expensive];
     const select = (excluded: string[], fixed?: readonly string[]) =>
       runAuction(quotes, task.ledger, driver.nowMs, excluded, fixed, strategy).winner?.bidHash;
-    expect(select([])).toBe(rebuild.bidHash);
+    expect(select([])).toBe(patch.bidHash);
     expect(select(["gamma"])).toBe(patch.bidHash);
+    expect(select(["beta"])).toBe(rebuild.bidHash);
     expect(select([], ["beta", "gamma", "epsilon"])).toBe(patch.bidHash);
+  });
+
+  it("uses strategy preference only between equally priced eligible bids", () => {
+    const driver = recoveryOpen();
+    const [cheap] = bidsFor(driver);
+    if (cheap === undefined) throw new Error("expected bids");
+    const patch = signBid({ ...cheap.bid, strategy: "patch" }, roster.beta);
+    const rebuild = signBid(
+      { ...cheap.bid, strategy: "rebuild", committedAtMs: cheap.bid.committedAtMs + 1 },
+      roster.beta,
+    );
+    expect(
+      runAuction([patch, rebuild], record(driver).ledger, driver.nowMs, [], undefined, "rebuild")
+        .winner?.bidHash,
+    ).toBe(rebuild.bidHash);
+    expect(
+      runAuction([patch, rebuild], record(driver).ledger, driver.nowMs, []).winner?.bidHash,
+    ).toBe(patch.bidHash);
   });
 
   it("TC-007 awards exactly one winner by price and records why the rest lost", () => {

@@ -1,0 +1,321 @@
+{
+  "replay": {
+    "trials": 160,
+    "pairs": 80,
+    "deliveries": 159,
+    "standby": 44,
+    "matchingAssignments": 78,
+    "matchingFirstRecovery": 80,
+    "differentFirstRecovery": 0,
+    "verifiedFeedback": 43,
+    "diversificationAwards": 2,
+    "diversificationOpportunities": 3,
+    "timeoutDiversificationAwards": 2,
+    "timeoutDiversificationOpportunities": 2,
+    "workerFailureReports": 2,
+    "marketWins": 0,
+    "fixedWins": 1,
+    "byMode": {
+      "market": {
+        "overall": {
+          "trials": 80,
+          "correct": 79,
+          "falseAccepts": 0,
+          "p95Ms": 60095,
+          "totalSettlementNear": "30.57",
+          "settlementNearPerCorrect": "0.386962025316455696202531",
+          "bondConsumedNear": "2.73"
+        },
+        "byFault": {
+          "healthy": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 27971,
+            "totalSettlementNear": "8.8",
+            "settlementNearPerCorrect": "0.44",
+            "bondConsumedNear": "0"
+          },
+          "worker-crash": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 60095,
+            "totalSettlementNear": "5.6",
+            "settlementNearPerCorrect": "0.28",
+            "bondConsumedNear": "0"
+          },
+          "primary-provider-outage": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 53293,
+            "totalSettlementNear": "10.46",
+            "settlementNearPerCorrect": "0.523",
+            "bondConsumedNear": "2.46"
+          },
+          "rejected-output": {
+            "trials": 20,
+            "correct": 19,
+            "falseAccepts": 0,
+            "p95Ms": 62190,
+            "totalSettlementNear": "5.71",
+            "settlementNearPerCorrect": "0.300526315789473684210526",
+            "bondConsumedNear": "0.27"
+          }
+        }
+      },
+      "fixed": {
+        "overall": {
+          "trials": 80,
+          "correct": 80,
+          "falseAccepts": 0,
+          "p95Ms": 59071,
+          "totalSettlementNear": "30.46",
+          "settlementNearPerCorrect": "0.38075",
+          "bondConsumedNear": "2.46"
+        },
+        "byFault": {
+          "healthy": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 27950,
+            "totalSettlementNear": "8.8",
+            "settlementNearPerCorrect": "0.44",
+            "bondConsumedNear": "0"
+          },
+          "worker-crash": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 61351,
+            "totalSettlementNear": "5.6",
+            "settlementNearPerCorrect": "0.28",
+            "bondConsumedNear": "0"
+          },
+          "primary-provider-outage": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 53409,
+            "totalSettlementNear": "10.46",
+            "settlementNearPerCorrect": "0.523",
+            "bondConsumedNear": "2.46"
+          },
+          "rejected-output": {
+            "trials": 20,
+            "correct": 20,
+            "falseAccepts": 0,
+            "p95Ms": 56146,
+            "totalSettlementNear": "5.6",
+            "settlementNearPerCorrect": "0.28",
+            "bondConsumedNear": "0"
+          }
+        }
+      }
+    }
+  },
+  "analysis": {
+    "market": {
+      "trials": 80,
+      "correct": 79,
+      "thirdAssignments": 3,
+      "correctWithThirdAssignment": 2,
+      "callsCharged": 143,
+      "promptTokens": 270423,
+      "outputTokens": 74507,
+      "callsMissingUsage": 4,
+      "callStatuses": {
+        "ok": 139,
+        "provider-timeout": 4
+      },
+      "promptCompaction": {
+        "none": 119,
+        "guidance": 24
+      },
+      "promptStrategies": {
+        "patch": 120,
+        "rebuild": 23
+      },
+      "maxPromptBytes": 8182,
+      "maxOutputTokens": 764,
+      "providerCalls": {
+        "cloud-api.near.ai": 120,
+        "api.openai.com": 23
+      },
+      "terminalFailureCauses": {
+        "verifier-rejection": 1
+      },
+      "failures": [
+        {
+          "taskId": "bounded-131-40-33-107-96-rejected-output-1-market",
+          "cause": "verifier-rejection",
+          "agents": [
+            "alpha",
+            "blind-low-bid",
+            "blind-standby-low"
+          ],
+          "statuses": [
+            "ok",
+            "provider-timeout",
+            "ok"
+          ]
+        }
+      ],
+      "eligibleTriggerAssignments": [
+        {
+          "taskId": "bounded-153-107-96-40-33-primary-provider-outage-1-market",
+          "attempt": 3,
+          "trigger": "VERDICT_REJECTED",
+          "previous": "blind-standby-low",
+          "next": "blind-standby-first",
+          "differentProvider": false,
+          "correctDelivery": true,
+          "nextInferenceStatus": "ok"
+        },
+        {
+          "taskId": "bounded-114-131-57-153-128-rejected-output-2-market",
+          "attempt": 3,
+          "trigger": "PROVIDER_TIMEOUT",
+          "previous": "blind-low-bid",
+          "next": "blind-standby-low",
+          "differentProvider": true,
+          "correctDelivery": true,
+          "nextInferenceStatus": "ok"
+        },
+        {
+          "taskId": "bounded-131-40-33-107-96-rejected-output-1-market",
+          "attempt": 3,
+          "trigger": "PROVIDER_TIMEOUT",
+          "previous": "blind-low-bid",
+          "next": "blind-standby-low",
+          "differentProvider": true,
+          "correctDelivery": false,
+          "nextInferenceStatus": "ok"
+        }
+      ]
+    },
+    "fixed": {
+      "trials": 80,
+      "correct": 80,
+      "thirdAssignments": 1,
+      "correctWithThirdAssignment": 1,
+      "callsCharged": 141,
+      "promptTokens": 270455,
+      "outputTokens": 74220,
+      "callsMissingUsage": 2,
+      "callStatuses": {
+        "ok": 139,
+        "provider-timeout": 2
+      },
+      "promptCompaction": {
+        "none": 117,
+        "guidance": 24
+      },
+      "promptStrategies": {
+        "patch": 120,
+        "rebuild": 21
+      },
+      "maxPromptBytes": 8182,
+      "maxOutputTokens": 652,
+      "providerCalls": {
+        "cloud-api.near.ai": 120,
+        "api.openai.com": 21
+      },
+      "terminalFailureCauses": {},
+      "failures": [],
+      "eligibleTriggerAssignments": [
+        {
+          "taskId": "bounded-153-107-96-40-33-primary-provider-outage-1-fixed",
+          "attempt": 3,
+          "trigger": "VERDICT_REJECTED",
+          "previous": "blind-standby-low",
+          "next": "blind-standby-first",
+          "differentProvider": false,
+          "correctDelivery": true,
+          "nextInferenceStatus": "ok"
+        }
+      ]
+    },
+    "discordantPairs": [
+      {
+        "task": "bounded-131-40-33-107-96",
+        "fault": "rejected-output",
+        "repeat": 1,
+        "marketCorrect": false,
+        "fixedCorrect": true
+      }
+    ],
+    "byTask": {
+      "bounded-107-128-114-57-142": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-114-131-57-153-128": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-128-96-131-33-153": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-131-40-33-107-96": {
+        "market": 7,
+        "fixed": 8
+      },
+      "bounded-142-153-128-131-57": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-153-107-96-40-33": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-33-142-107-114-40": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-40-57-142-128-114": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-57-33-153-96-131": {
+        "market": 8,
+        "fixed": 8
+      },
+      "bounded-96-114-40-142-107": {
+        "market": 8,
+        "fixed": 8
+      }
+    }
+  },
+  "implementationHash": "sha256:34b3655e8ddc9b9bacec9c2f7975dfe8acfca404329ae45218a9276c0a9b6faf",
+  "corpusHash": "sha256:cd3fc8d3ffe6d9da43bb096834e5c41c983106d9f78904c3336faf273ce13150",
+  "sourceHashReverified": true,
+  "load": {
+    "samples": 1397,
+    "renderSamples": 0,
+    "firstSample": "2026-11-14T23:06:15.031992+00:00",
+    "lastSample": "2026-11-14T23:31:08.197602+00:00",
+    "scope": "Processes with /.remotion/ in their executable path or executable name ffmpeg. General browser and OS load is not excluded."
+  },
+  "validation": {
+    "tests": 238,
+    "testFiles": 46,
+    "typecheck": "passed",
+    "scopedEslint": "passed",
+    "scopedNoCommentsLint": "passed",
+    "formatCheck": "passed",
+    "fullLint": "9 pre-existing errors outside changed implementation; no commit"
+  },
+  "limitations": [
+    "Team-controlled operators; no outside operator validation.",
+    "Simulated settlement excludes provider invoices, gas and standby retainers.",
+    "Components overlap and repeat; 80 pairs are not 80 independent unseen tasks.",
+    "Higher aggregate structural complexity and function count do not prove greater model difficulty.",
+    "Recovery calls are independent between arms; organic provider timeouts were not forced identically.",
+    "Only two timeout overrides; no causal/general superiority estimate.",
+    "Changed corpus means improvement over the previous run cannot be attributed solely to code changes."
+  ]
+}

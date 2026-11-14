@@ -3,6 +3,8 @@ import {
   modelFromEnv,
   primaryBid,
   repairPrompt,
+  budgetedRepairPrompt,
+  PromptBudgetError,
   roster,
   signBid,
   type FixtureAgent,
@@ -17,6 +19,7 @@ import {
   signingKeyFromSeed,
   taskManifestSchema,
   toYocto,
+  workerFailureReasons,
   type Json,
 } from "@backstop/shared";
 import {
@@ -24,6 +27,8 @@ import {
   rebuildInstruction,
   registerWorker,
   repairFeedback,
+  recoveryStrategyFor,
+  publicDiagnosis,
   reserveStandby,
   type Reply,
 } from "@backstop/workers";
@@ -38,6 +43,8 @@ const settings = z
     BENCH_OPERATOR_PRICE: z.string(),
     BENCH_OPERATOR_STYLE: z.string(),
     BENCH_OPERATOR_STRATEGY: z.enum(recoveryStrategies).optional(),
+    BENCH_OPERATOR_HARDENED: z.enum(["0", "1"]).default("0"),
+    BENCH_OPERATOR_BOUNDED: z.enum(["0", "1"]).default("0"),
   })
   .parse(process.env);
 const agent: FixtureAgent =
@@ -60,6 +67,7 @@ const request = z.object({
   action: z.enum(["reserve", "ready", "primary-bid", "bid", "infer", "work"]),
   source: z.string().nullable().optional(),
   submit: z.boolean().optional(),
+  failureReason: z.enum(workerFailureReasons).optional(),
 });
 const snapshot = z.object({
   task: z.object({
@@ -80,7 +88,7 @@ function ok(reply: Reply): unknown {
   return reply.body;
 }
 
-async function act({ taskId, action, source, submit }: z.infer<typeof request>) {
+async function act({ taskId, action, source, submit, failureReason }: z.infer<typeof request>) {
   const path = `/api/tasks/${taskId}`;
   const { task } = snapshot.parse(ok(await client.get(path)));
   const price = near(settings.BENCH_OPERATOR_PRICE);
@@ -100,7 +108,12 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
   }
   if (action === "ready") {
     const reply = await client.post(`${path}/standby/ready`, { epoch: task.epoch });
-    return { status: reply.status };
+    return {
+      status: reply.status,
+      code:
+        z.object({ error: z.object({ code: z.string() }) }).safeParse(reply.body).data?.error
+          .code ?? null,
+    };
   }
   if (action === "bid") {
     const now = Date.now();
@@ -122,7 +135,12 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
       agent,
     );
     const reply = await client.post(`${path}/bids`, { bid });
-    return { status: reply.status };
+    return {
+      status: reply.status,
+      code:
+        z.object({ error: z.object({ code: z.string() }) }).safeParse(reply.body).data?.error
+          .code ?? null,
+    };
   }
   const brief = repairBriefSchema.parse(ok(await client.get(`${path}/repair`)));
   const last = task.checkpoints.at(-1);
@@ -136,27 +154,67 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
     throw new Error("Checkpoint content does not match its hash");
   const generate = async () => {
     if (model === null) throw new Error("Missing operator model");
-    return infer(
+    const started = performance.now();
+    const diagnosis =
+      settings.BENCH_OPERATOR_HARDENED === "1" ? publicDiagnosis(original, brief) : null;
+    const promptBrief = {
+      objective: `${task.manifest.objective} ${settings.BENCH_OPERATOR_STYLE}`,
+      rules: brief.rules,
+      brokenSource: original,
+      resumedFrom: last?.checkpoint.contentHash ?? null,
+      suite: brief.suite,
+      generic: true,
+      validatedSubtasks: [],
+      diagnosis,
+      ...(settings.BENCH_OPERATOR_HARDENED === "1" && strategy !== undefined
+        ? {
+            recoveryStrategy:
+              recoveryStrategyFor(original, task.recoveryFeedback ?? [], strategy) ?? strategy,
+          }
+        : {}),
+      failureHistory: [
+        ...task.failures.map(({ reason }) => reason),
+        ...(task.manifest.policy.recoveryStrategy === undefined &&
+        settings.BENCH_OPERATOR_HARDENED !== "1"
+          ? []
+          : repairFeedback(
+              original,
+              brief,
+              task.recoveryFeedback ?? [],
+              diagnosis?.finding.failingCases,
+            )),
+        ...rebuildInstruction(strategy),
+      ],
+    };
+    let packed: ReturnType<typeof budgetedRepairPrompt> | null;
+    try {
+      packed =
+        settings.BENCH_OPERATOR_BOUNDED === "1"
+          ? budgetedRepairPrompt(promptBrief, limits.maxPromptBytes)
+          : null;
+    } catch (error) {
+      if (!(error instanceof PromptBudgetError)) throw error;
+      return {
+        source: null,
+        status: "prompt-too-large",
+        promptTokens: null,
+        outputTokens: null,
+        promptBytes: error.promptBytes,
+        elapsedMs: Math.round(performance.now() - started),
+      };
+    }
+    const result = await infer(
       model,
-      repairPrompt({
-        objective: `${task.manifest.objective} ${settings.BENCH_OPERATOR_STYLE}`,
-        rules: brief.rules,
-        brokenSource: original,
-        resumedFrom: last?.checkpoint.contentHash ?? null,
-        suite: brief.suite,
-        generic: true,
-        validatedSubtasks: [],
-        diagnosis: null,
-        failureHistory: [
-          ...task.failures.map(({ reason }) => reason),
-          ...(task.manifest.policy.recoveryStrategy === undefined
-            ? []
-            : repairFeedback(original, brief, task.recoveryFeedback ?? [])),
-          ...rebuildInstruction(strategy),
-        ],
-      }),
+      packed?.messages ?? repairPrompt(promptBrief),
       performance.now() + Math.max(0, task.manifest.deadlineMs - Date.now()),
     );
+    return {
+      ...result,
+      elapsedMs: Math.round(performance.now() - started),
+      ...(packed === null
+        ? {}
+        : { promptCompaction: packed.compaction, promptStrategy: packed.strategy }),
+    };
   };
   if (action === "infer") return generate();
   const claim = z
@@ -177,7 +235,20 @@ async function act({ taskId, action, source, submit }: z.infer<typeof request>) 
   try {
     const inference = source === undefined ? await generate() : null;
     const patch = source === undefined ? (inference?.source ?? null) : source;
-    if (patch === null) return { inference, status: "no-patch" };
+    if (patch === null) {
+      const reason =
+        failureReason ??
+        (inference?.status === "provider-timeout"
+          ? "PROVIDER_TIMEOUT"
+          : inference?.status === "prompt-too-large"
+            ? "PROMPT_LIMIT"
+            : inference?.status === "invalid-or-truncated-code"
+              ? "INVALID_OUTPUT"
+              : undefined);
+      if (settings.BENCH_OPERATOR_BOUNDED === "1" && reason !== undefined)
+        ok(await client.post(`${path}/failures`, { fencingToken, reason }));
+      return { inference, status: "no-patch" };
+    }
     const checkpoint = {
       taskId,
       attempt: task.attempt,

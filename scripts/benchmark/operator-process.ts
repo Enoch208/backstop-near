@@ -62,6 +62,8 @@ export async function startOperator(
   spec: Omit<OperatorSpec, "id"> & { readonly id: string },
   config: ModelConfig,
   strategy?: RecoveryStrategy,
+  hardened = false,
+  bounded = false,
 ) {
   const child = fork(entry, [], {
     execArgv: ["--import", tsxLoader],
@@ -76,6 +78,8 @@ export async function startOperator(
       BENCH_OPERATOR_PRICE: spec.price,
       BENCH_OPERATOR_STYLE: spec.style,
       BENCH_OPERATOR_STRATEGY: strategy,
+      BENCH_OPERATOR_HARDENED: hardened ? "1" : "0",
+      BENCH_OPERATOR_BOUNDED: bounded ? "1" : "0",
     },
     stdio: ["ignore", "ignore", "inherit", "ipc"],
   });

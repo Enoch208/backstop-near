@@ -12,8 +12,33 @@ import { recoveryCapacity } from "@backstop/ledger";
 import { runAuction } from "./auction.js";
 import type { Decision, DecisionContext } from "./commands.js";
 import type { TaskRecord } from "./record.js";
-import { preferredRecoveryStrategy } from "./recovery-routing.js";
+import { exhaustedFailureDomain, preferredRecoveryStrategy } from "./recovery-routing.js";
 import { checkEndorsement, checkSignedBid } from "./signed-bid.js";
+
+function awaitingStandby(record: TaskRecord, context: DecisionContext, agentId?: string): boolean {
+  const auction = record.auction;
+  if (
+    auction === null ||
+    context.nowMs > record.manifest.deadlineMs ||
+    context.nowMs >
+      auction.closesAtMs + record.manifest.policy.leaseMs + record.manifest.policy.heartbeatGraceMs
+  )
+    return false;
+  return (
+    runAuction(
+      record.standby.filter(
+        ({ bid, bidHash }) =>
+          bid.epoch === auction.epoch &&
+          record.standbyAvailability[bidHash] !== auction.epoch &&
+          (agentId === undefined || leadAgent(bid) === agentId) &&
+          bid.estimatedDurationMs <= record.manifest.deadlineMs - context.nowMs,
+      ),
+      record.ledger,
+      context.nowMs,
+      [...record.excludedAgents, ...(context.busyAgents ?? [])],
+    ).winner !== null
+  );
+}
 
 export function decideReserveStandby(
   record: TaskRecord,
@@ -106,7 +131,7 @@ export function decideConfirmStandby(
 ): Decision {
   if (record.state !== "RECOVERY_OPEN" || record.auction?.epoch !== epoch)
     return fail("STALE_STATE", "There is no recovery window for that epoch");
-  if (context.nowMs > record.auction.closesAtMs)
+  if (context.nowMs > record.auction.closesAtMs && !awaitingStandby(record, context, agentId))
     return fail("BID_WINDOW_CLOSED", "The bid window closed");
   const reservation = record.standby.find(
     ({ bid }) =>
@@ -155,6 +180,31 @@ export function decideCloseAuction(record: TaskRecord, context: DecisionContext)
   const excluded = [...record.excludedAgents, ...(context.busyAgents ?? [])];
   const fixedOrder = record.manifest.policy.recoveryOrder;
   const preferred = preferredRecoveryStrategy(record);
+  const readyStandby = record.standby.filter(
+    ({ bid, bidHash }) =>
+      bid.epoch === auction.epoch &&
+      record.standbyAvailability[bidHash] === auction.epoch &&
+      bid.estimatedDurationMs <= record.manifest.deadlineMs - context.nowMs,
+  );
+  const exhausted = exhaustedFailureDomain(record, context.registry);
+  const diversified =
+    exhausted === undefined
+      ? null
+      : runAuction(
+          [...auction.bids, ...readyStandby].filter(
+            ({ bid }) =>
+              bid.estimatedDurationMs <= record.manifest.deadlineMs - context.nowMs &&
+              bid.members.every(({ agentId }) => {
+                const domain = context.registry.agentFailureDomains?.[agentId];
+                return typeof domain === "string" && domain.length > 0 && domain !== exhausted;
+              }),
+          ),
+          record.ledger,
+          context.nowMs,
+          excluded,
+          undefined,
+          preferred,
+        );
   const ordinary = runAuction(
     auction.bids,
     record.ledger,
@@ -165,33 +215,50 @@ export function decideCloseAuction(record: TaskRecord, context: DecisionContext)
   );
   const standby =
     ordinary.winner === null
-      ? runAuction(
-          record.standby.filter(
-            ({ bid, bidHash }) =>
-              bid.epoch === auction.epoch &&
-              record.standbyAvailability[bidHash] === auction.epoch &&
-              bid.estimatedDurationMs <= record.manifest.deadlineMs - context.nowMs,
-          ),
-          record.ledger,
-          context.nowMs,
-          excluded,
-          fixedOrder,
-          preferred,
-        )
+      ? runAuction(readyStandby, record.ledger, context.nowMs, excluded, fixedOrder, preferred)
       : null;
-  const winner = ordinary.winner ?? standby?.winner ?? null;
+  const winner = diversified?.winner ?? ordinary.winner ?? standby?.winner ?? null;
   if (winner === null) {
+    if (awaitingStandby(record, context))
+      return fail(
+        "POLICY_VIOLATION",
+        "Waiting for reserved standby readiness within the lease grace",
+      );
     return succeed([{ type: "terminal_failure", reason: "NO_ELIGIBLE_BIDS" }]);
   }
   return succeed([
-    ...(standby === null
+    ...(winner.bid.purpose !== "standby"
       ? []
       : [{ type: "standby_activated" as const, bidHash: winner.bidHash, epoch: auction.epoch }]),
     {
       type: "recovery_awarded",
       epoch: auction.epoch,
       winner: winner.bidHash,
-      rejected: [...ordinary.rejected, ...(standby?.rejected ?? [])],
+      rejected:
+        diversified?.winner === undefined || diversified.winner === null
+          ? [...ordinary.rejected, ...(standby?.rejected ?? [])]
+          : [
+              ...diversified.rejected,
+              ...[...auction.bids, ...readyStandby]
+                .filter(
+                  ({ bid, bidHash }) =>
+                    bidHash !== winner.bidHash &&
+                    !diversified.rejected.some((entry) => entry.bidHash === bidHash) &&
+                    bid.members.some(({ agentId }) => {
+                      const domain = context.registry.agentFailureDomains?.[agentId];
+                      return (
+                        typeof domain !== "string" || domain.length === 0 || domain === exhausted
+                      );
+                    }),
+                )
+                .map(({ bidHash }) => ({
+                  bidHash,
+                  reason:
+                    record.failures.at(-1)?.reason === "PROVIDER_TIMEOUT"
+                      ? "diversifies after an authenticated worker-reported provider timeout"
+                      : "final attempt diversifies after a verified recovery rejection",
+                })),
+            ],
     },
     {
       type: "attempt_assigned",

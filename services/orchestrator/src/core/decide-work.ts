@@ -5,6 +5,7 @@ import {
   succeed,
   type Checkpoint,
   type Digest,
+  type WorkerFailureReason,
 } from "@backstop/shared";
 import type { Decision, DecisionContext } from "./commands.js";
 import { lastCheckpointHash, type TaskRecord } from "./record.js";
@@ -22,6 +23,22 @@ function activeLease(record: TaskRecord, agentId: string, fencingToken: number, 
     return fail("STALE_LEASE", "The lease has expired");
   }
   return succeed(lease);
+}
+
+export function decideReportFailure(
+  record: TaskRecord,
+  agentId: string,
+  fencingToken: number,
+  reason: WorkerFailureReason,
+  context: DecisionContext,
+): Decision {
+  const lease = activeLease(record, agentId, fencingToken, context.nowMs);
+  if (!lease.ok) return lease;
+  return succeed(
+    failAttempt(record, context.nowMs, reason).map((event) =>
+      event.type === "attempt_failed" ? { ...event, reportedBy: agentId, fencingToken } : event,
+    ),
+  );
 }
 
 export function decideClaim(

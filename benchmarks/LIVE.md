@@ -128,6 +128,8 @@ pnpm benchmark:standby --lanes 6 --repeats 2 --out /tmp/backstop-standby.json --
 
 ## Outside tasks and a quote-aware fixed order
 
+Correction from the rejected-recovery review: the injected rejected-output checkpoint in this historical run included the reference implementation and one hidden acceptance input. That condition was not fully blind to recovery workers. The other conditions did not use this injected checkpoint. The numbers below are retained as historical results; the fresh evaluation described in [the revised protocol](REJECTED-RECOVERY.md) removes this leakage.
+
 The external suite adapts ten JavaScript problems from [HumanEval-X](https://github.com/zai-org/CodeGeeX/tree/2838420b7b4492cf3d16bce5320e26e65960c9e2/codegeex/benchmark/humaneval-x/js) and draws its cases from [HumanEval+ v0.1.10](https://github.com/evalplus/humanevalplus_release/releases/tag/v0.1.10). The harness pins both downloads by SHA-256. Each task gets a deliberately broken starter, two public examples, 12 hidden acceptance cases, and 48 separate audit cases. The public datasets may have appeared in model training. The run withheld the acceptance suite, audit cases and reference implementation from the workers.
 
 For the nested bracket problem, the JavaScript reference follows the stated subsequence rule. The EvalPlus Python reference differs on two of the selected inputs. A separate check verified that all 62 selected cases match the subsequence rule by testing whether a split leaves at least two opening brackets on its left and two closing brackets on its right. The other nine JavaScript references agreed with the EvalPlus Python references on every selected case.
@@ -154,6 +156,8 @@ pnpm benchmark:standby --external --lanes 8 --repeats 2 --out /tmp/backstop-exte
 
 ## Verifier feedback and recovery routing
 
+This historical run reused the same rejected-output injection described above, including its reference-code and hidden-input leakage. Its rejected-output condition must not be described as fully blind.
+
 The rerun uses the same ten external tasks, quotes, providers, fixture vault, 0.65 NEAR recovery cap, three inference calls, and four fault conditions. Both arms have the same patch and rebuild specialists. The quote-aware baseline still locks in the cheapest order within each tier. Backstop prefers the task's stated strategy and can switch to rebuild after verifier errors, repeated rejected artifacts, or failures confined to held-out cases. When the primary provider is disabled, only the standby specialists can take recovery. Signed bids retain the offered strategy and use the same price and eligibility checks.
 
 The initial strategy labels were chosen before this rerun, with the previous results available. HumanEval/119, /129, /132 and /154 prefer rebuild. The others prefer patch. The workers received public examples, a summary of verifier failures for the rejected checkpoint, and their own strategy instructions. Fixed specialists received the same strategy instructions and the existing generic failure reason. This compares both changes together. The audit inputs stayed out of worker prompts. The same 750 ms heartbeat grace was added in both arms to reduce infrastructure interruptions.
@@ -173,3 +177,50 @@ HumanEval/132, /119, and /129 accounted for 17 of Backstop's 18 unsuccessful tri
 pnpm benchmark:standby --external --verify benchmarks/routed-standby.json
 pnpm benchmark:standby --external --routed --lanes 5 --repeats 2 --out /tmp/backstop-routed.json --state /tmp/backstop-routed-state
 ```
+
+## Rejected-patch repairs and fresh external evaluation
+
+The 14 November 2026 evaluation fixes contradictory rebuild instructions, makes nested input shapes explicit, and feeds local retries their own rejected source. The fresh run gives both arms the same improved prompts and verifier summaries. It replaces the historical reference-containing rejected checkpoint with a public-example-only lookup. Task-ID routing hints were removed for this evaluation. The three known problem tasks were used for development; ten different external task IDs were reserved for the fresh run.
+
+| Evaluation | Scheduler | Correct | False accepts | p95 seconds | Settlement NEAR per correct result |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Three-task final regression | Backstop | 18/24 | 1 | 67.084 | 0.443889 |
+| Three-task final regression | Fixed specialists | 17/24 | 1 | 51.946 | 0.462353 |
+| Ten fresh tasks | Backstop | 78/80 | 0 | 20.008 | 0.424872 |
+| Ten fresh tasks | Fixed specialists | 78/80 | 0 | 16.153 | 0.390000 |
+
+There was no fresh-task delivery advantage: neither arm won a pair the other lost. Backstop cost 8.9% more per correct delivery and had 23.9% higher overall p95. Both failed the same two rejected-output cases by retaining spaces in parenthesis groups. The known-task regression recovered 5/6 rejected patches for Backstop versus 4/6 for fixed, but retained one false acceptance each. The Backstop false acceptance was a grid solver exceeding the audit execution budget. Both live providers and the prior three-call, token, price, and recovery-budget limits were retained; all operators were team-controlled and settlement was simulated. These results do not support a first-place claim.
+
+[Full protocol, fixes, limitations and reproduction commands](REJECTED-RECOVERY.md) · [Fresh raw results](fresh-rejected-recovery.json) · [Final development regression](rejected-recovery-regression.json)
+
+
+## Contract checks and price-first recovery
+
+The next frozen evaluation added concrete public preflight counterexamples, declared resource and boundary checks, repeated-failure detection, and price-first bidding with strategy as a tie-breaker. Both arms received the same changes. On ten fresh external tasks, each delivered 78/80 correct results with zero false acceptances and 20/20 rejected-output recoveries. Backstop's p95 was 31.440 seconds versus 25.785 for fixed; simulated settlement cost per correct delivery was 0.382051 versus 0.378974 NEAR, including consumed bonds but excluding provider bills and gas. The four-task development regression was 25/32 versus 27/32, with no false acceptances.
+
+Backstop still does not beat the quote-aware fixed baseline. Repeated bracket and threshold mistakes remain, and one recovery auction closed before bids arrived. A reporting exception on that terminal failure was recovered from its persisted event stream and counted as a failure; no trial was rerun. Read the [protocol, full results, reporting provenance and limitations](CONTRACT-RECOVERY.md), [fresh raw trials](contract-recovery-fresh.json), and [regression raw trials](contract-recovery-regression.json).
+
+
+## Semantic recovery and bounded standby hold
+
+The next evaluation retained the original one-second bid window and all funding/inference caps. An empty auction now waits up to leaseMs + heartbeatGraceMs for an eligible precommitted standby, while ordinary bids stay closed. Workers use precise public output mismatches, concise algorithm checks and specification-based subsequence/threshold guidance. Both arms receive the same changes.
+
+Known bracket/threshold regression: 16/16 correct for each arm. Ten new external tasks: 80/80 each, zero false acceptances, and simulated settlement cost of 0.38 NEAR per correct delivery for both. Observed p95 was 33.470 seconds for Backstop versus 35.868 for fixed. All 80 pairs had identical worker assignments, so the timing difference does not establish a routing advantage. The monitor observed no Remotion or ffmpeg processes during 694 samples spanning both final runs. The delayed-readiness edge was exercised in tests; it did not occur naturally in these live runs. [Protocol, validation and limitations](SEMANTIC-RECOVERY.md) · [Fresh raw trials](semantic-recovery-fresh.json) · [Regression raw trials](semantic-recovery-regression.json) · [Render monitor](semantic-recovery-load.json).
+
+
+## Provider diversification after a rejected recovery
+
+The next fresh evaluation combined ten unused external problems into ten three-function repair modules. Both arms retained the same three-call, prompt/output, quote, funding and outage limits. After a verified rejected recovery, Backstop could give its final attempt to the cheapest eligible ready worker at a different configured provider; fixed kept its quote-sorted order.
+
+Backstop **lost this run: 72/80 correct versus 77/80**, zero false acceptances in either arm, zero paired correctness wins and five losses. Simulated settlement cost per correct delivery was 0.405833 versus 0.396234 NEAR, including consumed bonds and excluding provider bills and gas. Observed p95 was 66.976 versus 70.090 seconds, but late render activity overlapped twelve successful trials, so this was not a fully idle-machine run and its small timing lead does not establish an advantage. All failed deliveries preceded the detected render activity.
+
+The routing override fired six times: two correct deliveries, two prompt-limit refusals, one invalid/truncated response, and one verifier rejection. Fixed also succeeded in both successful-switch pairs, using its cheaper retry. All 160 trials were retained and independently replayed. This result does not support enabling diversification by default; bounded prompt construction and explicit failure causes are higher-priority follow-ups. [Full protocol, failure breakdown and limitations](PROVIDER-DIVERSIFICATION.md) · [Raw results](diversity-recovery-fresh.json) · [Replay/analysis](diversity-recovery-summary.json) · [Load monitor](diversity-recovery-load.json).
+
+
+## Bounded prompts and timeout-aware routing
+
+The next frozen run used ten previously untested components composed into five-function modules, with the same calls, tokens, source, timing, funding, quotes and fixed baseline. Both arms received budgeted code-only prompts and explicit fenced failure reports; Backstop could prefer another eligible provider after a reported timeout.
+
+Backstop **did not win: 79/80 correct versus 80/80 fixed**, zero false acceptances, zero paired wins and one loss. Prompt overflow and invalid/truncated outputs were zero in both arms. Two timeout-triggered switches produced one correct delivery and one final-attempt scope error; fixed succeeded in both corresponding pairs. Simulated settlement cost per correct delivery was 0.386962 versus 0.380750 NEAR (Backstop 1.63% higher), including consumed bonds and excluding provider invoices/gas/retainers. Observed p95 was 60.095 versus 59.071 seconds. All 160 trials were retained and independently replayed, and 1397 monitoring samples showed no Remotion/ffmpeg processes.
+
+The prompt-cap failure was addressed, and the timeout handoff worked, but routing still has no demonstrated advantage. The fresh corpus has higher aggregate structural complexity and more functions per module, with simpler constituent functions; empirical difficulty and causality relative to prior runs are unproven. Workers remain team-controlled. [Full protocol, exact failure and limitations](BOUNDED-RECOVERY.md) · [Raw results](bounded-recovery-fresh.json) · [Replay/analysis](bounded-recovery-summary.json) · [Load monitor](bounded-recovery-load.json).

@@ -70,7 +70,12 @@ export type Runtime = {
 
 export type Reply = z.infer<typeof replySchema>;
 
-export function createRuntime(now: () => number, demo: boolean, statePath?: string): Runtime {
+export function createRuntime(
+  now: () => number,
+  demo: boolean,
+  statePath?: string,
+  agentFailureDomains?: Readonly<Record<string, string>>,
+): Runtime {
   const agentKeys = Object.fromEntries(
     identities.map((identity) => [identity.id, identity.key.publicKey]),
   );
@@ -78,7 +83,13 @@ export function createRuntime(now: () => number, demo: boolean, statePath?: stri
     mode: "fixture",
     demo,
     now,
-    registry: { agentKeys, verifierPublicKey: roster.verifier.key.publicKey },
+    registry: {
+      agentKeys,
+      verifierPublicKey: roster.verifier.key.publicKey,
+      ...(agentFailureDomains === undefined
+        ? {}
+        : { agentFailureDomains: { ...agentFailureDomains } }),
+    },
     identities: new Map(
       identities.map((identity) => [
         identity.id,

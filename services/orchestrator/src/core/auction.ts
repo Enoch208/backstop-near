@@ -21,9 +21,12 @@ function ineligibility(
   return null;
 }
 
-function cheaperFirst(a: SignedBid, b: SignedBid): number {
+function priceDifference(a: SignedBid, b: SignedBid): number {
   const byAmount = fromYocto(a.bid.amountYocto) - fromYocto(b.bid.amountYocto);
-  if (byAmount !== 0n) return byAmount < 0n ? -1 : 1;
+  return byAmount < 0n ? -1 : byAmount > 0n ? 1 : 0;
+}
+
+function earlierFirst(a: SignedBid, b: SignedBid): number {
   if (a.bid.committedAtMs !== b.bid.committedAtMs) return a.bid.committedAtMs - b.bid.committedAtMs;
   return a.bidHash < b.bidHash ? -1 : a.bidHash > b.bidHash ? 1 : 0;
 }
@@ -50,9 +53,9 @@ export function runAuction(
   const [winner = null, ...outbid] = [...eligible].sort(
     (a, b) =>
       (fixedOrder === undefined
-        ? strategyRank(a) - strategyRank(b)
-        : fixedOrder.indexOf(leadAgent(a.bid)) - fixedOrder.indexOf(leadAgent(b.bid))) ||
-      cheaperFirst(a, b),
+        ? priceDifference(a, b) || strategyRank(a) - strategyRank(b)
+        : fixedOrder.indexOf(leadAgent(a.bid)) - fixedOrder.indexOf(leadAgent(b.bid)) ||
+          priceDifference(a, b)) || earlierFirst(a, b),
   );
   return {
     winner,
@@ -65,7 +68,9 @@ export function runAuction(
         reason:
           fixedOrder !== undefined
             ? "later in fixed specialist order"
-            : winner !== null && strategyRank(signed) > strategyRank(winner)
+            : winner !== null &&
+                priceDifference(signed, winner) === 0 &&
+                strategyRank(signed) > strategyRank(winner)
               ? "less suitable recovery strategy"
               : "outbid",
       })),

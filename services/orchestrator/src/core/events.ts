@@ -56,7 +56,14 @@ export type TaskEventBody =
       failingCases: readonly string[];
     }
   | { type: "lease_expired"; attempt: number; fencingToken: number | null }
-  | { type: "attempt_failed"; attempt: number; reason: FailureReason; agents: readonly string[] }
+  | {
+      type: "attempt_failed";
+      attempt: number;
+      reason: FailureReason;
+      agents: readonly string[];
+      reportedBy?: string | undefined;
+      fencingToken?: number | undefined;
+    }
   | { type: "recovery_opened"; epoch: number; reason: FailureReason; closesAtMs: number }
   | { type: "coalition_proposed"; bid: SignedBid }
   | { type: "coalition_endorsed"; bidHash: Digest; endorsement: Endorsement }

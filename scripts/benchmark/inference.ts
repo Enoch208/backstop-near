@@ -34,6 +34,8 @@ export const inferenceSchema = z.object({
   promptBytes: z.int(),
   elapsedMs: z.int(),
   status: z.string(),
+  promptCompaction: z.string().optional(),
+  promptStrategy: z.enum(["patch", "rebuild"]).optional(),
 });
 
 export type Inference = {

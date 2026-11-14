@@ -30,6 +30,7 @@ import {
   decideClaim,
   decideExpireLease,
   decideHeartbeat,
+  decideReportFailure,
   decideSubmit,
 } from "./decide-work.js";
 import { decideFinding } from "./decide-finding.js";
@@ -60,6 +61,14 @@ export function decide(
       return decideClaim(record, command.agentId, context);
     case "heartbeat":
       return decideHeartbeat(record, command.agentId, command.fencingToken, context);
+    case "reportFailure":
+      return decideReportFailure(
+        record,
+        command.agentId,
+        command.fencingToken,
+        command.reason,
+        context,
+      );
     case "checkpoint":
       return decideCheckpoint(
         record,

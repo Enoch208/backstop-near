@@ -16,7 +16,7 @@ import {
   workers,
 } from "./routes/read.js";
 import { challenge, settle } from "./routes/verdicts.js";
-import { checkpoint, claim, heartbeat, submitArtifact } from "./routes/work.js";
+import { checkpoint, claim, heartbeat, reportFailure, submitArtifact } from "./routes/work.js";
 import type { Runtime } from "./runtime.js";
 
 type Handler = (
@@ -88,6 +88,9 @@ const routes: readonly Route[] = [
   ),
   route("POST", "/api/tasks/:task/heartbeat", (runtime, request, params) =>
     heartbeat(runtime, request, first(params)),
+  ),
+  route("POST", "/api/tasks/:task/failures", (runtime, request, params) =>
+    reportFailure(runtime, request, first(params)),
   ),
   route("POST", "/api/tasks/:task/checkpoints", (runtime, request, params) =>
     checkpoint(runtime, request, first(params)),

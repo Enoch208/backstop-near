@@ -34,6 +34,9 @@ export type Quote =
 
 export const riskBpsByFailure: Readonly<Record<FailureReason, number>> = {
   LEASE_EXPIRED: 2_500,
+  PROVIDER_TIMEOUT: 2_500,
+  PROMPT_LIMIT: 2_500,
+  INVALID_OUTPUT: 2_500,
   VERDICT_REJECTED: 5_000,
   CHALLENGE_UPHELD: 10_000,
   NO_ELIGIBLE_BIDS: 2_500,

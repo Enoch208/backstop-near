@@ -1,0 +1,77 @@
+{
+  "inferenceCalls": 0,
+  "rows": [
+    {
+      "taskId": "module-17-125-76-worker-crash-1-market",
+      "attempt": 3,
+      "recordedBytes": 8301,
+      "reconstructedBytes": 8301,
+      "newBytes": 7891,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-124-56-95-worker-crash-1-fixed",
+      "attempt": 2,
+      "recordedBytes": 8336,
+      "reconstructedBytes": 8336,
+      "newBytes": 7926,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-124-56-95-worker-crash-1-market",
+      "attempt": 2,
+      "recordedBytes": 8336,
+      "reconstructedBytes": 8336,
+      "newBytes": 7926,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-6-76-130-primary-provider-outage-1-fixed",
+      "attempt": 2,
+      "recordedBytes": 8459,
+      "reconstructedBytes": 8459,
+      "newBytes": 8049,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-6-76-130-primary-provider-outage-1-market",
+      "attempt": 2,
+      "recordedBytes": 8459,
+      "reconstructedBytes": 8459,
+      "newBytes": 8049,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-17-125-76-rejected-output-2-market",
+      "attempt": 3,
+      "recordedBytes": 8943,
+      "reconstructedBytes": 8943,
+      "newBytes": 4702,
+      "compaction": "guidance",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-124-56-95-primary-provider-outage-1-fixed",
+      "attempt": 2,
+      "recordedBytes": 8334,
+      "reconstructedBytes": 8334,
+      "newBytes": 7924,
+      "compaction": "none",
+      "strategy": "patch"
+    },
+    {
+      "taskId": "module-124-56-95-primary-provider-outage-1-market",
+      "attempt": 2,
+      "recordedBytes": 8334,
+      "reconstructedBytes": 8334,
+      "newBytes": 7924,
+      "compaction": "none",
+      "strategy": "patch"
+    }
+  ]
+}

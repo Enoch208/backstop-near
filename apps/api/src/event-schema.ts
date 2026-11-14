@@ -80,7 +80,14 @@ const eventBody = z.discriminatedUnion("type", [
     attempt: positive,
     fencingToken: positive.nullable(),
   }),
-  z.object({ type: z.literal("attempt_failed"), attempt: positive, reason, agents }),
+  z.object({
+    type: z.literal("attempt_failed"),
+    attempt: positive,
+    reason,
+    agents,
+    reportedBy: z.string().optional(),
+    fencingToken: positive.optional(),
+  }),
   z.object({ type: z.literal("recovery_opened"), epoch: positive, reason, closesAtMs: instant }),
   z.object({ type: z.literal("coalition_proposed"), bid: signedBidSchema }),
   z.object({

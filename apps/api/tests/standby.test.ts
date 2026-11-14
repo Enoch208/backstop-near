@@ -72,7 +72,12 @@ test("restores a signed booking, prevents double booking and only awards a ready
     await register(runtime, absent);
     const create = async (taskId: string) => {
       const manifest = {
-        ...checkoutManifest({ taskId, createdAtMs: clock.now, timing: liveTiming, maxAttempts: 3 }),
+        ...checkoutManifest({
+          taskId,
+          createdAtMs: clock.now,
+          timing: { ...liveTiming, bidWindowMs: 1_000 },
+          maxAttempts: 3,
+        }),
         objective: repairTask.objective,
         repairTaskHash: digestOf(repairTask),
         suite: {
@@ -154,6 +159,9 @@ test("restores a signed booking, prevents double booking and only awards a ready
     expect(runtime.store.records[task.taskId]?.standby).toHaveLength(2);
     clock.now += task.policy.leaseMs + 1;
     tick(runtime);
+    clock.now += 1_500;
+    tick(runtime);
+    expect(runtime.store.records[task.taskId]?.state).toBe("RECOVERY_OPEN");
     const readyPath = `${base}/standby/ready`;
     expect((await call(runtime, clock, asPrincipal(ready), readyPath, { epoch: 2 })).status).toBe(
       409,
@@ -161,7 +169,7 @@ test("restores a signed booking, prevents double booking and only awards a ready
     expect((await call(runtime, clock, asPrincipal(ready), readyPath, { epoch: 1 })).status).toBe(
       200,
     );
-    clock.now += task.policy.bidWindowMs + 1;
+    clock.now += 1;
     tick(runtime);
     const final = runtime.store.records[task.taskId];
     expect(final?.state).toBe("RECOVERY_ASSIGNED");

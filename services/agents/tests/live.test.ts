@@ -22,6 +22,60 @@ const boundary = {
 };
 
 describe("the live repair prompt", () => {
+  it("asks for a short check before code and pinpoints a threshold output mismatch", () => {
+    const prompt = repairPrompt({
+      ...brief,
+      generic: true,
+      diagnosis: {
+        from: "public-preflight",
+        finding: {
+          notes: "A public equality boundary failed.",
+          failingCases: [
+            { id: "grades", input: [[0, 0.7]], expected: ["E", "D-"], actual: ["E", "D"] },
+          ],
+        },
+      },
+    });
+    expect(prompt[0]?.content).toContain("at most 80 words");
+    expect(prompt[1]?.content).toContain('result[1] must be "D-", not "D"');
+    expect(prompt[1]?.content).toContain("increasing indices of the witness");
+    expect(prompt[1]?.content).toContain("check exact equality");
+    expect(
+      extractSource(
+        "Check: equality fails the strict threshold.\n```js\nfunction solve([n]) { return n > 0.7; }\n```",
+      ),
+    ).toBe("function solve([n]) { return n > 0.7; }\n");
+  });
+  it("rebuilds without the rejected implementation or instructions to preserve it", () => {
+    const text = repairPrompt({
+      ...brief,
+      recoveryStrategy: "rebuild",
+      resumedFrom: "rejected-checkpoint",
+    })
+      .map(({ content }) => content)
+      .join("\n");
+    expect(text).not.toContain(brief.brokenSource.trim());
+    expect(text).not.toContain("Build on it");
+    expect(text).toContain("Write a fresh implementation");
+    expect(text).toContain(brief.rules);
+  });
+
+  it("makes the nested one-argument calling convention explicit", () => {
+    const text = repairPrompt({
+      ...brief,
+      generic: true,
+      suite: {
+        entry: "solve",
+        cases: [{ id: "shape", visibility: "public", input: [["()", "()"]], expected: "Yes" }],
+      },
+    })
+      .map(({ content }) => content)
+      .join("\n");
+    expect(text).toContain('solve([["()","()"]])');
+    expect(text).toContain("It never spreads an array");
+    expect(text).toContain("input[0] is an array of length 2");
+    expect(text).toContain("input[0][0] is string");
+  });
   it("shows the model the public examples and never a held-out case", () => {
     const prompt = repairPrompt(brief)
       .map((message) => message.content)

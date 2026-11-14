@@ -6,9 +6,15 @@ import {
   type ModelConfig,
 } from "@backstop/agents";
 import { candidate, checkoutRules, checkoutSuite } from "@backstop/fixture-checkout";
-import { canonicalJson, digestText, type Digest, type RepairTaskBrief } from "@backstop/shared";
+import {
+  canonicalJson,
+  digestText,
+  type Digest,
+  type RepairTaskBrief,
+  type RecoveryStrategy,
+} from "@backstop/shared";
 import type { InferenceReceipt } from "@backstop/tee";
-import { probeRepair, publicRun } from "./diagnosis.js";
+import { probeRepair, publicRun, publicDiagnosis } from "./diagnosis.js";
 
 export type Product = {
   readonly label: string;
@@ -30,6 +36,7 @@ export type WorkContext = {
   readonly resume: Resume | null;
   readonly diagnosis: Diagnosis | null;
   readonly repairTask?: RepairTaskBrief;
+  readonly recoveryStrategy?: RecoveryStrategy;
 };
 
 export function publicFailures(
@@ -41,7 +48,7 @@ export function publicFailures(
     passed: run.passed,
     failures: run.failing.map(
       (failing) =>
-        `${failing.id} expected ${canonicalJson(failing.expected)} but got ${canonicalJson(failing.actual)}`,
+        `${failing.id}: input ${canonicalJson(failing.input)} expected ${canonicalJson(failing.expected)} but got ${canonicalJson(failing.actual)}`,
     ),
   };
 }
@@ -88,16 +95,29 @@ export async function produce(
     suite: task?.suite ?? checkoutSuite,
     generic: task !== undefined,
     validatedSubtasks: context.inherited,
-    diagnosis: context.diagnosis,
+    diagnosis:
+      context.diagnosis ??
+      (task === undefined ? null : publicDiagnosis(context.resume?.source ?? task.source, task)),
+    ...(context.recoveryStrategy === undefined
+      ? {}
+      : { recoveryStrategy: context.recoveryStrategy }),
   };
   let history = [...context.history];
   let repair = await proposeRepair(model, { ...brief, failureHistory: history });
   let check = publicFailures(repair.source, task);
   if (check.failures.length > 0) {
     history = [...history, `your own public test run failed: ${check.failures.join("; ")}`];
-    repair = await proposeRepair(model, { ...brief, failureHistory: history });
+    repair = await proposeRepair(model, {
+      ...brief,
+      brokenSource: repair.source,
+      resumedFrom: digestText(repair.source),
+      failureHistory: history,
+      diagnosis: null,
+    });
     check = publicFailures(repair.source, task);
   }
+  if (check.failures.length > 0)
+    throw new Error("The repair still fails public verification after the bounded retry");
   if (milestone !== undefined && task !== undefined) {
     const start = publicFailures(brief.brokenSource, task);
     const remaining = probeRepair(repair.source, task);
