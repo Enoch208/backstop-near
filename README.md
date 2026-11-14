@@ -2,9 +2,11 @@
 
 # Backstop
 
-**The self-healing agent economy. Agents can fail. Their commitments should not.**
+**Agents can fail. Their commitments should not.**
 
-Backstop sells bounded, collateral-backed guarantees for work done by AI agents. A customer funds a task with executable success criteria, a guarantor bonds capital against the outcome, and an agent takes the job. When that agent dies, stalls or ships a wrong answer, the market reorganizes: other agents bid to finish from the last checkpoint, a challenger is paid to break any patch that only looks correct, an independent verifier signs reproducible evidence, and a NEAR contract settles exactly what the guarantee promised, once.
+Backstop gives work done by AI agents a bounded, collateral-backed guarantee. When an agent dies, stalls or ships a wrong answer, a swarm of independent agents finishes the job from its last checkpoint, a verifier and a TEE prove the result, and a NEAR contract pays exactly what was promised, once.
+
+[Live demo](https://usebackstop.xyz) · [Demo video and launch post on X](https://x.com/dreyethh/status/2121737332801888540) · [Kill an agent yourself](https://usebackstop.xyz/app/live) · [Verify every claim in your browser](https://usebackstop.xyz/app/verify) · [The vault on NEAR testnet](https://testnet.nearblocks.io/address/vault.backstop-6501bb.testnet)
 
 Built for the NEAR Hackathon 2026 · AI Swarms track · every line written during the hackathon (first commit 13 Nov 2026).
 
@@ -20,11 +22,56 @@ Built for the NEAR Hackathon 2026 · AI Swarms track · every line written durin
 | **32 seeded fault cases, six modes**                                                                                            | **Everything recorded on testnet**                                                                    |
 | <img src="docs/media/arena.png" alt="Reliability arena: Backstop against a single agent, retries and three ablations">          | <img src="docs/media/overview.png" alt="Overview of the testnet record and the vault">                |
 
-Screenshots of the dashboard (`pnpm web`, then http://localhost:5210/app) on 14 Nov 2026; the replay is the recorded testnet run `checkout-live-37143`.
+Screenshots of the dashboard ([usebackstop.xyz/app](https://usebackstop.xyz/app), or `pnpm web` locally) on 14 Nov 2026; the replay is the recorded testnet run `checkout-live-37143`.
 
-In the [two-bidder testnet replay](http://localhost:5210/app/runs/two-bidders-testnet-1794682474), the primary dies after a checkpoint. Two team-run repairers bid 0.0625 and 0.1125 NEAR with separate keys. The lower bidder recovers the repair, the vault checks the TEE signature and pays it, and a second settlement is refused. [Run details and receipts](docs/outside-workers.md)
+## The problem
 
-## Judge path: do this, see that
+AI agents now take paid work, and they fail in ordinary ways: a process crashes halfway, a provider times out, or a patch passes its tests and is still wrong. Today nothing finishes the job and nothing makes the customer whole. Escrow stops a customer from paying for nothing, but the work stays undone. Retrying the same agent repeats the same failure. A passing test run asserted by the agent that wrote the code is not proof.
+
+## What Backstop does
+
+A customer funds a task with executable success criteria, a guarantor bonds capital against the outcome, and an agent takes the job. If it fails, the market reorganizes without anyone directing it:
+
+1. **Detect.** The working agent holds a fenced lease and sends heartbeats. When it dies or stalls, the lease lapses, and anything it sends late is refused.
+2. **Re-auction.** Independent agent processes, each with its own key and its own NEAR sub-account, price their own bids to finish from the last hash-checked checkpoint. A coalition exists only once every member has co-signed its share.
+3. **Challenge.** A challenger is paid to break any patch that merely passes the visible checks.
+4. **Verify.** An independent verifier runs held-out tests and signs reproducible evidence for the exact artifact. No agent can declare its own work accepted.
+5. **Settle once.** The NEAR contract pays the agents that delivered and returns what is owed. A second settlement is refused on chain. If nothing verifiable is delivered, the customer is refunded and compensated from the bond.
+
+## How NEAR is used
+
+| NEAR piece                        | What it does in Backstop                                                                                                                                                        | Where to see it                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `OutcomeVault` contract (Rust)    | Holds escrow, premium and bond, commits each attempt, and settles exactly once. A transfer counts only after the vault's own promise callback confirms it                       | [`vault.backstop-6501bb.testnet`](https://testnet.nearblocks.io/address/vault.backstop-6501bb.testnet) |
+| Sub-accounts                      | The customer, guarantor, coordinator, verifier and every agent are separate NEAR sub-accounts, and each payee is paid at its own                                                | [Live on NEAR testnet](#live-on-near-testnet)                                                          |
+| NEAR AI Cloud, inside a TEE       | AI repairs are generated in an attested enclave (Intel TDX, NVIDIA). The vault checks the enclave's signature on chain before an ACCEPT counts                                  | [TEE-verified AI](#tee-verified-ai)                                                                    |
+| NEAR Intents                      | A payee's NEAR payout is quoted into the asset and chain it asked for. These are dry-run quotes; nothing is swapped                                                             | [Intent-based payouts](#intent-based-payouts)                                                          |
+| Function-call access keys         | On a local NEAR node the coordinator and verifier keys are confined to their own vault methods; `pnpm chain:harden` does the same on testnet and has not been applied there yet | [Attacks Backstop refuses](#attacks-backstop-refuses)                                                  |
+| Public RPC, read from the browser | The Verify page re-reads every claim from NEAR testnet with no backend and no wallet                                                                                            | [usebackstop.xyz/app/verify](https://usebackstop.xyz/app/verify)                                       |
+
+Outside agents can also join over MCP with their own keys ([Join over MCP](#join-over-mcp)).
+
+## Evidence
+
+- **On NEAR testnet:** 12 recorded runs and 116 transactions, 19 of them attacks or repeats that the vault refused, and 5 AI patches whose enclave signature the vault checked. Every transaction is linked in [`deployments/testnet.json`](deployments/testnet.json).
+- **Against a single agent:** across 32 seeded fault cases, Backstop delivered 19 correct patches and 1 wrong one; a single agent delivered 15 and 8. Wrong acceptance was 5% against 34.8%. Without the paid challenger, wrong deliveries rise from 1 to 12 ([Reliability arena](#reliability-arena)).
+- **Checkable by anyone:** the browser re-reads every claim from NEAR testnet, and a tampered record fails its check ([Verify every claim](#verify-every-claim)).
+- **Stated limits:** what is simulated, what is centralized and what is unproven is listed under [What is real and what is a fixture](#what-is-real-and-what-is-a-fixture) and [Status and limitations](#status-and-limitations).
+
+## Try it
+
+Nothing to install:
+
+| Do                                                                                                 | See                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Open [usebackstop.xyz/app/live](https://usebackstop.xyz/app/live) and press **Kill alpha**         | alpha's process shows `SIGKILL`, its lease expires, the other agents bid, one resumes from alpha's checkpoint, and the task settles 0.69 NEAR in and out. This hosted swarm uses a fixture vault and scripted agents, and the page says so |
+| Open [the replay of `checkout-live-37143`](https://usebackstop.xyz/app/runs/checkout-live-37143)   | a run recorded on NEAR testnet with live AI, frame by frame: the kill, the bids each agent priced, the TEE-signed patch accepted on chain, and every transaction linked to the explorer                                                    |
+| Open [usebackstop.xyz/app/verify](https://usebackstop.xyz/app/verify), then choose a tamper option | your browser re-reads every claim from a public NEAR RPC; the tampered claim turns red                                                                                                                                                     |
+| Open [usebackstop.xyz/app/arena](https://usebackstop.xyz/app/arena)                                | 32 seeded fault cases in six modes, with the challenger, the market and the bond switched off in turn                                                                                                                                      |
+
+In the [two-bidder testnet replay](https://usebackstop.xyz/app/runs/two-bidders-testnet-1794682474), the primary dies after a checkpoint. Two team-run repairers bid 0.0625 and 0.1125 NEAR with separate keys. The lower bidder recovers the repair, the vault checks the TEE signature and pays it, and a second settlement is refused. [Run details and receipts](docs/outside-workers.md)
+
+## Reproduce it from a clone
 
 Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the first three rows.
 
@@ -91,6 +138,12 @@ After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.39699
 
 ## Contents
 
+- [The problem](#the-problem)
+- [What Backstop does](#what-backstop-does)
+- [How NEAR is used](#how-near-is-used)
+- [Evidence](#evidence)
+- [Try it](#try-it)
+- [Reproduce it from a clone](#reproduce-it-from-a-clone)
 - [Live on NEAR testnet](#live-on-near-testnet)
 - [TEE-verified AI](#tee-verified-ai)
 - [Verify every claim](#verify-every-claim)
@@ -108,6 +161,7 @@ After settlement, delta's 0.12 NEAR payout was quoted by NEAR Intents as 0.39699
 - [Testing and verification](#testing-and-verification)
 - [Project structure](#project-structure)
 - [Tech stack](#tech-stack)
+- [Built during the hackathon](#built-during-the-hackathon)
 - [Status and limitations](#status-and-limitations)
 - [License](#license)
 
@@ -493,6 +547,10 @@ The core packages are pure TypeScript: no IO, no clock, no randomness except an 
 ## Tech stack
 
 TypeScript 5.9 on Node 24, pnpm workspaces, zod 4, @noble/hashes and @noble/curves (ed25519, secp256k1, P-384), Phala's `dcap-qvl` for Intel TDX quotes, near-api-js 7, Vitest 5 with fast-check, ESLint 10 and Prettier 3. The contract is Rust 1.94 with `near-sdk` 5.29, built for `wasm32-unknown-unknown`.
+
+## Built during the hackathon
+
+All code in this repository was written during the hackathon window; the first commit is dated 13 Nov 2026. It does not build on an earlier project, a template or boilerplate. Third-party libraries are listed under [Tech stack](#tech-stack). AI coding assistants were used during development. The hosted demo at [usebackstop.xyz](https://usebackstop.xyz) runs `pnpm demo:hosted` from this repository behind a read-only proxy.
 
 ## Status and limitations
 
