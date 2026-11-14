@@ -39,6 +39,8 @@ jobs:
         run: pnpm test
       - name: Replay the recovery episode
         run: pnpm episode recovery
+      - name: Re-prove the headline claims
+        run: pnpm judge
 
   contract:
     runs-on: ubuntu-latest
