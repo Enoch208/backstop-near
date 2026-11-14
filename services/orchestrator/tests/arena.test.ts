@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import { arenaCase, baseline, runArenaCase, type ArenaOutcome } from "../src/index.js";
+
+const rank: Readonly<Record<ArenaOutcome, number>> = {
+  "delivered-correct": 3,
+  compensated: 2,
+  refunded: 1,
+  "delivered-wrong": 0,
+};
+
+const seeds = Array.from({ length: 32 }, (_, index) => index + 1);
+
+describe("the reliability arena", () => {
+  const rows = seeds.map((seed) => {
+    const setup = arenaCase(seed);
+    return {
+      setup,
+      backstop: runArenaCase(setup, "backstop"),
+      single: runArenaCase(baseline(setup), "single"),
+    };
+  });
+
+  it("keeps every ledger invariant and replays every task exactly, in every seeded case", () => {
+    for (const { backstop, single } of rows) {
+      expect([...backstop.violations, ...single.violations]).toEqual([]);
+      expect(backstop.replayMatches && single.replayMatches).toBe(true);
+      expect(["SETTLED", "FAILURE_SETTLED"]).toContain(backstop.state);
+    }
+  });
+
+  it("never ships a wrong patch while a challenger is present", () => {
+    const challenged = rows.filter(({ setup }) => setup.challenger);
+    expect(challenged.length).toBeGreaterThan(0);
+    expect(challenged.every(({ backstop }) => backstop.outcome !== "delivered-wrong")).toBe(true);
+  });
+
+  it("never leaves a customer worse off than a single agent on the same faults", () => {
+    for (const { setup, backstop, single } of rows) {
+      expect({ seed: setup.seed, better: rank[backstop.outcome] >= rank[single.outcome] }).toEqual({
+        seed: setup.seed,
+        better: true,
+      });
+    }
+  });
+
+  it("makes a customer whole, or better, whenever the work is not delivered", () => {
+    const undelivered = rows.filter(
+      ({ backstop }) => backstop.outcome === "compensated" || backstop.outcome === "refunded",
+    );
+    expect(undelivered.length).toBeGreaterThan(0);
+    for (const { backstop } of undelivered)
+      expect(backstop.customerReceived >= backstop.customerPaid).toBe(true);
+  });
+});

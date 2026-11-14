@@ -19,7 +19,8 @@
     "demo": "tsx scripts/demo.ts",
     "api": "tsx apps/api/src/main.ts",
     "test:chain": "vitest run -c vitest.chain.config.ts",
-    "chain": "tsx scripts/chain.ts"
+    "chain": "tsx scripts/chain.ts",
+    "arena": "tsx scripts/arena.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
