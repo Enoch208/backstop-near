@@ -1,5 +1,5 @@
 use near_sdk::serde_with::DisplayFromStr;
-use near_sdk::{env, near, require, AccountId, Gas, NearToken, Promise, PromiseError};
+use near_sdk::{env, near, require, AccountId, Gas, PromiseError};
 
 use crate::errors::{
     ERR_NOT_TRANSFER_RECIPIENT, ERR_RETRIES_REMAIN, ERR_RETRY_LIMIT, ERR_TRANSFER_NOT_FAILED,
@@ -8,6 +8,7 @@ use crate::errors::{
 use crate::events;
 use crate::model::{Pool, TransferStatus};
 use crate::task::Task;
+use crate::token;
 use crate::{OutcomeVault, OutcomeVaultExt};
 
 pub const MAX_TRANSFER_RETRIES: u32 = 3;
@@ -123,8 +124,7 @@ impl OutcomeVault {
     }
 
     pub(crate) fn dispatch(transfer: &Transfer) {
-        Promise::new(transfer.recipient.clone())
-            .transfer(NearToken::from_yoctonear(transfer.amount))
+        token::payment(transfer.recipient.clone(), transfer.amount)
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(CALLBACK_GAS)

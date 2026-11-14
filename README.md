@@ -164,6 +164,8 @@ Use the [repair task guide](docs/repair-task.md) to submit a dependency-free Jav
 
 For a key-free verification of the 120 live-model trials, run `pnpm benchmark:live --verify-run benchmarks/market-results.json`. Backstop completed 38 of 40 trials correctly. Fixed specialists and persistent retries each completed 37. All three had zero incorrect acceptances in this run. Backstop used fewer tokens per correct repair and had a slower p95 than both baselines. [Method, paired results, and earlier comparison](benchmarks/LIVE.md)
 
+A follow-up paired 240 trials across eight new tasks with inference from NEAR AI Cloud and OpenAI. Backstop delivered 75 of 80 correct repairs versus 72 for fixed specialists and 63 for persistent retries. Fixed specialists and Backstop tied in the injected provider-outage condition. The fixed workflow had lower p95 latency and lower combined customer and guarantor cost. Recheck with `pnpm benchmark:live --verify-run benchmarks/held-out-results.json`. [Method and raw results](benchmarks/LIVE.md#matched-run-on-eight-fresh-tasks-and-two-inference-providers)
+
 ## Track fit
 
 | Track                 | What the track asks for                                                                  | What Backstop does, and where to see it                                                                                                                                                                                                                                             |
@@ -495,6 +497,7 @@ The standalone API (`pnpm api`) stores task events, checkpoints, findings, regis
 The web app and recorded replay can be built for GitHub Pages. The testnet record shows team-run agents and the outside worker guide describes how another operator can run a worker. Independent customer demand and operator participation remain unverified. This prototype runs on testnet, with dry-run quotes for NEAR Intents.
 
 - The deployed vault remains upgradeable. The [testnet vault](docs/vault-recovery.md) supports a post-deadline exit and a recipient claim after automatic retries.
+- A separate [token-denominated vault candidate](docs/token-settlement.md) passed a NEP-141 payout and retry proof in NEAR Sandbox. The public demo uses native NEAR on testnet.
 - One coordinator runs the auction and one verifier signs evidence. The suite's author is trusted, distinct accounts can collude, and a passed test suite proves only the behavior it checked.
 - User-supplied repair tasks use an isolated JavaScript guest with bounded execution. The original checkout fixture uses `node:vm` and is limited to the built-in workers.
 - The guarantee pays bounded compensation when work cannot be recovered. The vault pays for its own storage.

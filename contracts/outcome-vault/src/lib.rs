@@ -11,6 +11,7 @@ mod payout;
 mod roles;
 mod settlement;
 mod task;
+mod token;
 mod transfer;
 mod validation;
 mod views;
@@ -99,6 +100,20 @@ impl OutcomeVault {
             tee_signers: LookupMap::new(StorageKey::TeeSigners),
             inferences: LookupMap::new(StorageKey::Inferences),
         }
+    }
+
+    #[init]
+    pub fn new_with_token(
+        owner: AccountId,
+        coordinator: AccountId,
+        verifier: AccountId,
+        token_contract: AccountId,
+        min_escrow: near_sdk::json_types::U128,
+    ) -> Self {
+        require!(min_escrow.0 > 0, ERR_DUST_ESCROW);
+        let vault = Self::new(owner, coordinator, verifier);
+        token::TokenAsset::set(token_contract, min_escrow);
+        vault
     }
 }
 
