@@ -24,9 +24,11 @@ import {
   fromYocto,
   leadAgent,
   near,
+  signingKeyFromSeed,
   sumYocto,
   type FailureReason,
   type Outcome,
+  type SignedBid,
 } from "@backstop/shared";
 
 export const modes = ["single", "fixed", "market"] as const;
@@ -70,6 +72,34 @@ export type Assignment = {
   }>;
 };
 
+const standbyIds = ["standby-a", "standby-b"] as const;
+
+export function standbyBids(taskId: string, ledger: Ledger, maxRecoveryAttempts: number) {
+  const standbyWorkers = standbyIds.map((agentId) => ({
+    ...roster.epsilon,
+    agentId,
+    account: `${agentId}.fixture.testnet`,
+    key: signingKeyFromSeed(`benchmark-reservation:${agentId}`),
+  }));
+  const capacity = recoveryCapacity(ledger);
+  return Array.from({ length: maxRecoveryAttempts }, (_, index) =>
+    standbyWorkers.map((agent, order) => {
+      const quote = (capacity * BigInt(80 + 10 * order)) / 100n;
+      return pricedBid(
+        { taskId, epoch: index + 1, nowMs: 1_000, bidWindowMs: 100 },
+        "Prepriced backup slot for a full repair on the second inference provider",
+        {
+          kind: "offer",
+          amountYocto: quote,
+          members: [{ agent, shareYocto: quote }],
+          estimatedDurationMs: 45_000,
+          reasoning: [],
+        },
+      );
+    }),
+  );
+}
+
 export function choose(
   mode: Mode,
   ledger: Ledger,
@@ -83,6 +113,7 @@ export function choose(
     failingCases: number;
     publicCases: number;
     msLeft: number;
+    standby?: readonly SignedBid[];
   },
 ): Assignment {
   const {
@@ -95,6 +126,7 @@ export function choose(
     failingCases,
     publicCases,
     msLeft,
+    standby,
   } = context;
   const available = (agent: string) => !unavailable.includes(agent);
   const noAssignment = { lead: "", payees: [], bids: [] };
@@ -160,8 +192,24 @@ export function choose(
     });
     return [join?.join === true ? endorseBid(bid, roster.delta) : bid];
   });
+  const availableStandby = (standby ?? []).filter(
+    ({ bid }) =>
+      bid.estimatedDurationMs <= msLeft &&
+      bid.members.every(({ agentId }) => available(agentId) && !excluded.includes(agentId)),
+  );
+  const offers = bids.length > 0 ? bids : availableStandby;
+  if (bids.length === 0) {
+    trace.push(
+      ...availableStandby.map(({ bid, bidHash }) => ({
+        lead: leadAgent(bid),
+        quote: formatNear(fromYocto(bid.amountYocto)),
+        reason: "standby",
+        signedBidHash: bidHash,
+      })),
+    );
+  }
   if (mode === "fixed") {
-    const next = bids[0];
+    const next = offers[0];
     if (next === undefined) return noAssignment;
     return {
       lead: leadAgent(next.bid),
@@ -172,7 +220,7 @@ export function choose(
       bids: [],
     };
   }
-  const { winner, rejected } = runAuction(bids, ledger, 1100, excluded);
+  const { winner, rejected } = runAuction(offers, ledger, 1100, excluded);
   const records = trace.map((bid) => ({
     ...bid,
     reason: rejected.find((entry) => entry.bidHash === bid.signedBidHash)?.reason ?? bid.reason,

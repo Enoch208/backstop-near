@@ -1,5 +1,28 @@
 import type { TaskDefinition } from "./tasks.js";
 
+const regressionInputs: Readonly<
+  Record<
+    string,
+    {
+      probe: TaskDefinition["audit"][number];
+      example: TaskDefinition["audit"][number];
+    }
+  >
+> = {
+  "quota-rebalance": {
+    probe: { units: 7, caps: [0, 0, 0], start: 2 },
+    example: { units: 5, caps: [0, 0, 0, 0], start: 1 },
+  },
+  "dependency-layers": {
+    probe: { build: ["build"], lint: [] },
+    example: { start: [], finish: ["finish"] },
+  },
+  "alert-episode": {
+    probe: { samples: [6, 7, 2, 5, 5], high: 5, low: 2 },
+    example: { samples: [8, 8, 3, 9, 9], high: 8, low: 3 },
+  },
+};
+
 export const heldOutTasks: readonly TaskDefinition[] = [
   {
     id: "inventory-quarantine",
@@ -349,3 +372,14 @@ export const heldOutTasks: readonly TaskDefinition[] = [
     ],
   },
 ];
+
+export const recoveryRetestTasks = heldOutTasks.map((task): TaskDefinition => {
+  const regression = regressionInputs[task.id];
+  return regression === undefined
+    ? task
+    : { ...task, acceptance: [...task.acceptance, regression.probe] };
+});
+
+export function publicRecoveryExample(taskId: string) {
+  return regressionInputs[taskId]?.example;
+}

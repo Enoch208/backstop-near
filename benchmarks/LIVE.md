@@ -80,3 +80,25 @@ Applying posted uncached input and output rates to reported usage gives an estim
 Against fixed specialists Backstop won three pairs and lost zero, a 3.75 percentage point difference with an exploratory task-cluster interval of 0 to 8.75 points. Under the provider outage the two specialist modes tied at 12/16 correct. Backstop accepted one wrong answer under that condition and fixed accepted none. The three false accepts across the full run missed an all-zero quota cap or a self-dependency case in the acceptance gate. The separate audit caught them. The small corpus and the tradeoff in latency and cost leave a consistent market advantage unproven. [Raw trials](held-out-results.json)
 
 To repeat, configure the primary with `BACKSTOP_AI_*` and the second endpoint with `BACKSTOP_BENCH_SECOND_BASE_URL`, `BACKSTOP_BENCH_SECOND_MODEL`, and `BACKSTOP_BENCH_SECOND_API_KEY`. Run `pnpm benchmark:live --held-out --repeats 2 --concurrency 6 --seed 738291 --out /tmp/backstop-heldout-repeat.json`. Inference is live and outcomes may vary.
+
+## Recovery retest and fresh tasks
+
+The retest reused the eight earlier tasks and seed 738291. It added separate acceptance probes for all-zero caps, self-dependencies, and exact alert closing thresholds. Both specialist schedulers could use two prepriced standby slots on the second provider when market bids were unavailable. The slots were simulated and used live inference. Every scheduler got the same updated acceptance gate, public recovery examples, and three-call cap. The harness keeps the private audit inputs from the models. The funded ceiling was 0.65 NEAR, including bond liability.
+
+| Run | Scheduler | Correct | False accepts | Correct under simulated outage | p95 seconds | Simulated NEAR per correct result, including bonds |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Regression | Backstop | 79/80 | 0 | 16/16 | 11.39 | 0.2975 |
+| Regression | Fixed specialists | 78/80 | 0 | 15/16 | 12.05 | 0.2915 |
+| Regression | Persistent retries | 64/80 | 0 | 0/16 | 13.17 | 0.4081 |
+| Four fresh tasks | Backstop | 37/40 | 3 | 7/8 | 19.33 | 0.3518 |
+| Four fresh tasks | Fixed specialists | 37/40 | 1 | 7/8 | 19.81 | 0.3392 |
+| Four fresh tasks | Persistent retries | 32/40 | 0 | 0/8 | 17.97 | 0.4100 |
+
+Backstop recovered all five of its earlier misses in the retest. Its remaining failure used all three calls on the alert task after injected tool loss. On the fresh tasks the two specialist schedulers each won two pairs and lost two. The Backstop audit caught two patches that mishandled object property names as IDs and one that applied an allowance incorrectly when sessions repeated. These results leave the overall reliability advantage unresolved. Both runs used eight concurrent blocks, the same two providers, and live generation that can vary between runs. [Regression results](recovery-retest.json) · [Fresh results](fresh-recovery.json)
+
+```sh
+pnpm benchmark:live --verify-run benchmarks/recovery-retest.json
+pnpm benchmark:live --verify-run benchmarks/fresh-recovery.json
+pnpm benchmark:live --recovery-retest --repeats 2 --concurrency 8 --seed 738291 --out /tmp/backstop-recovery-retest.json
+pnpm benchmark:live --fresh --repeats 2 --concurrency 8 --seed 511723 --out /tmp/backstop-fresh-recovery.json
+```

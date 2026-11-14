@@ -1,8 +1,17 @@
 import { repairPrompt, type ModelConfig } from "@backstop/agents";
 import { digestText, seededRandom, type FailureReason } from "@backstop/shared";
 import { check, type PreparedTask } from "./evaluate.js";
+import { publicRecoveryExample } from "./held-out.js";
 import { infer, limits, type Inference } from "./inference.js";
-import { accounting, choose, fundedLedger, type Assignment, type Mode } from "./schedule.js";
+import { runIsolated } from "@backstop/verifier";
+import {
+  accounting,
+  choose,
+  fundedLedger,
+  standbyBids,
+  type Assignment,
+  type Mode,
+} from "./schedule.js";
 
 export const legacyFaults = [
   "healthy",
@@ -30,6 +39,8 @@ const priorities: Readonly<Record<string, string>> = {
   gamma: "Inspect the prior checkpoint and diagnose interacting requirements before patching.",
   epsilon: "Look for a different algorithm when the earlier patch cannot satisfy all rules.",
 };
+const standbyPrompt =
+  "Re-derive the implementation from the published rules. Reason aloud internally about termination at capacity and equality at boundaries. Check any supplied counterexample before submitting.";
 
 function candidateAfterFault(
   fault: Fault,
@@ -61,6 +72,7 @@ export async function runTrial(
   matched?: {
     readonly secondary: ModelConfig | null;
     readonly initial: (request: () => Promise<Inference>) => Promise<Inference>;
+    readonly standbyAndFeedback?: boolean;
   },
 ) {
   const began = performance.now();
@@ -70,6 +82,12 @@ export async function runTrial(
   const failures: FailureReason[] = [];
   const excluded: string[] = [];
   const history: string[] = [];
+  const improved = matched?.standbyAndFeedback === true;
+  const taskId = `bench-${task.id}-${fault}-${String(repeat)}`;
+  const standby =
+    improved && matched?.secondary !== null && mode !== "single"
+      ? standbyBids(taskId, ledger, limits.calls - 1)
+      : [];
   const attempts: Attempt[] = [];
   const random = seededRandom(
     (seed ^ Number.parseInt(digestText(task.id).slice(7, 15), 16) ^ repeat) >>> 0,
@@ -92,16 +110,18 @@ export async function runTrial(
   let correct = false;
   let deliveredSource: string | null = null;
   let terminal = "attempt-cap";
+  let rejects = 0;
   for (let attempt = 1; attempt <= limits.calls; attempt++) {
     const msLeft = Math.floor(deadline - performance.now());
     if (msLeft <= 0) {
       terminal = "wall-deadline";
       break;
     }
-    const failingCases = check(checkpoint, task.entry, task.visible);
     const checkpointBefore = digestText(checkpoint);
+    const workSource = improved && rejects >= 2 ? task.starter : checkpoint;
+    const failingCases = check(workSource, task.entry, task.visible);
     const assignment = choose(mode, ledger, {
-      taskId: `bench-${task.id}-${fault}-${String(repeat)}`,
+      taskId,
       attempt,
       failures,
       excluded,
@@ -110,6 +130,7 @@ export async function runTrial(
       failingCases: failingCases.length,
       publicCases: task.visible.length,
       msLeft,
+      ...(standby[attempt - 2] === undefined ? {} : { standby: standby[attempt - 2] }),
     });
     if (assignment.lead === "") {
       terminal = "no-assignment";
@@ -125,16 +146,40 @@ export async function runTrial(
       });
       break;
     }
+    const publicExample = improved && rejects > 0 ? publicRecoveryExample(task.id) : undefined;
+    const expected =
+      publicExample === undefined
+        ? undefined
+        : runIsolated(task.reference, task.entry, [publicExample])[0];
+    if (publicExample !== undefined && expected?.ok !== true)
+      throw new Error("Invalid recovery example");
+    const publicCases =
+      publicExample !== undefined && expected?.ok === true
+        ? [
+            ...task.visible,
+            {
+              id: "recovery-example",
+              visibility: "public" as const,
+              input: publicExample,
+              expected: expected.value,
+            },
+          ]
+        : task.visible;
+    const isStandby = assignment.lead.startsWith("standby-");
     const diagnosis = {
       from: "public test runner",
-      finding: { failingCases, notes: "The current source was tested on the public examples." },
+      finding: {
+        failingCases:
+          publicCases === task.visible ? failingCases : check(workSource, task.entry, publicCases),
+        notes: "The current source was tested on the public examples.",
+      },
     };
     const messages = repairPrompt({
-      objective: `${task.objective} ${priorities[assignment.lead] ?? ""}`,
+      objective: `${task.objective} ${isStandby ? standbyPrompt : (priorities[assignment.lead] ?? "")}`,
       rules: task.rules,
-      brokenSource: checkpoint,
-      resumedFrom: checkpoint === task.starter ? null : checkpointBefore,
-      suite: task.suite,
+      brokenSource: workSource,
+      resumedFrom: workSource === task.starter ? null : checkpointBefore,
+      suite: { ...task.suite, cases: publicCases },
       generic: true,
       validatedSubtasks: task.visible.flatMap(({ id }) =>
         failingCases.some((testCase) => testCase.id === id) ? [] : [id],
@@ -143,7 +188,7 @@ export async function runTrial(
       diagnosis,
     });
     const provider =
-      unavailable.includes("alpha") && attempt > 1
+      (unavailable.includes("alpha") && attempt > 1) || isStandby
         ? (matched?.secondary ?? config)
         : assignment.lead === "gamma" || assignment.lead === "epsilon"
           ? (matched?.secondary ?? config)
@@ -178,6 +223,13 @@ export async function runTrial(
       } else {
         reason = "VERDICT_REJECTED";
         result = performance.now() > deadline ? "wall-deadline" : "verifier-rejected";
+        if (result === "verifier-rejected") {
+          rejects++;
+          if (improved && staged === workSource)
+            history.push(
+              "The last submission repeated the same source and failed. Change the algorithm or boundary condition.",
+            );
+        }
       }
     }
     attempts.push({
@@ -193,7 +245,9 @@ export async function runTrial(
     if (accepted) break;
     history.push(
       result === "verifier-rejected"
-        ? "The independent verifier found a mismatch on undisclosed cases. Reconsider all edge cases against the specification."
+        ? improved && publicRecoveryExample(task.id) !== undefined
+          ? "The verifier rejected the patch. Check the provided public boundary example and handle the entire class of cases it represents."
+          : "The independent verifier found a mismatch on undisclosed cases. Reconsider all edge cases against the specification."
         : result,
     );
     failures.push(reason);

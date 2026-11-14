@@ -4,7 +4,8 @@ import { parseArgs } from "node:util";
 import { modelFromEnv } from "@backstop/agents";
 import { digestOf, seededRandom } from "@backstop/shared";
 import { prepare } from "./benchmark/evaluate.js";
-import { heldOutTasks } from "./benchmark/held-out.js";
+import { freshTasks } from "./benchmark/fresh-tasks.js";
+import { heldOutTasks, recoveryRetestTasks } from "./benchmark/held-out.js";
 import { limits, type Inference } from "./benchmark/inference.js";
 import { results } from "./benchmark/report.js";
 import { faults, legacyFaults, runTrial, type Trial } from "./benchmark/run.js";
@@ -18,6 +19,8 @@ const { values } = parseArgs({
     "verify-run": { type: "string" },
     pilot: { type: "boolean", default: false },
     "held-out": { type: "boolean", default: false },
+    "recovery-retest": { type: "boolean", default: false },
+    fresh: { type: "boolean", default: false },
     concurrency: { type: "string", default: "1" },
     repeats: { type: "string", default: "1" },
     seed: { type: "string", default: "20261114" },
@@ -34,12 +37,27 @@ const numeric = (raw: string, name: string, minimum: number, maximum: number): n
   return value;
 };
 
-const definitions = values["held-out"] ? heldOutTasks : recoveryTasks;
+const improved = values["recovery-retest"] || values.fresh;
+const matched = values["held-out"] || improved;
+const definitions = values.fresh
+  ? freshTasks
+  : values["recovery-retest"]
+    ? recoveryRetestTasks
+    : values["held-out"]
+      ? heldOutTasks
+      : recoveryTasks;
 const prepared = definitions.map(prepare);
 const corpusHash = digestOf(definitions);
 if (values["verify-run"] !== undefined) {
   const { trials, deliveries } = verifyRun(values["verify-run"], [
+    { tasks: freshTasks.map(prepare), hash: digestOf(freshTasks), faults, matched: true },
     { tasks: heldOutTasks.map(prepare), hash: digestOf(heldOutTasks), faults, matched: true },
+    {
+      tasks: recoveryRetestTasks.map(prepare),
+      hash: digestOf(recoveryRetestTasks),
+      faults,
+      matched: true,
+    },
     { tasks: recoveryTasks.map(prepare), hash: digestOf(recoveryTasks), faults },
     { tasks: tasks.map(prepare), hash: digestOf(tasks), faults: legacyFaults },
   ]);
@@ -59,7 +77,7 @@ if (values["verify-run"] !== undefined) {
     );
   const config = primary;
   const selected = values.pilot ? prepared.slice(0, 2) : prepared;
-  const secondary = values["held-out"]
+  const secondary = matched
     ? modelFromEnv({
         BACKSTOP_AI_API_KEY: process.env.BACKSTOP_BENCH_SECOND_API_KEY || undefined,
         BACKSTOP_AI_BASE_URL: process.env.BACKSTOP_BENCH_SECOND_BASE_URL || undefined,
@@ -75,19 +93,25 @@ if (values["verify-run"] !== undefined) {
     )
       throw new Error("The second provider needs a distinct HTTPS host and a model");
   }
+  if (improved && secondary === null)
+    throw new Error("The recovery retest needs both inference providers");
   const repeats = numeric(values.repeats, "repeats", 1, 20);
   const concurrency = numeric(values.concurrency, "concurrency", 1, 8);
   const seed = numeric(values.seed, "seed", 1, 4_294_967_295);
   const random = seededRandom(seed);
   const output =
     values.out ??
-    (values["held-out"]
-      ? values.pilot
-        ? "benchmarks/held-out-pilot.json"
-        : "benchmarks/held-out-results.json"
-      : values.pilot
-        ? "benchmarks/market-pilot.json"
-        : "benchmarks/market-results.json");
+    (values.fresh
+      ? "benchmarks/fresh-recovery.json"
+      : values["recovery-retest"]
+        ? "benchmarks/recovery-retest.json"
+        : values["held-out"]
+          ? values.pilot
+            ? "benchmarks/held-out-pilot.json"
+            : "benchmarks/held-out-results.json"
+          : values.pilot
+            ? "benchmarks/market-pilot.json"
+            : "benchmarks/market-results.json");
   const trials: Trial[] = [];
   const blocks = selected
     .flatMap((task) =>
@@ -111,7 +135,7 @@ if (values["verify-run"] !== undefined) {
       recordedAt: new Date().toISOString(),
       corpusHash,
       model: config.model,
-      ...(values["held-out"] && {
+      ...(matched && {
         providers: [config, ...(secondary === null ? [] : [secondary])].map(
           ({ baseUrl, model }) => ({
             host: new URL(baseUrl).hostname,
@@ -121,6 +145,7 @@ if (values["verify-run"] !== undefined) {
         sharedPrimary: true,
         concurrency,
       }),
+      ...(improved && { policy: "standby-with-public-feedback" }),
       node: process.version,
       seed,
       repeats,
@@ -152,7 +177,7 @@ if (values["verify-run"] !== undefined) {
         block.fault,
         block.repeat,
         seed,
-        values["held-out"] ? { secondary, initial } : undefined,
+        matched ? { secondary, initial, standbyAndFeedback: improved } : undefined,
       );
       trials.push(trial);
       save();
