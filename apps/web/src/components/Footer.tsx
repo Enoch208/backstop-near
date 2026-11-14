@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { enclaveKey, liveRun, nearblocksAccount, record, repository } from "../data/record.js";
 import { Bars } from "./Bars.js";
+import { BuiltOnNear } from "./BuiltOnNear.js";
 
 type Item = { readonly label: string; readonly to: string };
 
@@ -53,7 +54,10 @@ export function Footer() {
         <Links items={legal} />
       </div>
       <div className="grid gap-4 px-4 pt-28 pb-12 text-[12px] sm:px-10 md:grid-cols-[2fr_2fr]">
-        <span>Built at NEAR HACKATHON 2026</span>
+        <span className="flex flex-wrap items-center gap-5">
+          <BuiltOnNear tone="light" className="h-5" />
+          <span>Built at NEAR HACKATHON 2026</span>
+        </span>
         <span className="text-white/50">
           Testnet only. Not insurance and not a promise of success.
         </span>
