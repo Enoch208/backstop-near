@@ -58,3 +58,19 @@ export function rosterAgent(agentId: string): FixtureAgent {
   if (agent === undefined) throw new RangeError(`No fixture agent ${agentId}`);
   return agent;
 }
+
+export type FixturePayout = {
+  readonly label: string;
+  readonly asset: string;
+  readonly recipient: string;
+  readonly recipientType: "DESTINATION_CHAIN" | "INTENTS";
+};
+
+export const payoutPreferences: Readonly<Record<string, FixturePayout>> = {
+  delta: {
+    label: "USDC on Base",
+    asset: "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+    recipient: "0x6cf8227bbe2ef5f0b7bfd9aa62c3fd3da19d4d22",
+    recipientType: "DESTINATION_CHAIN",
+  },
+};
