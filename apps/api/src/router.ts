@@ -1,6 +1,7 @@
 import { errorResponse, type ApiError } from "./http.js";
 import { listTasks, register } from "./routes/agents.js";
 import { fault } from "./routes/demo.js";
+import { getFinding, postFinding } from "./routes/findings.js";
 import { bid, createTask, endorse, fund } from "./routes/funding.js";
 import {
   chainSteps,
@@ -54,6 +55,12 @@ const routes: readonly Route[] = [
   ),
   route("GET", "/api/tasks/:task/artifacts/:hash", (runtime, _request, params) =>
     getArtifact(runtime, second(params)),
+  ),
+  route("GET", "/api/tasks/:task/findings/:hash", (runtime, _request, params) =>
+    getFinding(runtime, second(params)),
+  ),
+  route("POST", "/api/tasks/:task/findings", (runtime, request, params) =>
+    postFinding(runtime, request, first(params)),
   ),
   route("POST", "/api/tasks/:task/funding", (runtime, request, params) =>
     fund(runtime, request, first(params)),

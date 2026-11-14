@@ -1,5 +1,6 @@
-import type { Principal } from "@backstop/agents";
-import { signRequest, type Json } from "@backstop/shared";
+import { principals, type Principal } from "@backstop/agents";
+import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
+import { near, signRequest, toYocto, type Json } from "@backstop/shared";
 import { z } from "zod";
 import { createRuntime, handle, type Runtime } from "../src/index.js";
 
@@ -63,4 +64,25 @@ export async function read(
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const response = await handle(runtime, new Request(`${origin}${path}`));
   return { status: response.status, body: objectSchema.parse(await response.json()) };
+}
+
+export async function bondedTask(taskId: string): Promise<{ runtime: Runtime; clock: Clock }> {
+  const { runtime, clock } = testRuntime();
+  const manifest = checkoutManifest({
+    taskId,
+    createdAtMs: clock.now,
+    maxAttempts: 3,
+    timing: liveTiming,
+  });
+  await call(runtime, clock, principals.customer, "/api/tasks", { manifest });
+  const fund = (pool: string, amount: string) => ({
+    pool,
+    amountYocto: toYocto(near(amount)),
+    liabilityYocto: null,
+  });
+  const path = `/api/tasks/${taskId}/funding`;
+  await call(runtime, clock, principals.customer, path, fund("escrow", "0.40"));
+  await call(runtime, clock, principals.customer, path, fund("premium", "0.04"));
+  await call(runtime, clock, principals.guarantor, path, fund("bond", "0.25"));
+  return { runtime, clock };
 }

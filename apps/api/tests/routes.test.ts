@@ -3,50 +3,12 @@ import { asPrincipal, primaryBid, principals, roster } from "@backstop/agents";
 import { candidate, checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { near, toYocto } from "@backstop/shared";
 import { handle, tick } from "../src/index.js";
-import { call, origin, read, signedRequest, testRuntime } from "./support.js";
+import { bondedTask, call, origin, read, signedRequest, testRuntime } from "./support.js";
 
 const taskId = "checkout-api";
 
-async function bondedTask() {
-  const { runtime, clock } = testRuntime();
-  const manifest = checkoutManifest({
-    taskId,
-    createdAtMs: clock.now,
-    maxAttempts: 3,
-    timing: liveTiming,
-  });
-  await call(runtime, clock, principals.customer, "/api/tasks", { manifest });
-  const fund = (pool: string, amount: string) => ({
-    pool,
-    amountYocto: toYocto(near(amount)),
-    liabilityYocto: null,
-  });
-  await call(
-    runtime,
-    clock,
-    principals.customer,
-    `/api/tasks/${taskId}/funding`,
-    fund("escrow", "0.40"),
-  );
-  await call(
-    runtime,
-    clock,
-    principals.customer,
-    `/api/tasks/${taskId}/funding`,
-    fund("premium", "0.04"),
-  );
-  await call(
-    runtime,
-    clock,
-    principals.guarantor,
-    `/api/tasks/${taskId}/funding`,
-    fund("bond", "0.25"),
-  );
-  return { runtime, clock };
-}
-
 async function primaryAt(lead: typeof roster.gamma) {
-  const task = await bondedTask();
+  const task = await bondedTask(taskId);
   const bid = primaryBid(lead, taskId, "0.30", task.clock.now);
   await call(task.runtime, task.clock, asPrincipal(lead), `/api/tasks/${taskId}/bids`, { bid });
   await call(task.runtime, task.clock, asPrincipal(lead), `/api/tasks/${taskId}/claim`, {});
@@ -85,7 +47,7 @@ describe("the Backstop API", () => {
   });
 
   it("refuses a tampered body, an unknown actor and a stale request", async () => {
-    const { runtime, clock } = await bondedTask();
+    const { runtime, clock } = await bondedTask(taskId);
     const request = signedRequest(
       asPrincipal(roster.alpha),
       `/api/tasks/${taskId}/claim`,
@@ -234,7 +196,7 @@ describe("the Backstop API", () => {
   });
 
   it("keeps fault injection off outside demo mode", async () => {
-    const { runtime, clock } = await bondedTask();
+    const { runtime, clock } = await bondedTask(taskId);
     const fault = await call(runtime, clock, principals.coordinator, "/api/demo/faults", {
       action: "fail_next_transfer",
       taskId,
@@ -243,7 +205,7 @@ describe("the Backstop API", () => {
   });
 
   it("serves the event log as JSON or as a server-sent event stream", async () => {
-    const { runtime } = await bondedTask();
+    const { runtime } = await bondedTask(taskId);
     const log = await read(runtime, `/api/tasks/${taskId}/events?after=2`);
     expect(log.body).toMatchObject({ events: [{ version: 3 }, { version: 4 }] });
     const stream = await handle(
