@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { FeedEvent } from "./api.js";
 
 const tone = (type: string) => {
+  if (type === "finding_recorded") return "text-[#8fb8ff]";
   if (/failed|rejected|expired|terminal/.test(type)) return "text-refused";
   if (/accepted|settled|confirmed|verification_recorded|resolved/.test(type)) return "text-ok";
   if (/bid|coalition|endorse|awarded|assigned/.test(type)) return "text-[#e8c07a]";
