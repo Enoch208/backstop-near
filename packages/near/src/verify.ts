@@ -1,17 +1,17 @@
-import { FailoverRpcProvider, JsonRpcProvider, type Provider } from "near-api-js";
+import type { Provider } from "near-api-js";
 import { z } from "zod";
 import { vaultMethods, type RestrictedRole } from "./keys.js";
 import { defaultTestnetRpc } from "./network.js";
 import { readFinalOutcome } from "./journal.js";
 import { teeSignerSchema } from "./tee.js";
 import { ledgerViewSchema } from "./wire.js";
+import { ProofProvider } from "./proof-provider.js";
 
 export function testnetProofProvider(url?: string): Provider {
-  if (url !== undefined) return new JsonRpcProvider({ url });
-  return new FailoverRpcProvider(
-    [defaultTestnetRpc, "https://api.zan.top/near-testnet", "https://testnet-rpc.intea.rs"].map(
-      (endpoint) => new JsonRpcProvider({ url: endpoint }, { retries: 1 }),
-    ),
+  return new ProofProvider(
+    url === undefined
+      ? [defaultTestnetRpc, "https://api.zan.top/near-testnet", "https://testnet-rpc.intea.rs"]
+      : [url],
   );
 }
 
