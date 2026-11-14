@@ -2,6 +2,30 @@
   "network": "testnet",
   "contractId": "vault.backstop-6501bb.testnet",
   "deployTx": "3xyHBrhZNRfKafZRNw4LbMYUREY5DiAUHFKYxqqxqewW",
+  "upgrades": [
+    {
+      "at": "2026-11-14T13:19:14.895Z",
+      "txHash": "Esf2QSVUeqvW8dBJtWR9dZ1j5d3LDkjZdNWjrFLVjMbp",
+      "from": "GK8mAZNYBL17LhqGqHHh43gCrcrPD1bjkxTibe72oDnW",
+      "to": "5qz9ivSg64LkdkoHoLRNZhMPPpcHHYNvvGNF9MgXvZAa",
+      "explorer": "https://testnet.nearblocks.io/txns/Esf2QSVUeqvW8dBJtWR9dZ1j5d3LDkjZdNWjrFLVjMbp"
+    }
+  ],
+  "teeSigners": [
+    {
+      "at": "2026-11-14T13:19:37.736Z",
+      "txHash": "2ydXyZh4TvNUogitknatatAyqtiYGiyALKgESQCkAdS4",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "signingAddress": "0xfe0071895500a9755c18044948ab4f4e1a7f337e",
+      "attestationHash": "sha256:a63a39667dca751245d36981ece7b540b8dd30b2872cf5209536bc0d13d9ffaf",
+      "nonce": "61c401a4d60051af4326711c71414cc4b194ff3a79efb446a969d1ff64d24517",
+      "instances": 2,
+      "tcbStatus": "UpToDate",
+      "mrTd": "df4d77c857de652bd0fafa343a2026b51071ee03773d076d283abf1a7d36ff91ffa279ee4a617ac664f7e2a2c8d5891b",
+      "nvidiaKeyId": "nv-eat-kid-prod-20261114124017775-afdc4293-21b9-4796-bd05-850dd1d0d2a3",
+      "explorer": "https://testnet.nearblocks.io/txns/2ydXyZh4TvNUogitknatatAyqtiYGiyALKgESQCkAdS4"
+    }
+  ],
   "runs": [
     {
       "at": "2026-11-14T11:32:52.576Z",
