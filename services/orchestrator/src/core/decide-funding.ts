@@ -2,6 +2,7 @@ import {
   fail,
   fromYocto,
   manifestHash,
+  pendingEndorsers,
   succeed,
   taskManifestSchema,
   toYocto,
@@ -73,6 +74,9 @@ export function decideAssignPrimary(
   const checked = checkSignedBid(record, signed, context.registry);
   if (!checked.ok) return checked;
   if (checked.value.bid.epoch !== 0) return fail("POLICY_VIOLATION", "The primary bid is epoch 0");
+  if (pendingEndorsers(checked.value).length > 0) {
+    return fail("POLICY_VIOLATION", "Every member of a primary coalition must endorse it first");
+  }
   if (fromYocto(checked.value.bid.amountYocto) > record.ledger.available.escrow) {
     return fail("BUDGET_EXCEEDED", "The primary is paid from customer escrow only");
   }

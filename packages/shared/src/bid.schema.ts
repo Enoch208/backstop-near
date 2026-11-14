@@ -36,10 +36,17 @@ export const bidSchema = z
   );
 export type Bid = z.infer<typeof bidSchema>;
 
+export const endorsementSchema = z.strictObject({
+  agentId: agentIdSchema,
+  signature: signatureSchema,
+});
+export type Endorsement = z.infer<typeof endorsementSchema>;
+
 export const signedBidSchema = z.strictObject({
   bid: bidSchema,
   bidHash: digestSchema,
   signature: signatureSchema,
+  endorsements: z.array(endorsementSchema).max(4),
 });
 export type SignedBid = z.infer<typeof signedBidSchema>;
 
@@ -51,4 +58,12 @@ export function leadAgent(bid: Bid): string {
   const [lead] = bid.members;
   if (lead === undefined) throw new RangeError("A bid has at least one member");
   return lead.agentId;
+}
+
+export function pendingEndorsers(signed: SignedBid): string[] {
+  const lead = leadAgent(signed.bid);
+  const endorsed = new Set(signed.endorsements.map((endorsement) => endorsement.agentId));
+  return signed.bid.members
+    .map((member) => member.agentId)
+    .filter((agentId) => agentId !== lead && !endorsed.has(agentId));
 }

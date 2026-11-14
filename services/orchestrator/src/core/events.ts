@@ -2,6 +2,7 @@ import type {
   ChallengeRuling,
   Checkpoint,
   Digest,
+  Endorsement,
   EvidenceBundle,
   FailureReason,
   Lease,
@@ -50,6 +51,8 @@ export type TaskEventBody =
   | { type: "lease_expired"; attempt: number; fencingToken: number | null }
   | { type: "attempt_failed"; attempt: number; reason: FailureReason; agents: readonly string[] }
   | { type: "recovery_opened"; epoch: number; reason: FailureReason; closesAtMs: number }
+  | { type: "coalition_proposed"; bid: SignedBid }
+  | { type: "coalition_endorsed"; bidHash: Digest; endorsement: Endorsement }
   | { type: "bid_submitted"; bid: SignedBid }
   | { type: "recovery_awarded"; epoch: number; winner: Digest; rejected: readonly RejectedBid[] }
   | {

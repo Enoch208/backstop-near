@@ -6,6 +6,7 @@ import {
   signValue,
   toYocto,
   type Bid,
+  type Endorsement,
   type SignedBid,
 } from "@backstop/shared";
 import { roster, type FixtureAgent } from "./roster.js";
@@ -51,7 +52,20 @@ export const fixtureOffers: readonly Offer[] = [
 
 export function signBid(bid: Bid, lead: FixtureAgent): SignedBid {
   const parsed = bidSchema.parse(bid);
-  return { bid: parsed, bidHash: bidHash(parsed), signature: signValue(parsed, lead.key) };
+  return {
+    bid: parsed,
+    bidHash: bidHash(parsed),
+    signature: signValue(parsed, lead.key),
+    endorsements: [],
+  };
+}
+
+export function endorsement(signed: SignedBid, member: FixtureAgent): Endorsement {
+  return { agentId: member.agentId, signature: signValue(signed.bid, member.key) };
+}
+
+export function endorseBid(signed: SignedBid, member: FixtureAgent): SignedBid {
+  return { ...signed, endorsements: [...signed.endorsements, endorsement(signed, member)] };
 }
 
 export function fixtureBids(context: BidContext): SignedBid[] {

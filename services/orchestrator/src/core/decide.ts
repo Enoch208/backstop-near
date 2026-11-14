@@ -6,7 +6,7 @@ import {
   decideDeposit,
   decideGuarantee,
 } from "./decide-funding.js";
-import { decideBid, decideCloseAuction } from "./decide-market.js";
+import { decideBid, decideCloseAuction, decideEndorse } from "./decide-market.js";
 import {
   decideExpireDeadline,
   decideResolveTransfer,
@@ -74,6 +74,8 @@ export function decide(
       return decideExpireLease(record, context);
     case "bid":
       return decideBid(record, command.bid, context);
+    case "endorse":
+      return decideEndorse(record, command.bidHash, command.endorsement, context);
     case "closeAuction":
       return decideCloseAuction(record, context);
     case "recordVerification":

@@ -31,6 +31,7 @@ export type Auction = {
   readonly epoch: number;
   readonly closesAtMs: number;
   readonly bids: readonly SignedBid[];
+  readonly proposals: readonly SignedBid[];
 };
 
 export type TaskRecord = {

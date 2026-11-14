@@ -1,6 +1,7 @@
 import type {
   Checkpoint,
   Digest,
+  Endorsement,
   EvidenceBundle,
   Outcome,
   SignedBid,
@@ -26,6 +27,7 @@ export type Command =
     }
   | { kind: "expireLease" }
   | { kind: "bid"; bid: SignedBid }
+  | { kind: "endorse"; bidHash: Digest; endorsement: Endorsement }
   | { kind: "closeAuction" }
   | { kind: "recordVerification"; evidence: EvidenceBundle }
   | { kind: "challenge"; signed: SignedChallengeRuling }

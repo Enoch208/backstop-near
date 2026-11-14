@@ -1,5 +1,8 @@
 import {
+  decideToJoin,
+  endorsement,
   fixtureBids,
+  rosterAgent,
   roster,
   searchCounterexample,
   workFor,
@@ -11,7 +14,15 @@ import {
   checkoutSuite,
   fixtureAccounts,
 } from "@backstop/fixture-checkout";
-import { formatNear, fromYocto, near, type Digest, type SignedBid } from "@backstop/shared";
+import {
+  formatNear,
+  fromYocto,
+  leadAgent,
+  near,
+  pendingEndorsers,
+  type Digest,
+  type SignedBid,
+} from "@backstop/shared";
 import { attestRuling, judgeChallenge, verifyArtifact } from "@backstop/verifier";
 import { dueCommands } from "../core/keeper.js";
 import { lastCheckpointHash } from "../core/record.js";
@@ -173,6 +184,28 @@ export function challenge(driver: Driver, seed: number): void {
   );
 }
 
+function endorseIfWilling(driver: Driver, bid: SignedBid, agentId: string): void {
+  const member = rosterAgent(agentId);
+  const decision = decideToJoin(member, bid, record(driver).excludedAgents);
+  if (!decision.join) {
+    driver.steps.push({
+      atMs: driver.nowMs,
+      actor: agentId,
+      command: "endorse",
+      note: `${agentId} declines: ${decision.reason}`,
+      events: [],
+      refused: null,
+    });
+    return;
+  }
+  run(
+    driver,
+    agentId,
+    { kind: "endorse", bidHash: bid.bidHash, endorsement: endorsement(bid, member) },
+    `${agentId} co-signs its seat: ${decision.reason}`,
+  );
+}
+
 export function auction(driver: Driver, absent: readonly string[]): SignedBid[] {
   const current = record(driver);
   const bids = fixtureBids({
@@ -184,12 +217,18 @@ export function auction(driver: Driver, absent: readonly string[]): SignedBid[] 
   });
   for (const bid of bids) {
     advance(driver, 1_000);
+    const members = bid.bid.members.map((member) => member.agentId).join("+");
+    const offer = `${formatNear(fromYocto(bid.bid.amountYocto))} NEAR`;
+    const pending = pendingEndorsers(bid);
     run(
       driver,
-      bid.bid.members[0]?.agentId ?? "unknown",
+      leadAgent(bid.bid),
       { kind: "bid", bid },
-      `${formatNear(fromYocto(bid.bid.amountYocto))} NEAR bid from ${bid.bid.members.map((member) => member.agentId).join("+")}`,
+      pending.length === 0
+        ? `${offer} bid from ${members}`
+        : `${leadAgent(bid.bid)} proposes a ${offer} coalition with ${pending.join(", ")}`,
     );
+    for (const agentId of pending) endorseIfWilling(driver, bid, agentId);
   }
   advance(driver, current.manifest.policy.bidWindowMs);
   keep(driver, "Keeper closes the auction");

@@ -115,14 +115,44 @@ function apply(record: TaskRecord, body: TaskEventBody): TaskRecord {
         ...record,
         state: "RECOVERY_OPEN",
         epoch: body.epoch,
-        auction: { epoch: body.epoch, closesAtMs: body.closesAtMs, bids: [] },
+        auction: { epoch: body.epoch, closesAtMs: body.closesAtMs, bids: [], proposals: [] },
         assignment: null,
         candidate: null,
       };
+    case "coalition_proposed":
+      return record.auction === null
+        ? record
+        : {
+            ...record,
+            auction: { ...record.auction, proposals: [...record.auction.proposals, body.bid] },
+          };
+    case "coalition_endorsed":
+      return record.auction === null
+        ? record
+        : {
+            ...record,
+            auction: {
+              ...record.auction,
+              proposals: record.auction.proposals.map((proposal) =>
+                proposal.bidHash === body.bidHash
+                  ? { ...proposal, endorsements: [...proposal.endorsements, body.endorsement] }
+                  : proposal,
+              ),
+            },
+          };
     case "bid_submitted":
       return record.auction === null
         ? record
-        : { ...record, auction: { ...record.auction, bids: [...record.auction.bids, body.bid] } };
+        : {
+            ...record,
+            auction: {
+              ...record.auction,
+              bids: [...record.auction.bids, body.bid],
+              proposals: record.auction.proposals.filter(
+                (proposal) => proposal.bidHash !== body.bid.bidHash,
+              ),
+            },
+          };
     case "recovery_awarded":
       return record;
     case "verification_recorded":

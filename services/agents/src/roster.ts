@@ -52,3 +52,9 @@ export const identities: readonly Principal[] = [
   ...Object.values(principals),
   ...Object.values(roster).map(asPrincipal),
 ];
+
+export function rosterAgent(agentId: string): FixtureAgent {
+  const agent = Object.values(roster).find((member) => member.agentId === agentId);
+  if (agent === undefined) throw new RangeError(`No fixture agent ${agentId}`);
+  return agent;
+}

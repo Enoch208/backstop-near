@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixtureBids, roster, signBid } from "@backstop/agents";
+import { endorseBid, fixtureBids, roster, signBid } from "@backstop/agents";
 import { near, toYocto, type SignedBid } from "@backstop/shared";
 import { advance, run, runAuction } from "../src/index.js";
 import { assignedTask, record, refusal } from "./support.js";
@@ -11,7 +11,7 @@ function recoveryOpen() {
   return driver;
 }
 
-const bidsFor = (driver: ReturnType<typeof recoveryOpen>) =>
+const proposalsFor = (driver: ReturnType<typeof recoveryOpen>) =>
   fixtureBids({
     taskId: driver.taskId,
     epoch: 1,
@@ -19,6 +19,11 @@ const bidsFor = (driver: ReturnType<typeof recoveryOpen>) =>
     bidWindowMs: 10_000,
     excludedAgents: [],
   });
+
+const bidsFor = (driver: ReturnType<typeof recoveryOpen>) =>
+  proposalsFor(driver).map((signed) =>
+    signed.bid.members.length > 1 ? endorseBid(signed, roster.delta) : signed,
+  );
 
 describe("the recovery auction", () => {
   it("TC-007 awards exactly one winner by price and records why the rest lost", () => {
