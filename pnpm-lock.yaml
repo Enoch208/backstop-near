@@ -161,6 +161,9 @@ importers:
       react-router:
         specifier: 8.4.0
         version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      simple-icons:
+        specifier: 16.33.0
+        version: 16.33.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -2002,6 +2005,10 @@ packages:
 
   signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
+
+  simple-icons@16.33.0:
+    resolution: {integrity: sha512-z14u6A8ngAg9mgERRsNO8YkjIMefehIpBk7A8Dz3Gd91945qFP19MLPSHgV4z8P5u/MRYd5e07OTzaDoB4d6qA==}
+    engines: {node: '>=0.12.18'}
 
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
@@ -3863,6 +3870,8 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   signal-exit@3.0.7: {}
+
+  simple-icons@16.33.0: {}
 
   source-map-js@1.2.2: {}
 

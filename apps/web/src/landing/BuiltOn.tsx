@@ -1,28 +1,65 @@
-const rows = [
+import {
+  siGithubactions,
+  siModelcontextprotocol,
+  siNear,
+  siNodedotjs,
+  siPnpm,
+  siReact,
+  siRust,
+  siTailwindcss,
+  siTypescript,
+  siVite,
+  siVitest,
+  siZod,
+  type SimpleIcon,
+} from "simple-icons";
+
+type Tile = { readonly name: string; readonly icon: SimpleIcon | null };
+
+const rows: readonly (readonly Tile[])[] = [
   [
-    "NEAR Protocol",
-    "NEAR AI Cloud",
-    "NEAR Intents",
-    "Intel TDX",
-    "NVIDIA NRAS",
-    "near-sdk",
-    "MCP",
-    "Rust",
+    { name: "NEAR Protocol", icon: siNear },
+    { name: "NEAR AI Cloud", icon: siNear },
+    { name: "NEAR Intents", icon: siNear },
+    { name: "Intel TDX", icon: null },
+    { name: "NVIDIA NRAS", icon: null },
+    { name: "Rust", icon: siRust },
+    { name: "MCP", icon: siModelcontextprotocol },
+    { name: "TypeScript", icon: siTypescript },
   ],
-  ["Function-call keys", "ecrecover", "EIP-191", "DCAP", "TypeScript", "zod", "Vitest", "neard"],
+  [
+    { name: "Node.js", icon: siNodedotjs },
+    { name: "React", icon: siReact },
+    { name: "Vite", icon: siVite },
+    { name: "Vitest", icon: siVitest },
+    { name: "Zod", icon: siZod },
+    { name: "Tailwind CSS", icon: siTailwindcss },
+    { name: "pnpm", icon: siPnpm },
+    { name: "GitHub Actions", icon: siGithubactions },
+  ],
 ];
 
-function Row({ names, reverse }: { readonly names: readonly string[]; readonly reverse: boolean }) {
+function Logo({ tile }: { readonly tile: Tile }) {
+  return (
+    <div className="flex h-[104px] w-[210px] shrink-0 items-center justify-center gap-2.5 bg-tile px-4 text-ink/75">
+      {tile.icon !== null && (
+        <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 fill-current" aria-hidden="true">
+          <path d={tile.icon.path} />
+        </svg>
+      )}
+      <span className="text-[18px] font-semibold tracking-tight whitespace-nowrap">
+        {tile.name}
+      </span>
+    </div>
+  );
+}
+
+function Row({ tiles, reverse }: { readonly tiles: readonly Tile[]; readonly reverse: boolean }) {
   return (
     <div className="overflow-hidden">
       <div className={`flex w-max gap-1.5 ${reverse ? "drift-reverse" : "drift"}`}>
-        {[...names, ...names].map((name, index) => (
-          <div
-            key={`${name}-${String(index)}`}
-            className="flex h-[104px] w-[180px] shrink-0 items-center justify-center bg-tile px-4 text-center text-[19px] font-semibold tracking-tight text-ink/80"
-          >
-            {name}
-          </div>
+        {[...tiles, ...tiles].map((tile, index) => (
+          <Logo key={`${tile.name}-${String(index)}`} tile={tile} />
         ))}
       </div>
     </div>
@@ -31,9 +68,9 @@ function Row({ names, reverse }: { readonly names: readonly string[]; readonly r
 
 export function BuiltOn() {
   return (
-    <section className="space-y-1.5 py-1.5" aria-label="Built on">
-      {rows.map((names, index) => (
-        <Row key={names[0]} names={names} reverse={index === 1} />
+    <section className="space-y-1.5 py-1.5" aria-label="Built with">
+      {rows.map((tiles, index) => (
+        <Row key={tiles[0]?.name ?? String(index)} tiles={tiles} reverse={index === 1} />
       ))}
     </section>
   );
