@@ -10,6 +10,7 @@ import {
 import { checkoutSuite } from "@backstop/fixture-checkout";
 import {
   canonicalJson,
+  digestText,
   formatNear,
   fromYocto,
   leadAgent,
@@ -18,7 +19,7 @@ import {
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
-import { produce } from "./produce.js";
+import { produce, type Resume } from "./produce.js";
 import {
   artifactReplySchema,
   leaseReplySchema,
@@ -83,6 +84,20 @@ export function agentLoop(
     );
   };
 
+  const resumeFrom = async (task: Snapshot): Promise<Resume | null> => {
+    const latest = task.checkpoints.at(-1)?.checkpoint;
+    if (latest === undefined) return null;
+    const reply = await client.get(`${base}/artifacts/${latest.contentHash}`);
+    const fetched = artifactReplySchema.safeParse(reply.body);
+    if (!fetched.success || digestText(fetched.data.source) !== latest.contentHash) {
+      log(
+        `checkpoint ${latest.contentHash.slice(0, 19)}… is unavailable or altered; starting fresh`,
+      );
+      return null;
+    }
+    return { source: fetched.data.source, hash: latest.contentHash };
+  };
+
   const work = async () => {
     const claim = leaseReplySchema.safeParse((await client.post(`${base}/claim`, {})).body);
     const token = claim.success
@@ -102,10 +117,16 @@ export function agentLoop(
     );
     const step = Math.floor(task.manifest.policy.leaseMs / 4);
     const inherited = task.checkpoints.at(-1)?.checkpoint.validatedSubtasks ?? [];
+    const resume = await resumeFrom(task);
+    if (resume !== null)
+      log(
+        `resumed from checkpoint ${resume.hash.slice(0, 19)}… (hash verified), which passes ${inherited.join(", ") || "nothing yet"}`,
+      );
     const product = await produce(agent, model, {
       objective: task.manifest.objective,
       inherited,
       history,
+      resume,
     }).catch((error: unknown) => {
       clearInterval(beat);
       log("stopped heartbeats so the lease expires and the work is re-auctioned");
@@ -123,7 +144,11 @@ export function agentLoop(
       provenanceEventIds: [`${taskId}#${String(task.version)}`],
       parentCheckpointHash: parent,
     };
-    await client.post(`${base}/checkpoints`, { fencingToken: token, checkpoint });
+    await client.post(`${base}/checkpoints`, {
+      fencingToken: token,
+      checkpoint,
+      source: product.source,
+    });
     log(`checkpointed ${product.validatedSubtasks.join(", ") || "no validated subtasks"}`);
     if (!product.completes) {
       log("still working; heartbeats continue until the process ends");

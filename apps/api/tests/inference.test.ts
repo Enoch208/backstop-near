@@ -79,7 +79,22 @@ async function assigned() {
       checkpointHash: null,
       inference,
     });
-  return { runtime, submit };
+  const checkpointWith = (code: string) =>
+    call(runtime, clock, gamma, `${path}/checkpoints`, {
+      fencingToken: 1,
+      checkpoint: {
+        taskId,
+        attempt: 1,
+        stateVersion: 1,
+        contentHash: digestOf("not the code"),
+        artifactUri: "checkpoint://gamma",
+        validatedSubtasks: [],
+        provenanceEventIds: [],
+        parentCheckpointHash: null,
+      },
+      source: code,
+    });
+  return { runtime, submit, checkpointWith };
 }
 
 const fenced = (code: string) => `Here is the fix:\n\`\`\`js\n${code}\`\`\``;
@@ -118,6 +133,14 @@ describe("TEE-signed inference at the artifact door", () => {
     expect(await submit(other)).toMatchObject({
       status: 422,
       body: { error: { message: expect.stringContaining("holds other code") as unknown } },
+    });
+  });
+
+  it("refuses a checkpoint whose published source does not hash to its contentHash", async () => {
+    const { checkpointWith } = await assigned();
+    expect(await checkpointWith(source)).toMatchObject({
+      status: 422,
+      body: { error: { message: expect.stringContaining("does not hash") as unknown } },
     });
   });
 });

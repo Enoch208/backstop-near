@@ -7,6 +7,7 @@ const brief = {
   objective: "Repair checkoutTotal.",
   rules: checkoutRules,
   brokenSource: candidate("original").source,
+  resumedFrom: null,
   suite: checkoutSuite,
   validatedSubtasks: ["discount-before-tax"],
   failureHistory: ["attempt 1 failed: LEASE_EXPIRED"],

@@ -15,6 +15,7 @@ const teeAddress = addressOfSecret(teeSecret);
 
 async function fakeModel(
   replies: readonly string[],
+  prompts: string[] = [],
 ): Promise<{ baseUrl: string; calls: () => number }> {
   let calls = 0;
   const signed = new Map<string, string>();
@@ -35,6 +36,7 @@ async function fakeModel(
         );
         return;
       }
+      prompts.push(requestBody);
       const content = replies[Math.min(calls, replies.length - 1)] ?? "";
       calls += 1;
       const id = `chat-${String(calls)}`;
@@ -50,7 +52,7 @@ async function fakeModel(
 }
 
 const fenced = (source: string) => `\`\`\`js\n${source}\`\`\``;
-const context = { objective: "Repair checkoutTotal.", inherited: [], history: [] };
+const context = { objective: "Repair checkoutTotal.", inherited: [], history: [], resume: null };
 
 afterEach(() => {
   server?.close();
@@ -96,6 +98,24 @@ describe("live production", () => {
     );
     expect(model.calls()).toBe(2);
     expect(product.source).toBe(candidate("gamma-integer").source);
+  });
+
+  it("repairs the previous agent's checkpointed code, not the original", async () => {
+    const prompts: string[] = [];
+    const model = await fakeModel([fenced(candidate("gamma-integer").source)], prompts);
+    const resume = {
+      source: candidate("alpha-partial").source,
+      hash: candidate("alpha-partial").artifactHash,
+    };
+    await produce(
+      roster.gamma,
+      { baseUrl: model.baseUrl, apiKey: "test", model: "test/model" },
+      { ...context, resume },
+    );
+    expect(prompts[0]).toContain(resume.hash);
+    expect(prompts[0]).toContain(
+      JSON.stringify(candidate("alpha-partial").source.trim()).slice(1, 40),
+    );
   });
 
   it("keeps fixture work, clearly labelled, when no model is configured", async () => {

@@ -15,10 +15,13 @@ export type Product = {
   readonly unsigned: string | null;
 };
 
+export type Resume = { readonly source: string; readonly hash: Digest };
+
 export type WorkContext = {
   readonly objective: string;
   readonly inherited: readonly string[];
   readonly history: readonly string[];
+  readonly resume: Resume | null;
 };
 
 function publicFailures(source: string): { passed: string[]; failures: string[] } {
@@ -67,7 +70,8 @@ export async function produce(
   const brief = {
     objective: context.objective,
     rules: checkoutRules,
-    brokenSource: candidate("original").source,
+    brokenSource: context.resume?.source ?? candidate("original").source,
+    resumedFrom: context.resume?.hash ?? null,
     suite: checkoutSuite,
     validatedSubtasks: context.inherited,
   };

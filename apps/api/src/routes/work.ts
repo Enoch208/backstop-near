@@ -10,7 +10,11 @@ import { fromOutcome, parseBody, refuse } from "./outcome.js";
 const token = z.int().min(1);
 const claimBody = z.strictObject({});
 const heartbeatBody = z.strictObject({ fencingToken: token });
-const checkpointBody = z.strictObject({ fencingToken: token, checkpoint: checkpointSchema });
+const checkpointBody = z.strictObject({
+  fencingToken: token,
+  checkpoint: checkpointSchema,
+  source: z.string().min(1).max(64_000).optional(),
+});
 const artifactBody = z.strictObject({
   fencingToken: token,
   source: z.string().min(1).max(64_000),
@@ -50,6 +54,16 @@ export function checkpoint(runtime: Runtime, request: Request, taskId: string): 
   return signedWrite(runtime, request, ({ actor, body }) => {
     const parsed = parseBody(checkpointBody, body);
     if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
+    const source = parsed.value.source;
+    if (source !== undefined) {
+      if (digestText(source) !== parsed.value.checkpoint.contentHash)
+        return refuse(
+          runtime,
+          taskId,
+          failure("POLICY_VIOLATION", "The checkpoint source does not hash to its contentHash"),
+        );
+      runtime.artifacts.set(parsed.value.checkpoint.contentHash, source);
+    }
     return fromOutcome(
       runtime,
       taskId,

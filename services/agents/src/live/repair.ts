@@ -5,6 +5,7 @@ export type RepairBrief = {
   readonly objective: string;
   readonly rules: string;
   readonly brokenSource: string;
+  readonly resumedFrom: string | null;
   readonly suite: TestSuite;
   readonly validatedSubtasks: readonly string[];
   readonly failureHistory: readonly string[];
@@ -25,7 +26,9 @@ export function repairPrompt(brief: RepairBrief): ChatMessage[] {
     `Objective: ${brief.objective}`,
     `The published rules:\n${brief.rules}`,
     `Function name: ${brief.suite.entry}`,
-    "Current source:",
+    brief.resumedFrom === null
+      ? "Current source:"
+      : `Current source: the previous agent's checkpoint (${brief.resumedFrom}). Build on it; keep what already works.`,
     "```js",
     brief.brokenSource.trim(),
     "```",
