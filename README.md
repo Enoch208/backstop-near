@@ -18,9 +18,10 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm install && pnpm episode recovery`                                                                       | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`             | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
 | `pnpm demo`                                                                                                   | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`         | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
-| `pnpm test`                                                                                                   | `96 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `pnpm test`                                                                                                   | `99 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
 | `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox` | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED` | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
 | `pnpm arena`                                                                                                  | a Backstop-versus-single-agent table over 32 seeded fault cases, `violations 0 0`                                                                 | The mechanism holds across combinations of faults, not just one path; raw rows land in `benchmarks/`                                                                                                                   |
+| `pnpm market`, then connect an agent to `pnpm mcp`                                                            | a task whose patch passed all 8 checks, held open for challenges; your agent's counterexample comes back `attempt_rejected`                       | The challenger market is open: any outside agent (Claude Code, Cursor) can join over MCP with its own key, and the verifier re-runs its challenge before anything changes                                              |
 | `(cd contracts/outcome-vault && cargo test)`                                                                  | `37 passed`                                                                                                                                       | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
 
 ## Contents
@@ -28,6 +29,7 @@ Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the fi
 - [Why Backstop](#why-backstop)
 - [Try it in 60 seconds](#try-it-in-60-seconds)
 - [How it works](#how-it-works)
+- [Attacks Backstop refuses](#attacks-backstop-refuses)
 - [Reliability arena](#reliability-arena)
 - [The economics](#the-economics)
 - [The swarm](#the-swarm)
@@ -104,6 +106,15 @@ pnpm demo
 
 With `BACKSTOP_AI_API_KEY` set, the repair agents stop using pre-written patches and ask a model for one through an OpenAI-compatible endpoint: NEAR AI Cloud (`https://cloud-api.near.ai/v1`) by default, `BACKSTOP_AI_MODEL` to choose the model. Each agent's prompt carries the objective, the current source, the public examples, the previous checkpoint's validated work and the task's failure history, including the exact output a challenger proved wrong; it never carries a held-out case. Before submitting, the agent runs the public cases on its own patch in a sandbox, feeds any failure back to the model once, and checkpoints only the cases it actually passed. Verification, challenges and settlement are unchanged, so a model's confident wrong answer is caught the same way a scripted one is. The demo's mode line names the model. This path is tested against a stand-in model server; a recorded run against a live model will be added here with its results.
 
+### Join over MCP
+
+```bash
+pnpm market                     # terminal 1: a provisionally passing patch, challenge window open for 10 minutes
+claude mcp add backstop -e BACKSTOP_API_URL=http://127.0.0.1:8840 -- pnpm --dir "$PWD" mcp
+```
+
+`pnpm mcp` is a stdio MCP server that gives any agent five tools: `backstop_tasks`, `backstop_task`, `backstop_events`, `backstop_artifact` and `backstop_challenge`. The agent registers its own ed25519 key with the API on first use (it signs the claim with the key it registers) and can then act only as itself. Ask it to find an order the open patch prices wrongly; when it submits one, the verifier re-runs the patch and the reference on that exact input, and only a reproducible disagreement rejects the patch and reopens the market.
+
 ### Two more fixture scenarios
 
 ```bash
@@ -162,6 +173,27 @@ flowchart LR
 | `POST /api/demo/faults`                                   | coordinator, demo mode only | `kill_worker`, `fail_next_transfer`, `repeat_settlement` |
 
 Run it on its own with `pnpm api` (port 8840), or with `BACKSTOP_DEMO=1 pnpm api` to have it spawn a worker swarm for every task it creates and accept faults.
+
+## Attacks Backstop refuses
+
+| Attack                                                           | Refused by                                                                                  | With                                                                  |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| A killed or stale worker lands a heartbeat, checkpoint or result | fencing tokens in the orchestrator                                                          | `STALE_LEASE`                                                         |
+| An agent claims work it was not assigned                         | the orchestrator                                                                            | `UNAUTHORIZED`                                                        |
+| A forged, replayed, late or excluded bid                         | bid signature and auction checks                                                            | `BAD_SIGNATURE`, `DUPLICATE`, `BID_WINDOW_CLOSED`, `POLICY_VIOLATION` |
+| A lead enlists an agent in a coalition without its consent       | co-signature check                                                                          | proposal never enters the auction; forged endorsement `BAD_SIGNATURE` |
+| An agent (or LLM) declares its own work passed                   | only verifier-signed evidence on the exact artifact, suite, policy and fencing token counts | `BAD_SIGNATURE`, `STALE_LEASE`                                        |
+| An agent challenges its own work, or fabricates an upheld ruling | API and verifier-signed rulings                                                             | `POLICY_VIOLATION`, `BAD_SIGNATURE`                                   |
+| A payout before the challenge window closes                      | the state machine                                                                           | `INVALID_TRANSITION`                                                  |
+| Settling twice, on- or off-chain                                 | one settlement key per task                                                                 | `ALREADY_SETTLED`, `ERR_ALREADY_SETTLED`                              |
+| A payout beyond escrow plus the liability cap                    | ledger plan and contract budget                                                             | `LIABILITY_EXCEEDED`, `ERR_BUDGET_EXCEEDED`                           |
+| Anyone but the verifier records a verdict on chain               | contract roles                                                                              | `ERR_NOT_VERIFIER`                                                    |
+| Anyone but the vault calls the transfer callback                 | `#[private]` callback                                                                       | refused on a local NEAR node                                          |
+| A tampered, stale or unknown-actor API request                   | signed envelopes, 5-minute freshness                                                        | HTTP 401 / 403                                                        |
+| A retried request applied twice                                  | request-id idempotency                                                                      | the original response, `idempotent-replay: true`                      |
+| Code in a submitted patch reaching the host                      | sandbox without `require`, `process`, network or string evaluation, with a timeout          | each case reported as an error                                        |
+
+Every row is exercised by the test suites (`pnpm test`, `pnpm test:chain`, `cargo test`).
 
 ## Reliability arena
 
@@ -247,6 +279,7 @@ services/verifier/        sandbox, signed evidence, challenge rulings
 services/agents/          agent roster, signed bids and coalitions, scripted work, challenger
 services/workers/         each agent as a process: API client, event follower, decision loop
 apps/api/                 signed HTTP API, live event stream, keeper, verifier service, supervisor
+apps/mcp/                 MCP server: outside agents inspect tasks and challenge patches
 fixtures/checkout/        the broken checkout task, candidate patches, pinned suite and oracle
 contracts/outcome-vault/  the NEAR OutcomeVault contract (Rust, near-sdk)
 packages/near/            vault client, wire formats and events, deploy, local node, chain replay
@@ -254,6 +287,7 @@ scripts/episode.ts        replays an episode from the command line
 scripts/demo.ts           the live swarm with a real kill
 scripts/chain.ts          the recovery episode as real transactions on a local node or testnet
 scripts/arena.ts          seeded fault-injection cases, Backstop versus a single agent
+scripts/market.ts         an open challenge window for outside agents
 benchmarks/               the arena's raw per-case results
 ```
 
