@@ -6,9 +6,21 @@
 
 Backstop sells bounded, collateral-backed guarantees for work done by AI agents. A customer funds a task with executable success criteria, a guarantor bonds capital against the outcome, and an agent takes the job. When that agent dies, stalls or ships a wrong answer, the market reorganizes: other agents bid to finish from the last checkpoint, a challenger is paid to break any patch that only looks correct, an independent verifier signs reproducible evidence, and a NEAR contract settles exactly what the guarantee promised, once.
 
-Built for the NEAR Hackathon 2026 · AI Swarms track.
+Built for the NEAR Hackathon 2026 · AI Swarms track · every line written during the hackathon (first commit 13 Nov 2026).
 
 </div>
+
+## Judge path: do this, see that
+
+Requires Node 24 and pnpm 10. No keys, accounts or network are needed for the first three rows.
+
+| Do                                                                                                            | See                                                                                                                                               | What it proves                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install && pnpm episode recovery`                                                                       | `Final state: SETTLED`, `Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.`, two `REFUSED STALE_LEASE` and one `REFUSED ALREADY_SETTLED`             | The whole mechanism: a killed primary, a recovery auction, a coalition that forms by consent, a passing patch broken by a challenger, a verified repair, and a settlement that conserves every yoctoNEAR and pays once |
+| `pnpm demo`                                                                                                   | six agent processes, `judge: kill alpha`, `worker alpha ... signal SIGKILL`, `Final state: SETTLED (success)`, `settle again -> HTTP 409`         | The same recovery with real processes, a real `SIGKILL`, signed HTTP and a real clock; nobody tells the swarm to recover                                                                                               |
+| `pnpm test`                                                                                                   | `86 passed`                                                                                                                                       | Ledger conservation and idempotency (property-tested), fencing, the auction, coalition consent, verifier and challenge signatures, the API, and a live `SIGKILL` run                                                   |
+| `(cd contracts/outcome-vault && cargo build --target wasm32-unknown-unknown --release) && pnpm chain sandbox` | eleven transactions ending `On-chain ledger: SETTLED, in 0.69 NEAR, confirmed out 0.69 NEAR`, the repeat settlement `refused ERR_ALREADY_SETTLED` | The NEAR contract enforcing the same economics with real promise transfers and callbacks on a local NEAR node (Rust toolchain needed)                                                                                  |
+| `(cd contracts/outcome-vault && cargo test)`                                                                  | `37 passed`                                                                                                                                       | The contract's own unit tests, including a seeded randomized run that replays stale callbacks and checks conservation after every step                                                                                 |
 
 ## Contents
 
@@ -43,7 +55,7 @@ The episode replays the full story against the real state machine, ledger, sandb
 
 1. A customer posts a broken checkout function and escrows 0.40 NEAR plus a 0.04 NEAR premium; a guarantor bonds 0.25 NEAR.
 2. The primary agent, alpha, claims a fenced lease, checkpoints a partial fix, and is killed. Its heartbeats stop, the lease lapses, and its late heartbeat is refused with `STALE_LEASE`.
-3. Three offers bid for the rescue: beta alone (0.30), the gamma + delta coalition (0.52), and epsilon (0.80, over the remaining budget and rejected).
+3. Three offers bid for the rescue: beta alone (0.30), epsilon (0.80, over the remaining budget and rejected), and gamma, who proposes a 0.52 coalition giving delta a 0.12 seat as diagnostician. Delta checks the seat against its own price and co-signs it; only then does the coalition become a bid.
 4. Beta wins, resumes from alpha's checkpoint and submits a patch that passes all 8 public and held-out checks. The challenger, kappa, searches for a counterexample and finds one: an order of exactly $100.00 still pays shipping. The challenge is upheld and the market reopens without beta.
 5. The gamma + delta coalition wins, submits an integer-cents repair, passes verification, and survives the challenge window.
 6. Settlement pays 0.40 NEAR to gamma and 0.12 NEAR to delta (0.40 from escrow, 0.12 from the bond), returns 0.13 NEAR of bond to the guarantor and the 0.04 NEAR premium to the customer. A second settlement attempt is refused with `ALREADY_SETTLED`.
@@ -51,7 +63,7 @@ The episode replays the full story against the real state machine, ledger, sandb
 The run ends with:
 
 ```
-Final state: SETTLED at version 39
+Final state: SETTLED at version 43
 Total in: 0.69 NEAR. Confirmed out: 0.69 NEAR.
   gamma.fixture.testnet        0.4 NEAR
   delta.fixture.testnet        0.12 NEAR
@@ -66,7 +78,7 @@ Bond consumed: 0.12 NEAR (escrow was 0.4 NEAR)
 pnpm demo
 ```
 
-The same story with real moving parts: the API starts in demo mode and spawns five agent processes (alpha, beta, gamma, epsilon, kappa) that talk to it only over signed HTTP requests and a server-sent event stream. When alpha has checkpointed, the demo sends the judge's "kill alpha" fault, and the supervisor delivers a real `SIGKILL` to alpha's operating-system process. Nobody tells the system to recover: alpha's heartbeats stop, the keeper expires the lease on a real clock, the other processes see `recovery_opened` and bid on their own, and the run proceeds as above. It takes about 19 seconds and ends with the same 0.69 NEAR reconciliation, every worker's real exit status (alpha's is `signal SIGKILL`) and a refused second settlement (HTTP 409).
+The same story with real moving parts: the API starts in demo mode and spawns six agent processes (alpha, beta, gamma, delta, epsilon, kappa) that talk to it only over signed HTTP requests and a server-sent event stream. When alpha has checkpointed, the demo sends the judge's "kill alpha" fault, and the supervisor delivers a real `SIGKILL` to alpha's operating-system process. Nobody tells the system to recover: alpha's heartbeats stop, the keeper expires the lease on a real clock, the other processes see `recovery_opened` and bid on their own, gamma proposes its coalition and delta's process co-signs it, and the run proceeds as above. It takes about 19 seconds and ends with the same 0.69 NEAR reconciliation, every worker's real exit status (alpha's is `signal SIGKILL`) and a refused second settlement (HTTP 409).
 
 ### On a real NEAR node
 
@@ -158,12 +170,14 @@ Every step keeps one invariant: inflows equal the funds still in the pools plus 
 | ------------- | ---------------------------------- | -------------------------------------------------------------------------- |
 | alpha         | primary executor                   | fixes the discount order, checkpoints, then dies                           |
 | beta          | repairer                           | rewrites the totals in integer cents but misses the free-shipping boundary |
-| gamma + delta | repairer + diagnostician coalition | one signed bid, one payout split (0.40 + 0.12), a correct repair           |
+| gamma + delta | repairer + diagnostician coalition | gamma proposes, delta co-signs its 0.12 seat, a correct repair             |
 | epsilon       | repairer                           | bids above the remaining budget and is rejected                            |
 | kappa         | challenger                         | seeded search over random and boundary orders, judged by the verifier      |
 | verifier      | verifier                           | signs evidence; cannot bid, cannot be paid by the task                     |
 
-Bids are signed by their lead agent over the exact bid body, carry each member's share, and must add up. The auction rejects expired bids, bids over the remaining budget, and any bid containing an agent that already failed this task, then picks the lowest price, breaking ties by the earlier commitment and then by bid hash. Bids are collected off-chain and the winning bid hash is committed on-chain; it is a deterministic, auditable auction, not a trustless one.
+**Coalitions form by consent.** A coalition bid is signed by its lead over the exact bid body and carries each member's share, which must add up. Until every named member has co-signed that same body with its own key it is only a proposal: it is recorded in the task log but cannot enter the auction, so no agent can be enlisted, or have its share set, without agreeing. Each member decides for itself; delta joins only as a diagnostician, only above its minimum price, and never beside an agent that already failed the task.
+
+The auction rejects expired bids, bids over the remaining budget, and any bid containing an agent that already failed this task, then picks the lowest price, breaking ties by the earlier commitment and then by bid hash. Bids are collected off-chain and the winning bid hash is committed on-chain; it is a deterministic, auditable auction, not a trustless one.
 
 ## What is real and what is a fixture
 
