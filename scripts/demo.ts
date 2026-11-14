@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { modelFromEnv, principals } from "@backstop/agents";
 import { chainBridge, createRuntime, startApi, supervise } from "@backstop/api";
 import {
+  appendTestnetRun,
   chainOptionsFromEnv,
   explorerTx,
   finalizeSuccess,
@@ -119,6 +120,26 @@ if (chain !== null) {
     `${stamp()}     judge: settle again on NEAR -> refused ${repeat.errorCode ?? "(accepted!)"} ${link(repeat.txHash)}`,
   );
   const ledger = await getLedger(chain.parties.vault, chain.contract, taskId);
+  if (chain.network === "testnet") {
+    const steps = [
+      ...(runtime.chain?.log ?? [])
+        .filter((entry) => entry.taskId === taskId)
+        .map((entry) => entry.step),
+      {
+        label: "A repeated settlement is refused",
+        call: repeat,
+        refusalExpected: true,
+      },
+    ];
+    const killedWorker = runtime.workers.processes().find((worker) => worker.agentId === "alpha");
+    appendTestnetRun(chain.contract.accountId, chain.deployTx, {
+      kind: "live swarm",
+      taskId,
+      steps,
+      extra: { primaryExit: killedWorker?.exit ?? null, ledgerState: ledger?.state ?? null },
+    });
+    out(`${stamp()}     recorded in deployments/testnet.json`);
+  }
   out(
     `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
   );

@@ -1,46 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { runEpisode } from "@backstop/orchestrator";
 import {
+  appendTestnetRun,
   chainOptionsFromEnv,
   explorerTx,
   getLedger,
   replayOnChain,
   setUpChain,
-  type ChainRun,
 } from "@backstop/near";
 import { formatNear, fromYocto } from "@backstop/shared";
-import { z } from "zod";
 
 const network = process.argv[2] ?? "sandbox";
 const out = (line: string) => process.stdout.write(`${line}\n`);
-
-function record(run: ChainRun, contractId: string, deployTx: string | null): void {
-  mkdirSync(new URL("../deployments/", import.meta.url), { recursive: true });
-  const path = new URL("../deployments/testnet.json", import.meta.url);
-  const previous = z
-    .object({ runs: z.array(z.unknown()), deployTx: z.string().nullable() })
-    .safeParse(existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null);
-  const runs = previous.success ? previous.data.runs : [];
-  const entry = {
-    at: new Date().toISOString(),
-    taskId: run.taskId,
-    steps: run.steps.map((step) => ({
-      label: step.label,
-      txHash: step.call.txHash,
-      outcome: step.call.ok ? "success" : `refused ${step.call.errorCode ?? ""}`.trim(),
-      explorer: explorerTx(step.call.txHash),
-    })),
-    rebids: run.rebids,
-  };
-  const knownDeploy = previous.success ? previous.data.deployTx : null;
-  const document = {
-    network: "testnet",
-    contractId,
-    deployTx: deployTx ?? knownDeploy,
-    runs: [...runs, entry],
-  };
-  writeFileSync(path, `${JSON.stringify(document, null, 2)}\n`);
-}
 
 const setup = await setUpChain(chainOptionsFromEnv(network, process.env), out);
 try {
@@ -70,7 +40,12 @@ try {
   for (const row of ledger?.confirmed_by_recipient ?? [])
     out(`  ${row.recipient.padEnd(40)} ${formatNear(fromYocto(row.amount))} NEAR`);
   if (network === "testnet") {
-    record(run, contract.accountId, setup.deployTx);
+    appendTestnetRun(contract.accountId, setup.deployTx, {
+      kind: "replay",
+      taskId: run.taskId,
+      steps: run.steps,
+      extra: { rebids: run.rebids },
+    });
     out("Recorded in deployments/testnet.json");
   }
 } finally {

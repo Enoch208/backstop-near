@@ -10,3 +10,4 @@ export * from "./network.js";
 export * from "./faucet.js";
 export * from "./mirror.js";
 export * from "./parties.js";
+export * from "./record.js";
