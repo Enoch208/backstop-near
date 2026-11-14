@@ -1,23 +1,103 @@
 {
   "summary": {
     "cases": 32,
+    "modes": {
+      "backstop": "recovery market from the last checkpoint, paid challenger, bond, the case's attempt cap",
+      "single": "the primary alone: one attempt, no recovery market, no challenger",
+      "retries": "the primary alone, retrying from its own checkpoint under the same cap, guarantee and budget; no market, no challenger",
+      "no-challenger": "Backstop without the paid challenger",
+      "no-market": "Backstop without the recovery market: the failed primary retries from its own checkpoint",
+      "no-bond": "Backstop without the bond: no guarantor, no premium, no compensation, recovery paid from escrow only"
+    },
     "backstop": {
       "delivered-correct": 19,
       "delivered-wrong": 1,
       "compensated": 12,
       "refunded": 0,
+      "wrongAcceptancePercent": 5,
+      "attempts": 40,
       "ledgerChecks": 154,
       "violations": 0,
-      "replayMismatches": 0
+      "replayMismatches": 0,
+      "bondConsumed": "1680000000000000000000000",
+      "customerNetCost": "5840000000000000000000000",
+      "customerCostPerCorrect": "307368421052631578947368",
+      "meanSettleMs": 41845
     },
     "single": {
       "delivered-correct": 15,
       "delivered-wrong": 8,
       "compensated": 9,
       "refunded": 0,
+      "wrongAcceptancePercent": 34.8,
+      "attempts": 32,
       "ledgerChecks": 119,
       "violations": 0,
-      "replayMismatches": 0
+      "replayMismatches": 0,
+      "bondConsumed": "900000000000000000000000",
+      "customerNetCost": "6920000000000000000000000",
+      "customerCostPerCorrect": "461333333333333333333333",
+      "meanSettleMs": 33220
+    },
+    "retries": {
+      "delivered-correct": 15,
+      "delivered-wrong": 8,
+      "compensated": 9,
+      "refunded": 0,
+      "wrongAcceptancePercent": 34.8,
+      "attempts": 48,
+      "ledgerChecks": 151,
+      "violations": 0,
+      "replayMismatches": 0,
+      "bondConsumed": "900000000000000000000000",
+      "customerNetCost": "6920000000000000000000000",
+      "customerCostPerCorrect": "461333333333333333333333",
+      "meanSettleMs": 58720
+    },
+    "no-challenger": {
+      "delivered-correct": 17,
+      "delivered-wrong": 12,
+      "compensated": 3,
+      "refunded": 0,
+      "wrongAcceptancePercent": 41.4,
+      "attempts": 38,
+      "ledgerChecks": 142,
+      "violations": 0,
+      "replayMismatches": 0,
+      "bondConsumed": "540000000000000000000000",
+      "customerNetCost": "9520000000000000000000000",
+      "customerCostPerCorrect": "560000000000000000000000",
+      "meanSettleMs": 41720
+    },
+    "no-market": {
+      "delivered-correct": 15,
+      "delivered-wrong": 1,
+      "compensated": 16,
+      "refunded": 0,
+      "wrongAcceptancePercent": 6.3,
+      "attempts": 57,
+      "ledgerChecks": 178,
+      "violations": 0,
+      "replayMismatches": 0,
+      "bondConsumed": "1600000000000000000000000",
+      "customerNetCost": "3840000000000000000000000",
+      "customerCostPerCorrect": "256000000000000000000000",
+      "meanSettleMs": 62845
+    },
+    "no-bond": {
+      "delivered-correct": 15,
+      "delivered-wrong": 1,
+      "compensated": 0,
+      "refunded": 16,
+      "wrongAcceptancePercent": 6.3,
+      "attempts": 36,
+      "ledgerChecks": 146,
+      "violations": 0,
+      "replayMismatches": 0,
+      "bondConsumed": "0",
+      "customerNetCost": "4800000000000000000000000",
+      "customerCostPerCorrect": "320000000000000000000000",
+      "meanSettleMs": 36220
     }
   },
   "rows": [
@@ -30,7 +110,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -55,6 +137,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -67,7 +197,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -92,6 +224,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 41000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 25000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -104,7 +284,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -129,6 +311,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 41000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 25000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -143,7 +373,9 @@
         ],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -168,6 +400,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 17000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 14000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -180,7 +460,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -205,6 +487,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 65000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 10,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 25000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -217,7 +547,9 @@
         ],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -242,6 +574,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -253,7 +633,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -278,6 +660,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 81002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "40000000000000000000000",
+        "bondConsumed": "120000000000000000000000",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 53001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -289,7 +719,9 @@
         ],
         "challenger": true,
         "maxAttempts": 4,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -314,6 +746,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 4,
+        "settledAfterMs": 197004,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 9,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 81002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "140000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 4,
+        "settledAfterMs": 197004,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 9,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 77001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -325,7 +805,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -350,6 +832,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 81002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "140000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 66001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -359,7 +889,9 @@
         "absent": [],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -379,6 +911,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -393,7 +973,9 @@
         "absent": [],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -413,6 +995,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -430,7 +1060,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -455,6 +1087,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 55001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 52001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -468,7 +1148,9 @@
         ],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -488,6 +1170,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -504,7 +1234,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -529,6 +1261,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -540,7 +1320,9 @@
         ],
         "challenger": true,
         "maxAttempts": 4,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -565,6 +1347,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 4,
+        "settledAfterMs": 197004,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 9,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 81002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "140000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 4,
+        "settledAfterMs": 197004,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 9,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 77001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -577,7 +1407,9 @@
         ],
         "challenger": true,
         "maxAttempts": 4,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -597,6 +1429,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -615,7 +1495,9 @@
         ],
         "challenger": false,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-wrong",
@@ -635,6 +1517,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -651,7 +1581,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -676,6 +1608,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -687,7 +1667,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -712,6 +1694,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 81002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "40000000000000000000000",
+        "bondConsumed": "120000000000000000000000",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 53001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -723,7 +1753,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -748,6 +1780,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 65000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 10,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 25000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -759,7 +1839,9 @@
         ],
         "challenger": false,
         "maxAttempts": 4,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -779,6 +1861,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -797,7 +1927,9 @@
         ],
         "challenger": false,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -822,6 +1954,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -835,7 +2015,9 @@
         ],
         "challenger": true,
         "maxAttempts": 3,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -860,6 +2042,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 64001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 3,
+        "settledAfterMs": 146003,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 7,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 61001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -872,7 +2102,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -897,6 +2129,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 80002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "140000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 65001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -908,7 +2188,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -928,6 +2210,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -944,7 +2274,9 @@
         ],
         "challenger": true,
         "maxAttempts": 4,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -964,6 +2296,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -982,7 +2362,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -1002,6 +2384,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -1018,7 +2448,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": true
+        "failingTransfer": true,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -1038,6 +2470,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
@@ -1056,7 +2536,9 @@
         ],
         "challenger": true,
         "maxAttempts": 2,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -1081,6 +2563,54 @@
         "ledgerChecks": 3,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 64001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 2,
+        "settledAfterMs": 95002,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 61001,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 5,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -1093,7 +2623,9 @@
         ],
         "challenger": true,
         "maxAttempts": 4,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -1118,6 +2650,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 4,
+        "settledAfterMs": 89000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 13,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 34000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 6,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -1129,7 +2709,9 @@
         ],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "compensated",
@@ -1154,6 +2736,54 @@
         "ledgerChecks": 4,
         "violations": [],
         "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-wrong",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "compensated",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 17000,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "540000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "refunded",
+        "state": "FAILURE_SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 14000,
+        "customerPaid": "400000000000000000000000",
+        "customerReceived": "400000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
       }
     },
     {
@@ -1165,7 +2795,9 @@
         ],
         "challenger": true,
         "maxAttempts": 1,
-        "failingTransfer": false
+        "failingTransfer": false,
+        "recovery": "market",
+        "bond": true
       },
       "backstop": {
         "outcome": "delivered-correct",
@@ -1185,6 +2817,54 @@
         "attempts": 1,
         "settledAfterMs": 29001,
         "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "retries": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-challenger": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-market": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 29001,
+        "customerPaid": "440000000000000000000000",
+        "customerReceived": "100000000000000000000000",
+        "bondConsumed": "0",
+        "ledgerChecks": 4,
+        "violations": [],
+        "replayMatches": true
+      },
+      "no-bond": {
+        "outcome": "delivered-correct",
+        "state": "SETTLED",
+        "attempts": 1,
+        "settledAfterMs": 27001,
+        "customerPaid": "400000000000000000000000",
         "customerReceived": "100000000000000000000000",
         "bondConsumed": "0",
         "ledgerChecks": 4,
