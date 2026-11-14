@@ -17,7 +17,7 @@ type Attempt = {
   readonly number: number;
   readonly assignment: Assignment["bids"];
   readonly agent: string;
-  readonly inference: Omit<Inference, "source"> | null;
+  readonly inference: (Omit<Inference, "source"> & { readonly provider: string }) | null;
   readonly result: string;
   readonly sourceHash: string | null;
   readonly checkpointBefore: string;
@@ -58,9 +58,14 @@ export async function runTrial(
   fault: Fault,
   repeat: number,
   seed: number,
+  matched?: {
+    readonly secondary: ModelConfig | null;
+    readonly initial: (request: () => Promise<Inference>) => Promise<Inference>;
+  },
 ) {
   const began = performance.now();
-  const deadline = began + limits.wallMs;
+  let deadline = began + limits.wallMs;
+  let reusedInferenceMs = 0;
   const ledger = fundedLedger();
   const failures: FailureReason[] = [];
   const excluded: string[] = [];
@@ -70,11 +75,11 @@ export async function runTrial(
     (seed ^ Number.parseInt(digestText(task.id).slice(7, 15), 16) ^ repeat) >>> 0,
   );
   const providers = { alpha: 0, beta: 0, gamma: 1, delta: 1, epsilon: 2 };
-  const outage = Math.floor(random() * 3);
+  const simulatedOutage = Math.floor(random() * 3);
   const unavailable =
     fault === "constrained-recovery"
       ? Object.entries(providers)
-          .filter(([, provider]) => provider === outage)
+          .filter(([, provider]) => provider === (matched?.secondary ? 0 : simulatedOutage))
           .map(([agent]) => agent)
       : [];
   const costBps = Object.fromEntries(
@@ -137,7 +142,20 @@ export async function runTrial(
       failureHistory: history,
       diagnosis,
     });
-    const { source, ...inference } = await infer(config, messages, deadline);
+    const provider =
+      unavailable.includes("alpha") && attempt > 1
+        ? (matched?.secondary ?? config)
+        : assignment.lead === "gamma" || assignment.lead === "epsilon"
+          ? (matched?.secondary ?? config)
+          : config;
+    const request = () => infer(provider, messages, deadline);
+    const started = performance.now();
+    const { source, ...inference } =
+      matched !== undefined && attempt === 1 ? await matched.initial(request) : await request();
+    if (matched !== undefined && attempt === 1) {
+      reusedInferenceMs = inference.elapsedMs - (performance.now() - started);
+      deadline -= reusedInferenceMs;
+    }
     const candidate = candidateAfterFault(fault, attempt, source, task);
     const staged = candidate.source;
     if (staged !== null) checkpoint = staged;
@@ -166,7 +184,7 @@ export async function runTrial(
       number: attempt,
       assignment: assignment.bids,
       agent: assignment.lead,
-      inference,
+      inference: { ...inference, provider: new URL(provider.baseUrl).hostname },
       result,
       sourceHash: staged === null ? null : digestText(staged),
       checkpointBefore,
@@ -192,7 +210,7 @@ export async function runTrial(
     correct,
     accepted,
     terminal,
-    elapsedMs: Math.round(performance.now() - began),
+    elapsedMs: Math.round(performance.now() - began + reusedInferenceMs),
     attempts,
     deliveredSource,
     ...accounting(ledger, winner, winner !== null && attempts.length === 1),

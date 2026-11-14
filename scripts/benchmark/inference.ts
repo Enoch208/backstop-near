@@ -1,4 +1,4 @@
-import { extractSource, type ChatMessage, type ModelConfig } from "@backstop/agents";
+import { extractSource, nearAiCloud, type ChatMessage, type ModelConfig } from "@backstop/agents";
 import { z } from "zod";
 
 const completion = z.object({
@@ -60,6 +60,7 @@ export async function infer(
   const timeoutMs = Math.min(limits.callMs, Math.floor(deadlineMs - start));
   if (timeoutMs <= 0) return result("deadline");
   const url = new URL(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`);
+  const nearCloud = url.origin === new URL(nearAiCloud).origin;
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -69,8 +70,10 @@ export async function infer(
         model: config.model,
         messages,
         temperature: 0,
-        max_tokens: limits.maxOutputTokens,
-        chat_template_kwargs: { thinking: false },
+        ...(url.hostname === "api.openai.com"
+          ? { max_completion_tokens: limits.maxOutputTokens }
+          : { max_tokens: limits.maxOutputTokens }),
+        ...(nearCloud && { chat_template_kwargs: { thinking: false } }),
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });

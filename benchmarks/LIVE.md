@@ -62,3 +62,21 @@ The 120-trial follow-up used the same model over eight tasks. It moved the known
 | Backstop recovery market | 38/40 | 0 | 2 | 1,146 | 13.68 | 0.2571 |
 
 Under the constrained condition, the market delivered 8/8 correct repairs and both baselines delivered 7/8. Across all 40 paired cases, the market won one and lost zero against fixed specialists. Its estimated improvement was 2.5 percentage points, with an exploratory task-cluster interval of 0 to 7.5 points. The market's p95 time and simulated customer cost per correct repair were higher than fixed specialists'. The small, single-model sample leaves the general reliability difference unresolved. The offline verifier checked all 120 trials and reran the 112 delivered artifacts. [Raw results and artifacts](market-results.json)
+
+## Matched run on eight fresh tasks and two inference providers
+
+Run `pnpm benchmark:live --verify-run benchmarks/held-out-results.json` to verify the 240 trials and rerun all 213 delivered artifacts. The run used DeepSeek V4.1 Flash through NEAR AI Cloud and GPT-4.1 mini through OpenAI. Each block shares the first model response, its latency, recovery price floors, and the outage across all schedulers. Public examples and specifications went to the models. References, acceptance cases, and the separate audit cases stayed in the harness. Under the injected provider outage, both specialist schedulers could use OpenAI and persistent retries had no available worker. No inference provider was taken offline.
+
+| Mode | Correct | Incorrect accepted | Unresolved | p95 seconds | Combined simulated NEAR per correct result |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Persistent single agent | 63/80 | 1 | 16 | 14.97 | 0.4152 |
+| Fixed specialists | 72/80 | 1 | 7 | 14.40 | 0.2976 |
+| Backstop recovery market | 75/80 | 1 | 4 | 16.25 | 0.3007 |
+
+Combined simulated cost sums customer debits after refunds and compensation plus consumed guarantor bonds, across all trials, then divides by correct deliveries. This avoids counting compensation twice. Inference bills are outside this ledger measure. Three trial records share one provider timeout with no token report, so the report leaves tokens per correct delivery blank. Latency is end-to-end inside the harness, with each scheduler charged the same first-call time. The run used six concurrent paired blocks.
+
+Applying posted uncached input and output rates to reported usage gives an estimated inference cost per correct result of $0.00070 for Backstop, $0.00073 for fixed specialists, and $0.00069 for persistent retries. These estimates charge each scheduler for the shared first request and omit the attempt with missing usage. [NEAR AI rates](https://near.ai/models/deepseek-ai/DeepSeek-V4.1-Flash-1017) · [OpenAI rates](https://developers.openai.com/api/docs/models/gpt-4.1-mini)
+
+Against fixed specialists Backstop won three pairs and lost zero, a 3.75 percentage point difference with an exploratory task-cluster interval of 0 to 8.75 points. Under the provider outage the two specialist modes tied at 12/16 correct. Backstop accepted one wrong answer under that condition and fixed accepted none. The three false accepts across the full run missed an all-zero quota cap or a self-dependency case in the acceptance gate. The separate audit caught them. The small corpus and the tradeoff in latency and cost leave a consistent market advantage unproven. [Raw trials](held-out-results.json)
+
+To repeat, configure the primary with `BACKSTOP_AI_*` and the second endpoint with `BACKSTOP_BENCH_SECOND_BASE_URL`, `BACKSTOP_BENCH_SECOND_MODEL`, and `BACKSTOP_BENCH_SECOND_API_KEY`. Run `pnpm benchmark:live --held-out --repeats 2 --concurrency 6 --seed 738291 --out /tmp/backstop-heldout-repeat.json`. Inference is live and outcomes may vary.

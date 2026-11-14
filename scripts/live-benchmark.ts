@@ -4,7 +4,8 @@ import { parseArgs } from "node:util";
 import { modelFromEnv } from "@backstop/agents";
 import { digestOf, seededRandom } from "@backstop/shared";
 import { prepare } from "./benchmark/evaluate.js";
-import { limits } from "./benchmark/inference.js";
+import { heldOutTasks } from "./benchmark/held-out.js";
+import { limits, type Inference } from "./benchmark/inference.js";
 import { results } from "./benchmark/report.js";
 import { faults, legacyFaults, runTrial, type Trial } from "./benchmark/run.js";
 import { modes } from "./benchmark/schedule.js";
@@ -16,6 +17,8 @@ const { values } = parseArgs({
     "verify-corpus": { type: "boolean", default: false },
     "verify-run": { type: "string" },
     pilot: { type: "boolean", default: false },
+    "held-out": { type: "boolean", default: false },
+    concurrency: { type: "string", default: "1" },
     repeats: { type: "string", default: "1" },
     seed: { type: "string", default: "20261114" },
     out: { type: "string" },
@@ -31,11 +34,13 @@ const numeric = (raw: string, name: string, minimum: number, maximum: number): n
   return value;
 };
 
-const prepared = recoveryTasks.map(prepare);
-const corpusHash = digestOf(recoveryTasks);
+const definitions = values["held-out"] ? heldOutTasks : recoveryTasks;
+const prepared = definitions.map(prepare);
+const corpusHash = digestOf(definitions);
 if (values["verify-run"] !== undefined) {
   const { trials, deliveries } = verifyRun(values["verify-run"], [
-    { tasks: prepared, hash: corpusHash, faults },
+    { tasks: heldOutTasks.map(prepare), hash: digestOf(heldOutTasks), faults, matched: true },
+    { tasks: recoveryTasks.map(prepare), hash: digestOf(recoveryTasks), faults },
     { tasks: tasks.map(prepare), hash: digestOf(tasks), faults: legacyFaults },
   ]);
   process.stdout.write(
@@ -47,18 +52,42 @@ if (values["verify-run"] !== undefined) {
   );
 } else {
   if (existsSync(".env")) process.loadEnvFile();
-  const config = modelFromEnv(process.env);
-  if (config === null)
+  const primary = modelFromEnv(process.env);
+  if (primary === null)
     throw new Error(
       "Set BACKSTOP_AI_API_KEY in the environment or .env before running live inference.",
     );
+  const config = primary;
   const selected = values.pilot ? prepared.slice(0, 2) : prepared;
+  const secondary = values["held-out"]
+    ? modelFromEnv({
+        BACKSTOP_AI_API_KEY: process.env.BACKSTOP_BENCH_SECOND_API_KEY || undefined,
+        BACKSTOP_AI_BASE_URL: process.env.BACKSTOP_BENCH_SECOND_BASE_URL || undefined,
+        BACKSTOP_AI_MODEL: process.env.BACKSTOP_BENCH_SECOND_MODEL || undefined,
+      })
+    : null;
+  if (secondary !== null) {
+    const origin = new URL(secondary.baseUrl);
+    if (
+      !process.env.BACKSTOP_BENCH_SECOND_MODEL ||
+      origin.protocol !== "https:" ||
+      origin.hostname === new URL(config.baseUrl).hostname
+    )
+      throw new Error("The second provider needs a distinct HTTPS host and a model");
+  }
   const repeats = numeric(values.repeats, "repeats", 1, 20);
+  const concurrency = numeric(values.concurrency, "concurrency", 1, 8);
   const seed = numeric(values.seed, "seed", 1, 4_294_967_295);
   const random = seededRandom(seed);
   const output =
     values.out ??
-    (values.pilot ? "benchmarks/market-pilot.json" : "benchmarks/market-results.json");
+    (values["held-out"]
+      ? values.pilot
+        ? "benchmarks/held-out-pilot.json"
+        : "benchmarks/held-out-results.json"
+      : values.pilot
+        ? "benchmarks/market-pilot.json"
+        : "benchmarks/market-results.json");
   const trials: Trial[] = [];
   const blocks = selected
     .flatMap((task) =>
@@ -82,6 +111,16 @@ if (values["verify-run"] !== undefined) {
       recordedAt: new Date().toISOString(),
       corpusHash,
       model: config.model,
+      ...(values["held-out"] && {
+        providers: [config, ...(secondary === null ? [] : [secondary])].map(
+          ({ baseUrl, model }) => ({
+            host: new URL(baseUrl).hostname,
+            model,
+          }),
+        ),
+        sharedPrimary: true,
+        concurrency,
+      }),
       node: process.version,
       seed,
       repeats,
@@ -102,15 +141,28 @@ if (values["verify-run"] !== undefined) {
   process.stdout.write(
     `Running ${String(blocks.length * modes.length)} trials with ${config.model}. At most ${String(blocks.length * modes.length * limits.calls)} calls.\n`,
   );
-  for (const block of blocks) {
+  async function runBlock(block: (typeof blocks)[number]) {
+    let shared: Promise<Inference> | undefined;
+    const initial = (request: () => Promise<Inference>) => (shared ??= request());
     for (const { mode } of block.modes) {
-      const trial = await runTrial(config, block.task, mode, block.fault, block.repeat, seed);
+      const trial = await runTrial(
+        config,
+        block.task,
+        mode,
+        block.fault,
+        block.repeat,
+        seed,
+        values["held-out"] ? { secondary, initial } : undefined,
+      );
       trials.push(trial);
       save();
       process.stdout.write(
         `${trial.task} ${trial.fault} ${mode} ${trial.terminal} (${String(trial.attempts.length)} attempts)\n`,
       );
     }
+  }
+  for (let start = 0; start < blocks.length; start += concurrency) {
+    await Promise.all(blocks.slice(start, start + concurrency).map(runBlock));
   }
   process.stdout.write(`Results saved to ${output}\n`);
 }

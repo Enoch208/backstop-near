@@ -27,6 +27,9 @@ function summarize(rows: readonly Trial[]) {
   const cost = sumYocto(
     rows.map((row) => parseNear(row.customerNetNear) + near(row.compensationNear)),
   );
+  const compensation = sumYocto(rows.map((row) => near(row.compensationNear)));
+  const bondConsumed = sumYocto(rows.map((row) => near(row.bondConsumedNear)));
+  const jointCost = cost - compensation + bondConsumed;
   return {
     trials: rows.length,
     correct,
@@ -43,8 +46,10 @@ function summarize(rows: readonly Trial[]) {
       correct > 0 && knownTokens.length === calls.length ? knownTokenTotal / correct : null,
     customerNearBeforeCompensationPerCorrect:
       correct === 0 ? null : formatNear(cost / BigInt(correct)),
-    totalCompensationNear: formatNear(sumYocto(rows.map((row) => near(row.compensationNear)))),
-    totalBondConsumedNear: formatNear(sumYocto(rows.map((row) => near(row.bondConsumedNear)))),
+    customerAndGuarantorNearPerCorrect:
+      correct === 0 ? null : formatNear(jointCost / BigInt(correct)),
+    totalCompensationNear: formatNear(compensation),
+    totalBondConsumedNear: formatNear(bondConsumed),
   };
 }
 
@@ -89,6 +94,7 @@ function paired(rows: readonly Trial[], baseline: Exclude<Mode, "market">, seed:
 }
 
 export function results(rows: readonly Trial[], seed: number) {
+  const constrained = rows.filter(({ fault }) => fault === "constrained-recovery");
   return {
     byMode: Object.fromEntries(
       modes.map((mode) => [mode, summarize(rows.filter((row) => row.mode === mode))]),
@@ -105,5 +111,6 @@ export function results(rows: readonly Trial[], seed: number) {
       ]),
     ),
     paired: [paired(rows, "single", seed), paired(rows, "fixed", seed)],
+    constrainedPairs: [paired(constrained, "single", seed), paired(constrained, "fixed", seed)],
   };
 }

@@ -8,6 +8,7 @@ import { modes } from "./schedule.js";
 const attemptSchema = z.object({
   result: z.string(),
   sourceHash: digestSchema.nullable(),
+  checkpointAfter: digestSchema.optional(),
 });
 
 const trialSchema = z.object({
@@ -19,6 +20,8 @@ const trialSchema = z.object({
   correct: z.boolean(),
   attempts: z.array(attemptSchema).min(1),
   deliveredSource: z.string().nullable(),
+  unavailableDuringRecovery: z.array(z.string()).optional(),
+  costBps: z.record(z.string(), z.int()).optional(),
 });
 
 const reportSchema = z.object({
@@ -27,12 +30,18 @@ const reportSchema = z.object({
   expectedTrials: z.int().positive(),
   pilot: z.boolean(),
   repeats: z.int().positive(),
+  sharedPrimary: z.boolean().optional(),
   trials: z.array(trialSchema),
 });
 
 export function verifyRun(
   path: string,
-  corpora: readonly { tasks: readonly PreparedTask[]; hash: string; faults: readonly Fault[] }[],
+  corpora: readonly {
+    tasks: readonly PreparedTask[];
+    hash: string;
+    faults: readonly Fault[];
+    matched?: boolean;
+  }[],
 ) {
   const report = reportSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   const corpus = corpora.find(({ hash }) => hash === report.corpusHash);
@@ -47,6 +56,7 @@ export function verifyRun(
     throw new Error("The recorded run is incomplete");
   }
   const seen = new Set<string>();
+  const conditions = new Map<string, string>();
   let delivered = 0;
   for (const row of report.trials) {
     const task = selected.find(({ id }) => id === row.task);
@@ -59,6 +69,27 @@ export function verifyRun(
     )
       throw new Error(`Unexpected trial ${name}`);
     seen.add(name);
+    if (corpus.matched) {
+      if (
+        report.sharedPrimary !== true ||
+        row.attempts[0]?.checkpointAfter === undefined ||
+        row.unavailableDuringRecovery === undefined ||
+        row.costBps === undefined
+      )
+        throw new Error(`Missing shared primary checkpoint or recovery conditions for ${name}`);
+      const block = `${row.task}/${row.fault}/${String(row.repeat)}`;
+      const matched = digestText(
+        JSON.stringify([
+          row.attempts[0].checkpointAfter,
+          [...row.unavailableDuringRecovery].sort(),
+          Object.entries(row.costBps).sort(),
+        ]),
+      );
+      const previous = conditions.get(block);
+      if (previous !== undefined && matched !== previous)
+        throw new Error(`Different primary checkpoint, outage, or price floors for ${block}`);
+      conditions.set(block, matched);
+    }
     if (row.deliveredSource === null) {
       if (row.accepted || row.correct) throw new Error(`Missing delivered source for ${name}`);
       continue;
