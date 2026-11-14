@@ -25,10 +25,14 @@ const root = testnetRoot(
   options.rpc ?? defaultTestnetRpc,
 );
 const vaultId = `vault.${root.accountId}`;
-const roles: readonly RestrictedRole[] = ["coordinator", "verifier"];
+const roles: readonly { readonly party: string; readonly role: RestrictedRole }[] = [
+  { party: "coordinator", role: "coordinator" },
+  { party: "verifier", role: "verifier" },
+  { party: "vault", role: "owner" },
+];
 
-for (const role of roles) {
-  const account = await testnetParty(root, role, partyFunding[role] ?? 0n);
+for (const { party, role } of roles) {
+  const account = await testnetParty(root, party, partyFunding[party] ?? 0n);
   const grants = await keyGrants(account);
   if (grants.every((grant) => grant.kind === "function-call")) {
     out(`${account.accountId} already holds only function-call keys`);

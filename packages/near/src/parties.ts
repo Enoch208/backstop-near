@@ -75,7 +75,7 @@ async function restrictRoles(
   party: (name: string) => Account,
   vaultId: string,
   log: (line: string) => void,
-): Promise<Record<RestrictedRole, Account>> {
+): Promise<Record<"coordinator" | "verifier", Account>> {
   const restrict = async (role: RestrictedRole) => {
     const restriction = await restrictToVault(party(role), vaultId, role, near("2"));
     if (!restriction.call.ok)

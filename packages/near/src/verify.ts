@@ -22,7 +22,7 @@ const signerRecordSchema = z.object({
 const restrictionSchema = z.object({
   txHash: z.string(),
   account: z.string(),
-  role: z.enum(["coordinator", "verifier"]),
+  role: z.enum(["coordinator", "verifier", "owner"]),
 });
 
 export const testnetRecordSchema = z.object({

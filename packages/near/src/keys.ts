@@ -11,6 +11,7 @@ export const vaultMethods = {
     "retry_failed_transfer",
   ],
   verifier: ["record_verdict", "record_attested_verdict"],
+  owner: ["register_tee_signer", "revoke_tee_signer"],
 } as const;
 export type RestrictedRole = keyof typeof vaultMethods;
 

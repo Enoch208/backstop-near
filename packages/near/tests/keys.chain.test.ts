@@ -4,6 +4,7 @@ import { actions, type Account } from "near-api-js";
 import {
   callVault,
   deployVault,
+  registerTeeSigner,
   ensureSubAccounts,
   keyGrants,
   restrictToVault,
@@ -99,5 +100,27 @@ describe("least-privilege role keys on a local NEAR node", () => {
         callVault({ contractId: party("customer").accountId }, coordinator, "open_recovery", {}),
       ),
     ).toMatch(/ReceiverMismatch|receiver/i);
+  });
+
+  it("locks the vault: it can still register an enclave key but can never change its code", async () => {
+    const locked = await restrictToVault(party("vault"), vault.contractId, "owner", near("1"));
+    expect(locked.call.ok).toBe(true);
+    expect(await keyGrants(locked.account)).toEqual([
+      {
+        kind: "function-call",
+        publicKey: expect.any(String) as unknown,
+        receiver: vault.contractId,
+        methods: [...vaultMethods.owner],
+      },
+    ]);
+    const signer = "0x6efa5b49c88d75f66013053f4f89c6fbd319d6d9";
+    const registered = await registerTeeSigner(vault, locked.account, signer, "m", "00".repeat(32));
+    expect(registered.ok).toBe(true);
+    expect(
+      await refusal(async () => {
+        await locked.account.deployContract(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]));
+        return { ok: true, errorCode: null };
+      }),
+    ).not.toBe("accepted");
   });
 });

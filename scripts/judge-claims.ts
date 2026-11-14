@@ -5,6 +5,7 @@ import {
   publishedCodeHash,
   testnetRecordSchema,
   verifyLedger,
+  verifyRestriction,
   verifyStep,
   verifyTeeSigner,
 } from "@backstop/near";
@@ -210,7 +211,23 @@ export async function networkClaims(): Promise<Claim[]> {
     .object({ signer: z.string(), model: z.string() })
     .nullable()
     .parse(raw ?? null);
+  const restrictions = await Promise.all(
+    record.keyRestrictions.map((entry) =>
+      verifyRestriction(provider, record.contractId, entry.account),
+    ),
+  );
+  const locked: Claim[] =
+    restrictions.length === 0
+      ? []
+      : [
+          {
+            claim: "No role key can move NEAR, and the vault's code can no longer change",
+            ok: restrictions.every((restriction) => restriction.ok),
+            evidence: restrictions.map((restriction) => restriction.detail).join("; "),
+          },
+        ];
   return [
+    ...locked,
     {
       claim: "The vault on testnet runs exactly the published reproducible build",
       ok: deployed === publishedCodeHash(),
