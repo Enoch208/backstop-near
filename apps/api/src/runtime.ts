@@ -1,6 +1,7 @@
 import { identities, roster } from "@backstop/agents";
 import type { Digest, Outcome } from "@backstop/shared";
 import { react } from "./automations.js";
+import type { ChainBridge } from "./chain.js";
 import {
   dispatch,
   emptyStore,
@@ -40,10 +41,12 @@ export type Runtime = {
   readonly identities: Map<string, Identity>;
   readonly artifacts: Map<Digest, string>;
   readonly replies: Map<string, { status: number; body: string }>;
+  readonly inflight: Map<string, Promise<{ status: number; body: string }>>;
   readonly listeners: Set<(event: TaskEvent) => void>;
   readonly faults: { failNextTransfer: boolean };
   store: Store;
   workers: WorkerControl | null;
+  chain: ChainBridge | null;
 };
 
 export function createRuntime(now: () => number, demo: boolean): Runtime {
@@ -63,10 +66,12 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     ),
     artifacts: new Map(),
     replies: new Map(),
+    inflight: new Map(),
     listeners: new Set(),
     faults: { failNextTransfer: false },
     store: emptyStore,
     workers: null,
+    chain: null,
   };
 }
 

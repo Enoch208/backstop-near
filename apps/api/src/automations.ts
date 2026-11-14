@@ -3,6 +3,7 @@ import { checkoutSuite, fixtureAccounts } from "@backstop/fixture-checkout";
 import { maxTransferRetries } from "@backstop/ledger";
 import { dueCommands, type TaskEvent, type TaskRecord } from "@backstop/orchestrator";
 import { verifyArtifact } from "@backstop/verifier";
+import { mirrorEvents } from "./chain.js";
 import { execute, type Runtime } from "./runtime.js";
 
 function verifySubmission(runtime: Runtime, record: TaskRecord): void {
@@ -40,14 +41,15 @@ function settleTransfers(runtime: Runtime, record: TaskRecord): void {
 }
 
 export function react(runtime: Runtime, events: readonly TaskEvent[]): void {
+  if (runtime.chain !== null) mirrorEvents(runtime, runtime.chain, events);
   for (const event of events) {
     const record = runtime.store.records[event.taskId];
     if (record === undefined) continue;
     if (event.body.type === "task_created") runtime.workers?.launch(event.taskId);
     if (event.body.type === "artifact_submitted") verifySubmission(runtime, record);
-    if (event.body.type === "settlement_started" || event.body.type === "transfer_retried") {
-      settleTransfers(runtime, record);
-    }
+    const settling =
+      event.body.type === "settlement_started" || event.body.type === "transfer_retried";
+    if (settling && runtime.chain === null) settleTransfers(runtime, record);
   }
 }
 

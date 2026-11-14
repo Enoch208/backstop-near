@@ -86,6 +86,9 @@ importers:
       '@backstop/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
+      '@backstop/near':
+        specifier: workspace:*
+        version: link:../../packages/near
       '@backstop/orchestrator':
         specifier: workspace:*
         version: link:../../services/orchestrator

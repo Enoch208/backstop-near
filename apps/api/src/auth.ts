@@ -37,29 +37,45 @@ export async function authenticate(
   };
 }
 
+type HandlerResult = Handled | { error: ApiError; taskVersion: number | null };
+
+const replay = (cached: { status: number; body: string }) =>
+  new Response(cached.body, {
+    status: cached.status,
+    headers: { "content-type": "application/json", "idempotent-replay": "true" },
+  });
+
 export async function signedWrite(
   runtime: Runtime,
   request: Request,
-  handle: (auth: Authenticated) => Handled | { error: ApiError; taskVersion: number | null },
+  handle: (auth: Authenticated) => HandlerResult | Promise<HandlerResult>,
 ): Promise<Response> {
   const traceId = crypto.randomUUID();
   const auth = await authenticate(runtime, request);
   if (!auth.ok) return errorResponse(auth.error, traceId, null);
-  const cached = runtime.replies.get(auth.value.key);
-  if (cached !== undefined) {
-    return new Response(cached.body, {
-      status: cached.status,
-      headers: { "content-type": "application/json", "idempotent-replay": "true" },
+  const key = auth.value.key;
+  const cached = runtime.replies.get(key);
+  if (cached !== undefined) return replay(cached);
+  const running = runtime.inflight.get(key);
+  if (running !== undefined) return replay(await running);
+  const work = (async () => {
+    const result = await handle(auth.value);
+    const response =
+      "error" in result
+        ? errorResponse(result.error, traceId, result.taskVersion)
+        : json(result.value, result.status);
+    const reply = { status: response.status, body: await response.text() };
+    runtime.replies.set(key, reply);
+    return reply;
+  })();
+  runtime.inflight.set(key, work);
+  try {
+    const reply = await work;
+    return new Response(reply.body, {
+      status: reply.status,
+      headers: { "content-type": "application/json" },
     });
+  } finally {
+    runtime.inflight.delete(key);
   }
-  const result = handle(auth.value);
-  const response =
-    "error" in result
-      ? errorResponse(result.error, traceId, result.taskVersion)
-      : json(result.value, result.status);
-  runtime.replies.set(auth.value.key, {
-    status: response.status,
-    body: await response.clone().text(),
-  });
-  return response;
 }

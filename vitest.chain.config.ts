@@ -1,13 +1,19 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
+const chainProject = (name: string, root: string) => ({
   test: {
-    name: "chain",
-    root: "packages/near",
+    name,
+    root,
     include: ["tests/**/*.chain.test.ts"],
-    environment: "node",
+    environment: "node" as const,
     testTimeout: 300_000,
     hookTimeout: 300_000,
     fileParallelism: false,
+  },
+});
+
+export default defineConfig({
+  test: {
+    projects: [chainProject("near-chain", "packages/near"), chainProject("api-chain", "apps/api")],
   },
 });
