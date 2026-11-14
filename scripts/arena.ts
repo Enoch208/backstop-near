@@ -1,5 +1,6 @@
 import { writeFileSync } from "node:fs";
 import {
+  ablate,
   arenaCase,
   baseline,
   retryBaseline,
@@ -17,7 +18,8 @@ const modes = [
     key: "backstop",
     title: "Backstop",
     setup: (setup: ArenaCase) => setup,
-    detail: "recovery market from the last checkpoint, paid challenger, the case's attempt cap",
+    detail:
+      "recovery market from the last checkpoint, paid challenger, bond, the case's attempt cap",
   },
   {
     key: "single",
@@ -30,7 +32,27 @@ const modes = [
     title: "Retries",
     setup: retryBaseline,
     detail:
-      "the primary alone, retrying from its own checkpoint under the same attempt cap, guarantee and budget",
+      "the primary alone, retrying from its own checkpoint under the same cap, guarantee and budget; no market, no challenger",
+  },
+  {
+    key: "no-challenger",
+    title: "No chall",
+    setup: ablate["no-challenger"],
+    detail: "Backstop without the paid challenger",
+  },
+  {
+    key: "no-market",
+    title: "No market",
+    setup: ablate["no-market"],
+    detail:
+      "Backstop without the recovery market: the failed primary retries from its own checkpoint",
+  },
+  {
+    key: "no-bond",
+    title: "No bond",
+    setup: ablate["no-bond"],
+    detail:
+      "Backstop without the bond: no guarantor, no premium, no compensation, recovery paid from escrow only",
   },
 ] as const;
 type Mode = (typeof modes)[number]["key"];
@@ -49,14 +71,17 @@ const tally = (mode: Mode) => {
   const results = rows.map((row) => row[mode]);
   const count = (outcome: string) => results.filter((result) => result.outcome === outcome).length;
   const correct = count("delivered-correct");
+  const wrong = count("delivered-wrong");
   const customerNetCost = sum(
     results.map((result) => result.customerPaid - result.customerReceived),
   );
   return {
     "delivered-correct": correct,
-    "delivered-wrong": count("delivered-wrong"),
+    "delivered-wrong": wrong,
     compensated: count("compensated"),
     refunded: count("refunded"),
+    wrongAcceptancePercent:
+      correct + wrong === 0 ? null : Math.round((1000 * wrong) / (correct + wrong)) / 10,
     attempts: results.reduce((total, result) => total + result.attempts, 0),
     ledgerChecks: results.reduce((total, result) => total + result.ledgerChecks, 0),
     violations: results.reduce((total, result) => total + result.violations.length, 0),
@@ -71,12 +96,14 @@ const tally = (mode: Mode) => {
 };
 type Tally = ReturnType<typeof tally>;
 
+const tallies = Object.fromEntries(modes.map((mode) => [mode.key, tally(mode.key)])) as Record<
+  Mode,
+  Tally
+>;
 const summary = {
   cases,
   modes: Object.fromEntries(modes.map((mode) => [mode.key, mode.detail])),
-  backstop: tally("backstop"),
-  single: tally("single"),
-  retries: tally("retries"),
+  ...tallies,
 };
 const plain = (value: unknown) =>
   JSON.stringify(
@@ -89,7 +116,7 @@ writeFileSync(
   `${plain({ summary, rows })}\n`,
 );
 const csv = [
-  "seed,fate,absent,challenger,max_attempts,failing_transfer,recovery,mode,outcome,state,attempts,settled_after_ms,customer_paid_yocto,customer_received_yocto,bond_consumed_yocto,violations,replay_matches",
+  "seed,fate,absent,challenger,max_attempts,failing_transfer,recovery,bond,mode,outcome,state,attempts,settled_after_ms,customer_paid_yocto,customer_received_yocto,bond_consumed_yocto,violations,replay_matches",
   ...rows.flatMap((row) =>
     modes.map((mode) => {
       const setup = mode.setup(row.setup);
@@ -102,6 +129,7 @@ const csv = [
         setup.maxAttempts,
         setup.failingTransfer,
         setup.recovery,
+        setup.bond,
         mode.key,
         result.outcome,
         result.state,
@@ -124,28 +152,30 @@ const nearText = (amount: bigint | null) => {
   const magnitude = amount < 0n ? -amount : amount;
   return `${amount < 0n ? "-" : ""}${formatNear(((magnitude + step / 2n) / step) * step)}`;
 };
+const seconds = (ms: number) => (ms / 1000).toFixed(1);
 
 const lines: readonly { label: string; show: (entry: Tally) => string }[] = [
-  ...(
-    [
-      "delivered-correct",
-      "delivered-wrong",
-      "compensated",
-      "refunded",
-      "attempts",
-      "ledgerChecks",
-      "violations",
-      "replayMismatches",
-    ] as const
-  ).map((key) => ({ label: key, show: (entry: Tally) => String(entry[key]) })),
+  ...(["delivered-correct", "delivered-wrong", "compensated", "refunded"] as const).map((key) => ({
+    label: key,
+    show: (entry: Tally) => String(entry[key]),
+  })),
+  {
+    label: "wrong acceptance",
+    show: (entry) =>
+      entry.wrongAcceptancePercent === null ? "n/a" : `${entry.wrongAcceptancePercent.toFixed(1)}%`,
+  },
+  ...(["attempts", "ledgerChecks", "violations", "replayMismatches"] as const).map((key) => ({
+    label: key,
+    show: (entry: Tally) => String(entry[key]),
+  })),
   { label: "bond paid out (NEAR)", show: (entry) => nearText(entry.bondConsumed) },
   { label: "customer net cost (NEAR)", show: (entry) => nearText(entry.customerNetCost) },
   { label: "cost per correct (NEAR)", show: (entry) => nearText(entry.customerCostPerCorrect) },
-  { label: "mean settle (sim. s)", show: (entry) => (entry.meanSettleMs / 1000).toFixed(1) },
+  { label: "mean settle (sim. s)", show: (entry) => seconds(entry.meanSettleMs) },
 ];
 
 out(
-  `Reliability arena: ${String(cases)} seeded fault-injection cases, each run three ways through the real`,
+  `Reliability arena: ${String(cases)} seeded fault-injection cases, each run in ${String(modes.length)} modes through the real`,
 );
 out(
   "orchestrator, verifier, challenger and ledger (FIXTURE agents and vault). Ground truth is the reference",
@@ -153,30 +183,35 @@ out(
 out(
   "oracle, not the pinned suite. This measures the mechanism over scripted agents, not AI quality.",
 );
-for (const mode of modes) out(`  ${mode.title.padEnd(10)}${mode.detail}`);
-out(`  ${"".padEnd(10)}(no recovery market, no challenger)`);
+for (const mode of modes) out(`  ${mode.title.padEnd(11)}${mode.detail}`);
 out("");
 out(`${"".padEnd(26)}${modes.map((mode) => mode.title.padStart(10)).join("")}`);
 for (const line of lines) {
   out(
-    `${line.label.padEnd(26)}${modes.map((mode) => line.show(summary[mode.key]).padStart(10)).join("")}`,
+    `${line.label.padEnd(26)}${modes.map((mode) => line.show(tallies[mode.key]).padStart(10)).join("")}`,
   );
 }
 
-const { backstop, retries, single } = summary;
-const unchanged = rows.filter((row) => row.retries.outcome === row.single.outcome).length;
+const sameOutcome = (left: Mode, right: Mode) =>
+  rows.filter((row) => row[left].outcome === row[right].outcome).length;
+const moved = (from: Mode, to: Mode, before: string, after: string) =>
+  rows.filter((row) => row[from].outcome === before && row[to].outcome === after).length;
+const { backstop, retries, single } = tallies;
+
 out("");
 out(
-  `Retries vs Single: the same outcome in ${String(unchanged)} of ${String(cases)} cases, using ${String(retries.attempts - single.attempts)} more attempts.`,
+  `Retries vs Single: the same outcome in ${String(sameOutcome("retries", "single"))} of ${String(cases)} cases, using ${String(retries.attempts - single.attempts)} more attempts.`,
 );
-if (unchanged === cases) {
+if (sameOutcome("retries", "single") === cases) {
   out(
-    "Each scripted fault is bound to its agent: the killed primary dies again on every retry, and the wrong",
+    "  Each scripted fault is bound to its agent: the killed primary dies again on every retry, and the",
   );
   out(
-    "patch passes the pinned suite on its first attempt, so nothing fails and nothing is retried. The only",
+    "  wrong patch passes the pinned suite on its first attempt, so nothing fails and nothing is retried.",
   );
-  out("transient fault in the matrix is the failing transfer, which every mode retries.");
+  out(
+    "  The only transient fault in the matrix is the failing transfer, which every mode retries.",
+  );
 }
 const atLeast = (label: string, ours: bigint | number, theirs: bigint | number, lower: boolean) =>
   (lower ? ours <= theirs : ours >= theirs) ? [label] : [];
@@ -203,23 +238,13 @@ const matched = [
     true,
   ),
   ...atLeast(
-    `mean settle time (${(retries.meanSettleMs / 1000).toFixed(1)} vs ${(backstop.meanSettleMs / 1000).toFixed(1)} s)`,
+    `mean settle time (${seconds(retries.meanSettleMs)} vs ${seconds(backstop.meanSettleMs)} s)`,
     retries.meanSettleMs,
     backstop.meanSettleMs,
     true,
   ),
 ];
 out(`Retries match or beat Backstop on: ${matched.length === 0 ? "nothing" : matched.join(", ")}.`);
-const refused = rows.filter(
-  (row) => row.retries.outcome === "delivered-wrong" && row.backstop.outcome === "compensated",
-).length;
-const rescued = rows.filter(
-  (row) => row.retries.outcome === "compensated" && row.backstop.outcome === "delivered-correct",
-).length;
-const repaired = rows.filter(
-  (row) =>
-    row.retries.outcome === "delivered-wrong" && row.backstop.outcome === "delivered-correct",
-).length;
 const bondFor = (delivered: boolean) =>
   sum(
     rows
@@ -227,10 +252,50 @@ const bondFor = (delivered: boolean) =>
       .map((row) => row.backstop.bondConsumed),
   );
 out(
-  `Against Retries, Backstop replaces ${String(repaired)} wrong patches with correct ones, recovers ${String(rescued)} dead primaries, and refuses`,
+  `Against Retries, Backstop replaces ${String(moved("retries", "backstop", "delivered-wrong", "delivered-correct"))} wrong patches with correct ones, recovers ${String(moved("retries", "backstop", "compensated", "delivered-correct"))} dead primaries, and refuses`,
 );
 out(
-  `${String(refused)} wrong patches it cannot replace. Its bond pays ${nearText(bondFor(false))} NEAR compensating failures and`,
+  `${String(moved("retries", "backstop", "delivered-wrong", "compensated"))} wrong patches it cannot replace. Its bond pays ${nearText(bondFor(false))} NEAR compensating failures and`,
 );
 out(`${nearText(bondFor(true))} NEAR topping up recovery bids above the escrow.`);
+
+out("");
+out("Ablations, one part of Backstop switched off at a time, on the same cases:");
+for (const mode of modes.filter((entry) => entry.key.startsWith("no-"))) {
+  const entry = tallies[mode.key];
+  const change = (key: "delivered-correct" | "delivered-wrong" | "compensated" | "refunded") =>
+    `${key} ${String(backstop[key])} -> ${String(entry[key])}`;
+  out(
+    `  ${mode.title.padEnd(11)}changes ${String(cases - sameOutcome(mode.key, "backstop"))} of ${String(cases)} outcomes: ${change("delivered-correct")}, ${change("delivered-wrong")},`,
+  );
+  out(`  ${"".padEnd(11)}${change("compensated")}, ${change("refunded")}`);
+}
+const shippedWrong = (mode: Mode, fate: string) =>
+  rows.filter((row) => row[mode].outcome === "delivered-wrong" && row.setup.fate === fate).length;
+const unchallenged = tallies["no-challenger"]["delivered-wrong"];
+out(
+  `  Without the challenger ${String(unchallenged)} wrong patches ship, ${unchallenged > single["delivered-wrong"] ? "more than" : "no more than"} the single agent's ${String(single["delivered-wrong"])}:`,
+);
+out(
+  `  ${String(shippedWrong("no-challenger", "delivers-wrong"))} wrong primaries and ${String(shippedWrong("no-challenger", "dies"))} recoveries won by a bid whose patch passes the suite but is wrong.`,
+);
+const dead = rows.filter((row) => row.setup.fate === "dies");
+const recovered = (mode: Mode) =>
+  dead.filter((row) => row[mode].outcome === "delivered-correct").length;
+out(
+  `  No market vs Retries: the same outcome in ${String(sameOutcome("no-market", "retries"))} of ${String(cases)} cases. Keeping the challenger turns ${String(moved("retries", "no-market", "delivered-wrong", "compensated"))} wrong`,
+);
+out(
+  `  deliveries into compensated failures; ${String(recovered("no-market"))} of ${String(dead.length)} dead primaries are recovered (Backstop: ${String(recovered("backstop"))}).`,
+);
+const recoveries = rows.filter(
+  (row) => row.backstop.outcome === "delivered-correct" && row.backstop.attempts > 1,
+);
+const toppedUp = recoveries.filter((row) => row.backstop.bondConsumed > 0n).length;
+out(
+  `  Without the bond nothing is compensated (${String(tallies["no-bond"].refunded)} refunds) and ${String(moved("no-bond", "backstop", "refunded", "delivered-correct"))} of Backstop's correct deliveries are lost;`,
+);
+out(
+  `  ${String(toppedUp)} of Backstop's ${String(recoveries.length)} correct recoveries needed bond on top of the escrow. With no guarantee, no premium is paid.`,
+);
 out("Raw data: benchmarks/arena.json, benchmarks/arena.csv");

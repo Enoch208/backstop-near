@@ -1,17 +1,31 @@
 import {
   primaryBid,
+  publicKeys,
   roster,
   rosterAgent,
   signBid,
   workFor,
   type FixtureAgent,
 } from "@backstop/agents";
-import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
+import {
+  candidate,
+  checkoutManifest,
+  checkoutSuite,
+  fixtureAccounts,
+} from "@backstop/fixture-checkout";
 import { ledgerViolations, statement } from "@backstop/ledger";
-import { between, canonicalJson, leadAgent, pick, seededRandom } from "@backstop/shared";
+import {
+  between,
+  canonicalJson,
+  fromYocto,
+  leadAgent,
+  pick,
+  seededRandom,
+  taskManifestSchema,
+} from "@backstop/shared";
 import { runInSandbox } from "@backstop/verifier";
 import { replay } from "../core/store.js";
-import { advance, record, run, type Driver } from "./driver.js";
+import { advance, newDriver, record, run, type Driver } from "./driver.js";
 import {
   auction,
   challenge,
@@ -22,7 +36,7 @@ import {
   verify,
   type Work,
 } from "./phases.js";
-import { openCheckoutTask } from "./scenarios.js";
+import { episodeStartMs, openCheckoutTask } from "./scenarios.js";
 
 export const primaryFates = ["dies", "delivers-correct", "delivers-wrong"] as const;
 export type PrimaryFate = (typeof primaryFates)[number];
@@ -38,6 +52,7 @@ export type ArenaCase = {
   readonly maxAttempts: number;
   readonly failingTransfer: boolean;
   readonly recovery: Recovery;
+  readonly bond: boolean;
 };
 
 export type ArenaOutcome = "delivered-correct" | "delivered-wrong" | "compensated" | "refunded";
@@ -73,6 +88,7 @@ export function arenaCase(seed: number): ArenaCase {
     maxAttempts: between(random, 1, 4),
     failingTransfer: random() < 0.3,
     recovery: "market",
+    bond: true,
   };
 }
 
@@ -91,6 +107,45 @@ export const baseline = (arenaCase: ArenaCase): ArenaCase => ({
   ...retryBaseline(arenaCase),
   maxAttempts: 1,
 });
+
+export const ablations = ["no-challenger", "no-market", "no-bond"] as const;
+export type Ablation = (typeof ablations)[number];
+
+export const ablate: Readonly<Record<Ablation, (arenaCase: ArenaCase) => ArenaCase>> = {
+  "no-challenger": (arenaCase) => ({ ...arenaCase, challenger: false }),
+  "no-market": (arenaCase) => ({ ...arenaCase, recovery: "same-agent" }),
+  "no-bond": (arenaCase) => ({ ...arenaCase, bond: false }),
+};
+
+const registry = { agentKeys: publicKeys, verifierPublicKey: roster.verifier.key.publicKey };
+
+function openUnbonded(taskId: string, maxAttempts: number): Driver {
+  const driver = newDriver(taskId, registry, episodeStartMs);
+  const terms = checkoutManifest({ taskId, createdAtMs: episodeStartMs, maxAttempts });
+  const manifest = taskManifestSchema.parse({
+    ...terms,
+    budget: { ...terms.budget, premiumYocto: "0" },
+    guarantee: null,
+  });
+  run(
+    driver,
+    fixtureAccounts.customer,
+    { kind: "create", manifest },
+    "Customer posts the task with no guarantee",
+  );
+  run(
+    driver,
+    fixtureAccounts.customer,
+    {
+      kind: "deposit",
+      pool: "escrow",
+      amount: fromYocto(manifest.budget.escrowYocto),
+      reference: "fixture-vault:escrow",
+    },
+    "Customer escrows the budget; no premium, no bond",
+  );
+  return driver;
+}
 
 const retryAgent = (agent: FixtureAgent, attempt: number): FixtureAgent => ({
   ...agent,
@@ -178,7 +233,10 @@ function retry(driver: Driver, primary: FixtureAgent): void {
 
 export function runArenaCase(setup: ArenaCase, label: string): ArenaResult {
   const primary = rosterAgent(primaries[setup.fate]);
-  const opened = openCheckoutTask(`arena-${label}-${String(setup.seed)}`, setup.maxAttempts);
+  const taskId = `arena-${label}-${String(setup.seed)}`;
+  const opened = setup.bond
+    ? openCheckoutTask(taskId, setup.maxAttempts)
+    : openUnbonded(taskId, setup.maxAttempts);
   const driver =
     setup.recovery === "market" ? opened : withRetries(opened, primary, setup.maxAttempts);
   const startedAt = driver.nowMs;
