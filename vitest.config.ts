@@ -22,6 +22,7 @@ export default defineConfig({
       workspace("workers", "services/workers"),
       workspace("api", "apps/api"),
       workspace("near", "packages/near"),
+      workspace("mcp", "apps/mcp"),
     ],
   },
 });

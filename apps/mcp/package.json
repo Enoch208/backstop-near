@@ -1,0 +1,22 @@
+{
+  "name": "@backstop/mcp",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backstop/agents": "workspace:*",
+    "@backstop/shared": "workspace:*",
+    "@backstop/workers": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@backstop/api": "workspace:*",
+    "@backstop/fixture-checkout": "workspace:*"
+  }
+}

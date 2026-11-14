@@ -20,13 +20,16 @@
     "api": "tsx apps/api/src/main.ts",
     "test:chain": "vitest run -c vitest.chain.config.ts",
     "chain": "tsx scripts/chain.ts",
-    "arena": "tsx scripts/arena.ts"
+    "arena": "tsx scripts/arena.ts",
+    "mcp": "tsx apps/mcp/src/main.ts",
+    "market": "tsx scripts/market.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
     "@backstop/api": "workspace:*",
     "@backstop/fixture-checkout": "workspace:*",
     "@backstop/ledger": "workspace:*",
+    "@backstop/mcp": "workspace:*",
     "@backstop/near": "workspace:*",
     "@backstop/orchestrator": "workspace:*",
     "@backstop/shared": "workspace:*",
