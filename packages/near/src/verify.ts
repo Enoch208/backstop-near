@@ -19,11 +19,18 @@ const signerRecordSchema = z.object({
   attestationHash: z.string(),
 });
 
+const restrictionSchema = z.object({
+  txHash: z.string(),
+  account: z.string(),
+  role: z.enum(["coordinator", "verifier"]),
+});
+
 export const testnetRecordSchema = z.object({
   contractId: z.string(),
   deployTx: z.string().nullable(),
   upgrades: z.array(upgradeSchema).default([]),
   teeSigners: z.array(signerRecordSchema).default([]),
+  keyRestrictions: z.array(restrictionSchema).default([]),
   runs: z.array(z.object({ taskId: z.string(), steps: z.array(stepSchema) })),
 });
 export type TestnetRecord = z.infer<typeof testnetRecordSchema>;
@@ -97,5 +104,32 @@ export async function verifyTeeSigner(
     ok: latest ? matches : onChain?.model === recorded.model,
     subject: recorded.signingAddress,
     detail: `${recorded.signingAddress} is registered on chain for ${recorded.model}${latest ? ` with attestation ${hash.slice(0, 12)}...` : ""}${onChain === null ? " (MISSING)" : ""}`,
+  };
+}
+
+const permissionSchema = z.union([
+  z.literal("FullAccess"),
+  z.object({
+    FunctionCall: z.object({ receiver_id: z.string(), method_names: z.array(z.string()) }),
+  }),
+]);
+
+export async function verifyRestriction(
+  provider: JsonRpcProvider,
+  contractId: string,
+  account: string,
+): Promise<Finding> {
+  const list = await provider.viewAccessKeyList({ accountId: account });
+  const permissions = list.keys.map((key) => permissionSchema.parse(key.access_key.permission));
+  const restricted =
+    permissions.length > 0 &&
+    permissions.every(
+      (permission) =>
+        permission !== "FullAccess" && permission.FunctionCall.receiver_id === contractId,
+    );
+  return {
+    ok: restricted,
+    subject: account,
+    detail: `${account} holds ${String(permissions.length)} key(s), ${restricted ? `all function-call keys for ${contractId} only` : "at least one key with wider access"}`,
   };
 }

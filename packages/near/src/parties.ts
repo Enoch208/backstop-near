@@ -6,6 +6,7 @@ import { startLocalChain } from "./local.js";
 import type { ChainParties } from "./mirror.js";
 import { defaultTestnetRpc, testnetParty, testnetRoot, topUp } from "./network.js";
 import { parseKey } from "./credentials.js";
+import { restrictToVault, type RestrictedRole } from "./keys.js";
 
 export const partyFunding: Readonly<Record<string, bigint>> = {
   vault: near("4"),
@@ -70,6 +71,25 @@ async function accountsFor(options: ChainOptions, log: (line: string) => void) {
   return { accounts, stop: () => Promise.resolve() };
 }
 
+async function restrictRoles(
+  party: (name: string) => Account,
+  vaultId: string,
+  log: (line: string) => void,
+): Promise<Record<RestrictedRole, Account>> {
+  const restrict = async (role: RestrictedRole) => {
+    const restriction = await restrictToVault(party(role), vaultId, role, near("2"));
+    if (!restriction.call.ok)
+      throw new Error(`Could not restrict ${role}: ${restriction.call.errorCode ?? "unknown"}`);
+    return restriction.account;
+  };
+  const restricted = {
+    coordinator: await restrict("coordinator"),
+    verifier: await restrict("verifier"),
+  };
+  log(`Coordinator and verifier keys are now function-call keys for ${vaultId} only`);
+  return restricted;
+}
+
 export async function setUpChain(
   options: ChainOptions,
   log: (line: string) => void,
@@ -86,6 +106,10 @@ export async function setUpChain(
     coordinator: party("coordinator").accountId,
     verifier: party("verifier").accountId,
   });
+  const roles =
+    options.network === "sandbox"
+      ? await restrictRoles(party, contract.accountId, log)
+      : { coordinator: party("coordinator"), verifier: party("verifier") };
   return {
     network: options.network,
     contract,
@@ -95,8 +119,8 @@ export async function setUpChain(
       vault: prepared.vault,
       customer: party("customer"),
       guarantor: party("guarantor"),
-      coordinator: party("coordinator"),
-      verifier: party("verifier"),
+      coordinator: roles.coordinator,
+      verifier: roles.verifier,
       payoutAccount: (agentId) => party(agentId).accountId,
     },
   };

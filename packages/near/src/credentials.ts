@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { KeyPair, type KeyPairString } from "near-api-js";
@@ -27,8 +27,12 @@ export function loadKey(network: string, accountId: string): KeyPairString | nul
   return asKeyPairString(credential.private_key);
 }
 
-export function saveKey(network: string, accountId: string, keyPair: KeyPair): void {
-  const path = credentialsPath(network, accountId);
+export function saveKey(
+  network: string,
+  accountId: string,
+  keyPair: KeyPair,
+  path = credentialsPath(network, accountId),
+): void {
   mkdirSync(join(homedir(), ".near-credentials", network), { recursive: true, mode: 0o700 });
   const credential = {
     account_id: accountId,
@@ -41,4 +45,19 @@ export function saveKey(network: string, accountId: string, keyPair: KeyPair): v
 
 export function parseKey(value: string): KeyPairString {
   return asKeyPairString(value);
+}
+
+const stagedPath = (network: string, accountId: string) =>
+  credentialsPath(network, accountId).replace(/\.json$/, ".next.json");
+
+export function stageKey(network: string, accountId: string, keyPair: KeyPair): void {
+  saveKey(network, accountId, keyPair, stagedPath(network, accountId));
+}
+
+export function promoteStagedKey(network: string, accountId: string, retiredAs: string): void {
+  const current = credentialsPath(network, accountId);
+  const retired = current.replace(/\.json$/, `.${retiredAs}.json`);
+  if (existsSync(retired)) throw new Error(`${retired} already exists`);
+  renameSync(current, retired);
+  renameSync(stagedPath(network, accountId), current);
 }

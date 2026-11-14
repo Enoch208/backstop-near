@@ -21,6 +21,7 @@ const documentSchema = z.object({
   deployTx: z.string().nullable(),
   upgrades: z.array(z.unknown()).default([]),
   teeSigners: z.array(z.unknown()).default([]),
+  keyRestrictions: z.array(z.unknown()).default([]),
   runs: z.array(z.unknown()),
 });
 type Document = z.infer<typeof documentSchema>;
@@ -31,7 +32,7 @@ function load(path: string): Document {
   );
   return previous.success
     ? previous.data
-    : { deployTx: null, upgrades: [], teeSigners: [], runs: [] };
+    : { deployTx: null, upgrades: [], teeSigners: [], keyRestrictions: [], runs: [] };
 }
 
 function save(path: string, contractId: string, document: Document): void {
@@ -42,6 +43,7 @@ function save(path: string, contractId: string, document: Document): void {
     deployTx: document.deployTx,
     upgrades: document.upgrades,
     teeSigners: document.teeSigners,
+    ...(document.keyRestrictions.length === 0 ? {} : { keyRestrictions: document.keyRestrictions }),
     runs: document.runs,
   };
   writeFileSync(path, `${JSON.stringify(ordered, null, 2)}\n`);
@@ -76,7 +78,7 @@ export function appendTestnetRun(
 
 export function appendTestnetEntry(
   contractId: string,
-  list: "upgrades" | "teeSigners",
+  list: "upgrades" | "teeSigners" | "keyRestrictions",
   entry: { readonly txHash: string } & Record<string, unknown>,
   path = testnetRecord,
 ): void {

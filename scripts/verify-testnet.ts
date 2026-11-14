@@ -4,6 +4,7 @@ import {
   testnetRecordSchema,
   verifyLedger,
   verifyStep,
+  verifyRestriction,
   verifyTeeSigner,
   type Finding,
 } from "@backstop/near";
@@ -48,6 +49,16 @@ for (const [index, signer] of record.teeSigners.entries()) {
   findings.push(await verifyStep(provider, step, root));
   const latest = lastIndex.get(signer.signingAddress) === index;
   findings.push(await verifyTeeSigner(provider, record.contractId, signer, latest));
+}
+for (const restriction of record.keyRestrictions) {
+  const step = {
+    label: "restrict",
+    txHash: restriction.txHash,
+    outcome: "success",
+    signer: restriction.account,
+  };
+  findings.push(await verifyStep(provider, step, root));
+  findings.push(await verifyRestriction(provider, record.contractId, restriction.account));
 }
 for (const run of record.runs) {
   for (const step of run.steps) findings.push(await verifyStep(provider, step, root));

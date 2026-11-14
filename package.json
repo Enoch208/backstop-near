@@ -27,7 +27,8 @@
     "vault:build": "sh scripts/build-vault.sh",
     "verify:testnet": "tsx scripts/verify-testnet.ts",
     "vault:upgrade": "tsx scripts/upgrade-vault.ts",
-    "tee": "tsx scripts/tee.ts"
+    "tee": "tsx scripts/tee.ts",
+    "chain:harden": "tsx scripts/harden.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",

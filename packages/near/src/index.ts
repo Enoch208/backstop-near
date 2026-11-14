@@ -14,3 +14,4 @@ export * from "./record.js";
 export * from "./intents.js";
 export * from "./verify.js";
 export * from "./tee.js";
+export * from "./keys.js";
