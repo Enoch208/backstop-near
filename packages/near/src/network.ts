@@ -53,3 +53,21 @@ export function testnetRoot(
   }
   return new Account(accountId, rpcUrl, key);
 }
+
+export async function topUp(
+  root: Account,
+  party: Account,
+  minimumAvailable: bigint,
+): Promise<string | null> {
+  const { balance } = await party.getState();
+  if (balance.available >= minimumAvailable) return null;
+  const outcome = readOutcome(
+    await root.transfer({
+      receiverId: party.accountId,
+      amount: minimumAvailable - balance.available,
+    }),
+  );
+  if (!outcome.ok)
+    throw new Error(`Could not top up ${party.accountId}: ${outcome.errorCode ?? "unknown"}`);
+  return outcome.txHash;
+}

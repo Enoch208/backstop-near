@@ -22,7 +22,8 @@
     "chain": "tsx scripts/chain.ts",
     "arena": "tsx scripts/arena.ts",
     "mcp": "tsx apps/mcp/src/main.ts",
-    "market": "tsx scripts/market.ts"
+    "market": "tsx scripts/market.ts",
+    "chain:account": "tsx scripts/testnet-account.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",

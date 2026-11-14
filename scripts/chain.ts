@@ -11,6 +11,7 @@ import {
   startLocalChain,
   testnetParty,
   testnetRoot,
+  topUp,
   type ChainRun,
 } from "@backstop/near";
 import { formatNear, fromYocto, near } from "@backstop/shared";
@@ -33,6 +34,13 @@ const funding: Readonly<Record<string, bigint>> = {
   epsilon: near("0.05"),
 };
 const names = Object.keys(funding);
+
+const workingBalance: Readonly<Record<string, bigint>> = {
+  customer: near("0.8"),
+  guarantor: near("0.5"),
+  coordinator: near("1"),
+  verifier: near("0.4"),
+};
 
 async function partiesOn(): Promise<{
   root: Account;
@@ -60,7 +68,12 @@ async function partiesOn(): Promise<{
     process.env.BACKSTOP_TESTNET_RPC ?? defaultTestnetRpc,
   );
   const accounts: Record<string, Account> = {};
-  for (const name of names) accounts[name] = await testnetParty(root, name, funding[name] ?? 0n);
+  for (const name of names) {
+    const account = await testnetParty(root, name, funding[name] ?? 0n);
+    const toppedUp = await topUp(root, account, workingBalance[name] ?? 0n);
+    if (toppedUp !== null) out(`Topped up ${account.accountId} in ${toppedUp}`);
+    accounts[name] = account;
+  }
   return { root, accounts, stop: () => Promise.resolve() };
 }
 
@@ -68,7 +81,7 @@ function record(run: ChainRun, contractId: string, deployTx: string | null): voi
   mkdirSync(new URL("../deployments/", import.meta.url), { recursive: true });
   const path = new URL("../deployments/testnet.json", import.meta.url);
   const previous = z
-    .object({ runs: z.array(z.unknown()) })
+    .object({ runs: z.array(z.unknown()), deployTx: z.string().nullable() })
     .safeParse(existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null);
   const runs = previous.success ? previous.data.runs : [];
   const entry = {
@@ -82,7 +95,13 @@ function record(run: ChainRun, contractId: string, deployTx: string | null): voi
     })),
     rebids: run.rebids,
   };
-  const document = { network: "testnet", contractId, deployTx, runs: [...runs, entry] };
+  const knownDeploy = previous.success ? previous.data.deployTx : null;
+  const document = {
+    network: "testnet",
+    contractId,
+    deployTx: deployTx ?? knownDeploy,
+    runs: [...runs, entry],
+  };
   writeFileSync(path, `${JSON.stringify(document, null, 2)}\n`);
 }
 

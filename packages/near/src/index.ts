@@ -7,3 +7,4 @@ export * from "./accounts.js";
 export * from "./local.js";
 export * from "./credentials.js";
 export * from "./network.js";
+export * from "./faucet.js";
