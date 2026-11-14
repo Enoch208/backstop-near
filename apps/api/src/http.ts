@@ -45,23 +45,24 @@ export function json(value: unknown, status = 200, headers: Record<string, strin
   });
 }
 
+export function errorBody(error: ApiError, traceId: string, taskVersion: number | null) {
+  return {
+    error: {
+      code: error.code,
+      message: error.message,
+      retryable: error.retryable,
+      traceId,
+      taskVersion,
+    },
+  };
+}
+
 export function errorResponse(
   error: ApiError,
   traceId: string,
   taskVersion: number | null,
 ): Response {
-  return json(
-    {
-      error: {
-        code: error.code,
-        message: error.message,
-        retryable: error.retryable,
-        traceId,
-        taskVersion,
-      },
-    },
-    error.status,
-  );
+  return json(errorBody(error, traceId, taskVersion), error.status);
 }
 
 export async function readJson(request: Request): Promise<unknown> {

@@ -27,6 +27,7 @@ export const taskManifestSchema = z.strictObject({
   taskId: taskIdSchema,
   owner: nearAccountSchema,
   objective: z.string().min(1).max(500),
+  repairTaskHash: digestSchema.exactOptional(),
   suite: z.strictObject({
     suiteId: z.string().min(1).max(64),
     suiteHash: digestSchema,

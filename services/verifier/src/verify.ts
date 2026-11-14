@@ -2,6 +2,7 @@ import {
   type AttestedInference,
   canonicalJson,
   evidenceHash,
+  repairRunnerId,
   signValue,
   type CheckResult,
   type Digest,
@@ -11,7 +12,7 @@ import {
   type TestSuite,
   type SuiteCase,
 } from "@backstop/shared";
-import { runInSandbox, type RunResult } from "./sandbox.js";
+import { runInSandbox, type RunResult, type Runner } from "./sandbox.js";
 
 export type VerificationRequest = {
   readonly taskId: string;
@@ -41,8 +42,11 @@ function check(testCase: SuiteCase, result: RunResult | undefined): CheckResult 
   return { ...base, status: "fail", detail: clip(`got ${canonicalJson(result.value)}`) };
 }
 
-export function verifyArtifact(request: VerificationRequest): EvidenceBundle {
-  const results = runInSandbox(
+export function verifyArtifact(
+  request: VerificationRequest,
+  run: Runner = runInSandbox,
+): EvidenceBundle {
+  const results = run(
     request.artifactSource,
     request.suite.entry,
     request.suite.cases.map((testCase) => testCase.input),
@@ -58,7 +62,10 @@ export function verifyArtifact(request: VerificationRequest): EvidenceBundle {
     artifactHash: request.artifactHash,
     suiteHash: request.suiteHash,
     runnerId: request.runnerId,
-    checks,
+    checks:
+      request.runnerId === repairRunnerId
+        ? checks.map((item) => (item.visibility === "held_out" ? { ...item, detail: null } : item))
+        : checks,
     totals: { passed, failed: checks.length - passed },
     verdict: passed === checks.length ? "ACCEPT" : "REJECT",
     verifierAccount: request.verifierAccount,

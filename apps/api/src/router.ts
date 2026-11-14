@@ -2,12 +2,14 @@ import { errorResponse, type ApiError } from "./http.js";
 import { listTasks, register } from "./routes/agents.js";
 import { fault } from "./routes/demo.js";
 import { getFinding, postFinding } from "./routes/findings.js";
-import { bid, createTask, endorse, fund } from "./routes/funding.js";
+import { bid, createTask, endorse } from "./routes/funding.js";
+import { fund } from "./routes/deposits.js";
 import {
   agentLines,
   chainSteps,
   events,
   getArtifact,
+  getRepairBrief,
   getTask,
   health,
   payouts,
@@ -45,6 +47,9 @@ const routes: readonly Route[] = [
   route("GET", "/api/tasks", (runtime) => listTasks(runtime)),
   route("POST", "/api/tasks", (runtime, request) => createTask(runtime, request)),
   route("GET", "/api/tasks/:task", (runtime, _request, params) => getTask(runtime, first(params))),
+  route("GET", "/api/tasks/:task/repair", (runtime, _request, params) =>
+    getRepairBrief(runtime, first(params)),
+  ),
   route("GET", "/api/tasks/:task/payouts", (runtime, _request, params) =>
     payouts(runtime, first(params)),
   ),

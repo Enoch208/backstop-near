@@ -11,6 +11,7 @@ export function supervise(
   runtime: Runtime,
   apiUrl: string,
   onLine: (line: string) => void,
+  names: readonly (typeof swarm)[number][] = swarm,
 ): WorkerControl {
   const tracked = new Map<string, Tracked>();
   const keyOf = (taskId: string, agentId: string) => `${taskId}/${agentId}`;
@@ -54,7 +55,7 @@ export function supervise(
 
   return {
     launch: (taskId) => {
-      for (const agentId of swarm) launchOne(taskId, agentId);
+      for (const agentId of names) launchOne(taskId, agentId);
     },
     kill: (taskId, agentId) => {
       const entry = tracked.get(keyOf(taskId, agentId));

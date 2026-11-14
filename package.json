@@ -31,7 +31,9 @@
     "chain:harden": "tsx scripts/harden.ts",
     "web": "pnpm --filter @backstop/web dev",
     "judge": "tsx scripts/judge.ts",
-    "chain:redteam": "tsx scripts/red-team.ts"
+    "chain:redteam": "tsx scripts/red-team.ts",
+    "worker:outside": "tsx services/workers/src/main.ts",
+    "benchmark:live": "tsx scripts/live-benchmark.ts"
   },
   "devDependencies": {
     "@backstop/agents": "workspace:*",
@@ -42,6 +44,7 @@
     "@backstop/near": "workspace:*",
     "@backstop/orchestrator": "workspace:*",
     "@backstop/shared": "workspace:*",
+    "@backstop/verifier": "workspace:*",
     "@backstop/workers": "workspace:*",
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.2",

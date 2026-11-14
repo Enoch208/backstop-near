@@ -1,4 +1,4 @@
-import { endorseBid, rosterAgent, signBid } from "@backstop/agents";
+import { endorseBid, roster, rosterAgent, signBid } from "@backstop/agents";
 import type { TaskEventBody, TaskRecord } from "@backstop/orchestrator";
 import {
   digestOf,
@@ -57,6 +57,12 @@ const step = async (
 });
 
 export function reissue(signed: SignedBid, payoutAccount: (agentId: string) => string): SignedBid {
+  const fixture = signed.bid.members.every((member) =>
+    Object.values(roster).some(
+      (agent) => agent.agentId === member.agentId && agent.account === member.account,
+    ),
+  );
+  if (!fixture) return signed;
   const members = signed.bid.members.map((member) => ({
     ...member,
     account: payoutAccount(member.agentId),
@@ -178,6 +184,8 @@ export function chainMirror(parties: ChainParties, options: MirrorOptions): Chai
         ];
       case "attempt_assigned": {
         const chainBid = reissue(body.bid, parties.payoutAccount);
+        const [lead] = chainBid.bid.members;
+        if (lead === undefined) throw new Error("An assignment has no lead payee");
         rebids.push({
           attempt: body.attempt,
           offchainBidHash: body.bid.bidHash,
@@ -192,7 +200,7 @@ export function chainMirror(parties: ChainParties, options: MirrorOptions): Chai
             `Coordinator commits attempt ${String(body.attempt)} to ${leadAgent(chainBid.bid)}`,
             registerAssignment(parties.vault, parties.coordinator, taskId, {
               attempt: body.attempt,
-              agent: parties.payoutAccount(leadAgent(chainBid.bid)),
+              agent: lead.account,
               bidHash: toHex32(chainBid.bidHash),
               payees,
             }),

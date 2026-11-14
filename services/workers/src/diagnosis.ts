@@ -7,19 +7,22 @@ import {
   type Digest,
   type FailingCase,
   type Finding,
+  type RepairTaskBrief,
 } from "@backstop/shared";
-import { runInSandbox } from "@backstop/verifier";
+import { runInSandbox, runIsolated } from "@backstop/verifier";
 import type { ApiClient } from "./client.js";
 import { findingReplySchema } from "./messages.js";
 import type { Resume } from "./produce.js";
 
 export type PublicRun = { readonly passed: string[]; readonly failing: FailingCase[] };
 
-export function publicRun(source: string): PublicRun {
-  const cases = publicView(checkoutSuite).cases;
-  const results = runInSandbox(
+export function publicRun(source: string, repairTask?: RepairTaskBrief): PublicRun {
+  const suite = repairTask?.suite ?? checkoutSuite;
+  const cases = publicView(suite).cases;
+  const run = repairTask === undefined ? runInSandbox : runIsolated;
+  const results = run(
     source,
-    checkoutSuite.entry,
+    suite.entry,
     cases.map((testCase) => testCase.input),
   );
   const passed: string[] = [];
@@ -40,7 +43,41 @@ export function publicRun(source: string): PublicRun {
   return { passed, failing };
 }
 
-export function diagnose(taskId: string, attempt: number, agentId: string, code: Resume): Finding {
+export function probeRepair(source: string, task: RepairTaskBrief) {
+  const results = runIsolated(
+    source,
+    task.suite.entry,
+    task.probes.map((probe) => probe.input),
+  );
+  for (const [index, probe] of task.probes.entries()) {
+    const result = results[index];
+    if (result?.ok !== true || canonicalJson(result.value) !== canonicalJson(probe.expected)) {
+      return {
+        id: `probe-${String(index + 1)}`,
+        input: probe.input,
+        expected: probe.expected,
+        actual: result === undefined ? "No result" : result.ok ? result.value : result.error,
+      };
+    }
+  }
+  return null;
+}
+
+export function diagnose(
+  taskId: string,
+  attempt: number,
+  agentId: string,
+  code: Resume,
+  repairTask?: RepairTaskBrief,
+): Finding {
+  if (repairTask !== undefined) {
+    const run = publicRun(code.source, repairTask);
+    const probe = probeRepair(code.source, repairTask);
+    return {
+      failingCases: probe === null ? run.failing : [...run.failing.slice(0, 31), probe],
+      notes: `${String(run.passed.length)} of ${String(repairTask.suite.cases.length)} public cases pass on ${code.hash}. Checked the pinned challenge probes separately.`,
+    };
+  }
   const run = publicRun(code.source);
   const target = {
     taskId,

@@ -6,9 +6,9 @@ import {
   type ModelConfig,
 } from "@backstop/agents";
 import { candidate, checkoutRules, checkoutSuite } from "@backstop/fixture-checkout";
-import { canonicalJson, digestText, type Digest } from "@backstop/shared";
+import { canonicalJson, digestText, type Digest, type RepairTaskBrief } from "@backstop/shared";
 import type { InferenceReceipt } from "@backstop/tee";
-import { publicRun } from "./diagnosis.js";
+import { probeRepair, publicRun } from "./diagnosis.js";
 
 export type Product = {
   readonly label: string;
@@ -29,10 +29,14 @@ export type WorkContext = {
   readonly history: readonly string[];
   readonly resume: Resume | null;
   readonly diagnosis: Diagnosis | null;
+  readonly repairTask?: RepairTaskBrief;
 };
 
-export function publicFailures(source: string): { passed: string[]; failures: string[] } {
-  const run = publicRun(source);
+export function publicFailures(
+  source: string,
+  repairTask?: RepairTaskBrief,
+): { passed: string[]; failures: string[] } {
+  const run = publicRun(source, repairTask);
   return {
     passed: run.passed,
     failures: run.failing.map(
@@ -47,7 +51,10 @@ export async function produce(
   model: ModelConfig | null,
   context: WorkContext,
 ): Promise<Product> {
-  if (model === null || agent.role === "executor") {
+  const repairTask = context.repairTask;
+  if (repairTask !== undefined && model === null)
+    throw new Error("User-supplied repairs require a model");
+  if (model === null || (repairTask === undefined && agent.role === "executor")) {
     const { plan, artifact } = workFor(agent.agentId);
     return {
       label: `${artifact.name} (fixture patch)`,
@@ -60,22 +67,47 @@ export async function produce(
       unsigned: null,
     };
   }
+  const milestone = agent.role === "executor" ? repairTask?.primaryMilestone : undefined;
+  const task =
+    milestone === undefined || repairTask === undefined
+      ? repairTask
+      : {
+          ...repairTask,
+          suite: {
+            ...repairTask.suite,
+            cases: repairTask.suite.cases.filter((testCase) =>
+              milestone.publicCaseIds.includes(testCase.id),
+            ),
+          },
+        };
   const brief = {
-    objective: context.objective,
-    rules: checkoutRules,
-    brokenSource: context.resume?.source ?? candidate("original").source,
+    objective: milestone?.objective ?? context.objective,
+    rules: milestone?.rules ?? task?.rules ?? checkoutRules,
+    brokenSource: context.resume?.source ?? task?.source ?? candidate("original").source,
     resumedFrom: context.resume?.hash ?? null,
-    suite: checkoutSuite,
+    suite: task?.suite ?? checkoutSuite,
+    generic: task !== undefined,
     validatedSubtasks: context.inherited,
     diagnosis: context.diagnosis,
   };
   let history = [...context.history];
   let repair = await proposeRepair(model, { ...brief, failureHistory: history });
-  let check = publicFailures(repair.source);
+  let check = publicFailures(repair.source, task);
   if (check.failures.length > 0) {
     history = [...history, `your own public test run failed: ${check.failures.join("; ")}`];
     repair = await proposeRepair(model, { ...brief, failureHistory: history });
-    check = publicFailures(repair.source);
+    check = publicFailures(repair.source, task);
+  }
+  if (milestone !== undefined && task !== undefined) {
+    const start = publicFailures(brief.brokenSource, task);
+    const remaining = probeRepair(repair.source, task);
+    if (
+      check.failures.length > 0 ||
+      check.passed.length <= start.passed.length ||
+      remaining === null
+    ) {
+      throw new Error("The model did not produce the specified partial improvement");
+    }
   }
   const signed = repair.receipt === null ? "unsigned" : "TEE-signed";
   return {
@@ -86,6 +118,6 @@ export async function produce(
     artifactHash: digestText(repair.source),
     uri: `live-ai://${model.model}`,
     validatedSubtasks: check.passed.map((id) => `public:${id}`),
-    completes: true,
+    completes: milestone === undefined,
   };
 }

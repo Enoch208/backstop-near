@@ -1,0 +1,1506 @@
+{
+  "benchmark": "Backstop in-process recovery scheduler evaluation with live model inference",
+  "pilot": true,
+  "startedAt": "2026-11-14T18:26:11.845Z",
+  "recordedAt": "2026-11-14T18:28:17.333Z",
+  "corpusHash": "sha256:e828df02f6e92d9d5665c36f430d2ed2d80f64f0ed17206d10e1354948359640",
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "node": "v24.14.1",
+  "seed": 20261114,
+  "repeats": 1,
+  "limits": {
+    "calls": 3,
+    "maxPromptBytes": 8192,
+    "maxOutputTokens": 960,
+    "maxSourceBytes": 4096,
+    "wallMs": 240000,
+    "callMs": 45000
+  },
+  "expectedTrials": 24,
+  "completedTrials": 24,
+  "costModel": "Simulation using real Backstop payout planning. Provider token usage is reported only when supplied by the provider.",
+  "evidenceScope": "Injected worker and tool outcomes, isolated function tests, and the in-process auction. No worker processes, TEE receipt checks, or NEAR transactions.",
+  "byMode": {
+    "single": {
+      "trials": 8,
+      "correct": 8,
+      "wrong": 0,
+      "notAccepted": 0,
+      "correctRate": 1,
+      "wrongAcceptanceRate": 0,
+      "medianSeconds": 3.622,
+      "p95Seconds": 9.733,
+      "providerCallAttempts": 14,
+      "providerCallsWithReportedTokens": 14,
+      "knownTokenTotal": 7734,
+      "tokensPerCorrect": 966.75,
+      "customerNearBeforeCompensationPerCorrect": "0.41",
+      "totalCompensationNear": "0",
+      "totalBondConsumedNear": "0"
+    },
+    "fixed": {
+      "trials": 8,
+      "correct": 8,
+      "wrong": 0,
+      "notAccepted": 0,
+      "correctRate": 1,
+      "wrongAcceptanceRate": 0,
+      "medianSeconds": 3.441,
+      "p95Seconds": 11.95,
+      "providerCallAttempts": 14,
+      "providerCallsWithReportedTokens": 14,
+      "knownTokenTotal": 7631,
+      "tokensPerCorrect": 953.875,
+      "customerNearBeforeCompensationPerCorrect": "0.41",
+      "totalCompensationNear": "0",
+      "totalBondConsumedNear": "0"
+    },
+    "market": {
+      "trials": 8,
+      "correct": 8,
+      "wrong": 0,
+      "notAccepted": 0,
+      "correctRate": 1,
+      "wrongAcceptanceRate": 0,
+      "medianSeconds": 4.611,
+      "p95Seconds": 7.984,
+      "providerCallAttempts": 14,
+      "providerCallsWithReportedTokens": 14,
+      "knownTokenTotal": 7648,
+      "tokensPerCorrect": 956,
+      "customerNearBeforeCompensationPerCorrect": "0.225625",
+      "totalCompensationNear": "0",
+      "totalBondConsumedNear": "0"
+    }
+  },
+  "byFaultAndMode": {
+    "healthy": {
+      "single": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 2.047,
+        "p95Seconds": 3.541,
+        "providerCallAttempts": 2,
+        "providerCallsWithReportedTokens": 2,
+        "knownTokenTotal": 1021,
+        "tokensPerCorrect": 510.5,
+        "customerNearBeforeCompensationPerCorrect": "0.44",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "fixed": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 2.287,
+        "p95Seconds": 2.805,
+        "providerCallAttempts": 2,
+        "providerCallsWithReportedTokens": 2,
+        "knownTokenTotal": 1021,
+        "tokensPerCorrect": 510.5,
+        "customerNearBeforeCompensationPerCorrect": "0.44",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "market": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 1.232,
+        "p95Seconds": 4.352,
+        "providerCallAttempts": 2,
+        "providerCallsWithReportedTokens": 2,
+        "knownTokenTotal": 1021,
+        "tokensPerCorrect": 510.5,
+        "customerNearBeforeCompensationPerCorrect": "0.44",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      }
+    },
+    "transient-tool": {
+      "single": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 3.622,
+        "p95Seconds": 7.014,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2062,
+        "tokensPerCorrect": 1031,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "fixed": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 3.441,
+        "p95Seconds": 9.976,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2062,
+        "tokensPerCorrect": 1031,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "market": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 2.9,
+        "p95Seconds": 7.984,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2062,
+        "tokensPerCorrect": 1031,
+        "customerNearBeforeCompensationPerCorrect": "0.1875",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      }
+    },
+    "worker-death": {
+      "single": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 3.587,
+        "p95Seconds": 9.733,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2417,
+        "tokensPerCorrect": 1208.5,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "fixed": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 3.682,
+        "p95Seconds": 11.95,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2417,
+        "tokensPerCorrect": 1208.5,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "market": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 4.611,
+        "p95Seconds": 6.889,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2417,
+        "tokensPerCorrect": 1208.5,
+        "customerNearBeforeCompensationPerCorrect": "0.125",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      }
+    },
+    "incorrect-output": {
+      "single": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 4.559,
+        "p95Seconds": 8.094,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2234,
+        "tokensPerCorrect": 1117,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "fixed": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 3.192,
+        "p95Seconds": 5.82,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2131,
+        "tokensPerCorrect": 1065.5,
+        "customerNearBeforeCompensationPerCorrect": "0.4",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      },
+      "market": {
+        "trials": 2,
+        "correct": 2,
+        "wrong": 0,
+        "notAccepted": 0,
+        "correctRate": 1,
+        "wrongAcceptanceRate": 0,
+        "medianSeconds": 4.653,
+        "p95Seconds": 7.455,
+        "providerCallAttempts": 4,
+        "providerCallsWithReportedTokens": 4,
+        "knownTokenTotal": 2148,
+        "tokensPerCorrect": 1074,
+        "customerNearBeforeCompensationPerCorrect": "0.15",
+        "totalCompensationNear": "0",
+        "totalBondConsumedNear": "0"
+      }
+    }
+  },
+  "paired": [
+    {
+      "baseline": "single",
+      "distinctTaskClusters": 2,
+      "pairs": 8,
+      "marketWins": 0,
+      "marketLosses": 0,
+      "correctRateDifference": 0,
+      "exploratory95PercentTaskClusterBootstrap": [0, 0]
+    },
+    {
+      "baseline": "fixed",
+      "distinctTaskClusters": 2,
+      "pairs": 8,
+      "marketWins": 0,
+      "marketLosses": 0,
+      "correctRateDifference": 0,
+      "exploratory95PercentTaskClusterBootstrap": [0, 0]
+    }
+  ],
+  "trials": [
+    {
+      "task": "split-evenly",
+      "mode": "single",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 4559,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 2014
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 410,
+            "outputTokens": 70,
+            "promptBytes": 1823,
+            "elapsedMs": 2541
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:4925eb3dff50b776bb85ab4222a8f0fe299cf6abafebc5a2b00fae72ee61f6ce",
+          "checkpointBefore": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointAfter": "sha256:4925eb3dff50b776bb85ab4222a8f0fe299cf6abafebc5a2b00fae72ee61f6ce"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  return Array.from({ length: seats }, (_, i) => base + (i < remainder ? 1 : 0));\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "fixed",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3192,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 2014
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 410,
+            "outputTokens": 70,
+            "promptBytes": 1818,
+            "elapsedMs": 1174
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:e0d411e486521136d704cb30f46cf5deb8bdb6934d05d1b82c35d7b90b2f1376",
+          "checkpointBefore": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointAfter": "sha256:e0d411e486521136d704cb30f46cf5deb8bdb6934d05d1b82c35d7b90b2f1376"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  return Array.from({length: seats}, (_, i) => base + (i < remainder ? 1 : 0));\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "market",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 4653,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1609
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.15",
+              "reason": "submitted",
+              "signedBidHash": "sha256:aea289dda9800889421519701bb8c27a90629c4a2bf04cee44d0eecdf1c9c022"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.36",
+              "reason": "outbid",
+              "signedBidHash": "sha256:fa23235acb0dd75943567a3da84500c37bd9bc1d2b9feb4fd2d212acbe2abd0d"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.45",
+              "reason": "outbid",
+              "signedBidHash": "sha256:78fc453535b7c75127cd9778a52eaf9bef42e13e45cc30f1b96eccab98981f94"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 410,
+            "outputTokens": 70,
+            "promptBytes": 1818,
+            "elapsedMs": 3026
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:e0d411e486521136d704cb30f46cf5deb8bdb6934d05d1b82c35d7b90b2f1376",
+          "checkpointBefore": "sha256:0ff3ff1bef2fff4553af1cfffa0dd15f2895e72a81a89617adf610b13b64d52d",
+          "checkpointAfter": "sha256:e0d411e486521136d704cb30f46cf5deb8bdb6934d05d1b82c35d7b90b2f1376"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  return Array.from({length: seats}, (_, i) => base + (i < remainder ? 1 : 0));\n}\n",
+      "customerNetNear": "0.15",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.15"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "market",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 1232,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1229
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "single",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 2047,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 2043
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "fixed",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 2287,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 2282
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "single",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3622,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1326
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 321,
+            "outputTokens": 86,
+            "promptBytes": 1538,
+            "elapsedMs": 2289
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "market",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 2900,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1644
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.125",
+              "reason": "submitted",
+              "signedBidHash": "sha256:f1a3a887b0417ad56217da111068d45ba0efd7130e2e8206001395d346e0c9b2"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.3",
+              "reason": "outbid",
+              "signedBidHash": "sha256:e35163b2a6308a52cbf3acb8780471c0e8c3677c1bd6918772e425f988cb6aee"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.375",
+              "reason": "outbid",
+              "signedBidHash": "sha256:508e4cf34b8c9c654bdafda480dcc74d71cde42f454d3f13539a5884f01f0e18"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 321,
+            "outputTokens": 86,
+            "promptBytes": 1533,
+            "elapsedMs": 1238
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.125",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.125"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "fixed",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3441,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1374
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 321,
+            "outputTokens": 86,
+            "promptBytes": 1533,
+            "elapsedMs": 2059
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "fixed",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 11950,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 7890
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 625,
+            "outputTokens": 250,
+            "promptBytes": 2455,
+            "elapsedMs": 4044
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "market",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 6889,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 3901
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.125",
+              "reason": "submitted",
+              "signedBidHash": "sha256:07aa4486fd870a07eb8edaa753dd619d6fe5d0cf73a42a4350541709ee86e0ea"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.3",
+              "reason": "outbid",
+              "signedBidHash": "sha256:2f67d94836595eb4ec88f5cf758ea994266388122125e4a38cf7072eeed19a4d"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.375",
+              "reason": "outbid",
+              "signedBidHash": "sha256:c819cff09b95598ff544698a90a4a8f171cee3434bbeaf8b23a21249f7332564"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 625,
+            "outputTokens": 250,
+            "promptBytes": 2455,
+            "elapsedMs": 2967
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.125",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.125"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "single",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 9733,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 4169
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 625,
+            "outputTokens": 250,
+            "promptBytes": 2460,
+            "elapsedMs": 5558
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "fixed",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 2805,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 2796
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "market",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 4352,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 4342
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "single",
+      "fault": "healthy",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3541,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 3537
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.44",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "market",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 7984,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 4016
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.25",
+              "reason": "submitted",
+              "signedBidHash": "sha256:da7af36ebd187603324d3a2ec07b30e1d6cb078e4c18d6c94d8dc8bd2d02f1e9"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.6",
+              "reason": "outbid",
+              "signedBidHash": "sha256:7bb2419ea09b94a2e5ef82b0c9e1cb0f203f88c357814a7e1a58fe07de6c90bd"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.65",
+              "reason": "outbid",
+              "signedBidHash": "sha256:faf61b21c12f2ad564b891e19931e06b636c81fa7e0b4b13a3e020b6de25e372"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 384,
+            "outputTokens": 250,
+            "promptBytes": 1741,
+            "elapsedMs": 3949
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.25",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.25"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "single",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 7014,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 4016
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 384,
+            "outputTokens": 250,
+            "promptBytes": 1746,
+            "elapsedMs": 2989
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "fixed",
+      "fault": "transient-tool",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 9976,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 6749
+          },
+          "result": "injected-transient-tool-loss",
+          "sourceHash": null,
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 384,
+            "outputTokens": 250,
+            "promptBytes": 1741,
+            "elapsedMs": 3219
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:7eb84cfe9a5694f5f5aa57d29f30d0eac635322379df86632b6a5a27557f98be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const b of bookings) {\n    const s = Math.max(b[0], start);\n    const e = Math.min(b[1], end);\n    if (e > s) clipped.push([s, e]);\n  }\n  clipped.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n  const merged = [];\n  for (const [s, e] of clipped) {\n    if (merged.length && s <= merged[merged.length - 1][1]) {\n      if (e > merged[merged.length - 1][1]) merged[merged.length - 1][1] = e;\n    } else {\n      merged.push([s, e]);\n    }\n  }\n  const result = [];\n  let cursor = start;\n  for (const [s, e] of merged) {\n    if (s > cursor) result.push([cursor, s]);\n    if (e > cursor) cursor = e;\n  }\n  if (cursor < end) result.push([cursor, end]);\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "fixed",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3682,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1791
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 435,
+            "outputTokens": 86,
+            "promptBytes": 1883,
+            "elapsedMs": 1885
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "market",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 4611,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1629
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.125",
+              "reason": "submitted",
+              "signedBidHash": "sha256:ede7b98663ff2b5056a1110d96157906ccbc2444cc4ab9ce30f870367b3e70c8"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.3",
+              "reason": "outbid",
+              "signedBidHash": "sha256:96dacd22c6c93cce3ab265c68ba01f3582bde997655849c6a52011c5df68ede2"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.375",
+              "reason": "outbid",
+              "signedBidHash": "sha256:515c49ceba544a1abcfa0dd4188ef78a5b7245677b4cefbf3f3b658e60d66b78"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 435,
+            "outputTokens": 86,
+            "promptBytes": 1883,
+            "elapsedMs": 2968
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.125",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.125"
+    },
+    {
+      "task": "split-evenly",
+      "mode": "single",
+      "fault": "worker-death",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 3587,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 311,
+            "outputTokens": 86,
+            "promptBytes": 1490,
+            "elapsedMs": 1397
+          },
+          "result": "injected-worker-death-after-checkpoint",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:7f1dd5fe14451826fb016347c6504200e7ba5bd0500023640e7d9e4aafb7444b",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 435,
+            "outputTokens": 86,
+            "promptBytes": 1888,
+            "elapsedMs": 2186
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointBefore": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb",
+          "checkpointAfter": "sha256:442e154f8a7ba0a8ed60f71298c42421e409158b9b765776a7ac55fb8fe575eb"
+        }
+      ],
+      "deliveredSource": "function split({total, seats}) {\n  if (seats === 0) return [];\n  const base = Math.floor(total / seats);\n  const remainder = total % seats;\n  const result = [];\n  for (let i = 0; i < seats; i++) {\n    result.push(base + (i < remainder ? 1 : 0));\n  }\n  return result;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "fixed",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 5820,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 3016
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 491,
+            "outputTokens": 139,
+            "promptBytes": 2055,
+            "elapsedMs": 2793
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:e5938a8928e306250678ba797f0c07e426ddf74b91016e660e8fddf0c39d9b57",
+          "checkpointBefore": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointAfter": "sha256:e5938a8928e306250678ba797f0c07e426ddf74b91016e660e8fddf0c39d9b57"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  let cursor = start;\n  const out = [];\n  const clipped = bookings\n    .map(([a,b]) => [Math.max(a,start), Math.min(b,end)])\n    .filter(([a,b]) => a < b)\n    .sort((x,y) => x[0] - y[0]);\n  for (const [a,b] of clipped) {\n    if (a > cursor) out.push([cursor,a]);\n    cursor = Math.max(cursor,b);\n  }\n  if (cursor < end) out.push([cursor,end]);\n  return out;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "single",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 8094,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 3910
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a"
+        },
+        {
+          "number": 2,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 491,
+            "outputTokens": 242,
+            "promptBytes": 2060,
+            "elapsedMs": 4175
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:387c381e51d895a12a1e6c308da6ca2c4cd8256278d8c67c8f908c50c7eeb6be",
+          "checkpointBefore": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointAfter": "sha256:387c381e51d895a12a1e6c308da6ca2c4cd8256278d8c67c8f908c50c7eeb6be"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  const clipped = [];\n  for (const [a,b] of bookings) {\n    const lo = Math.max(a, start);\n    const hi = Math.min(b, end);\n    if (lo < hi) clipped.push([lo, hi]);\n  }\n  clipped.sort((x,y) => x[0] - y[0] || x[1] - y[1]);\n  const merged = [];\n  for (const [a,b] of clipped) {\n    if (merged.length && a <= merged[merged.length-1][1]) {\n      if (b > merged[merged.length-1][1]) merged[merged.length-1][1] = b;\n    } else {\n      merged.push([a,b]);\n    }\n  }\n  const out = [];\n  let cursor = start;\n  for (const [a,b] of merged) {\n    if (a > cursor) out.push([cursor, a]);\n    if (b > cursor) cursor = b;\n  }\n  if (cursor < end) out.push([cursor, end]);\n  return out;\n}\n",
+      "customerNetNear": "0.4",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.4"
+    },
+    {
+      "task": "minute-slots",
+      "mode": "market",
+      "fault": "incorrect-output",
+      "repeat": 1,
+      "correct": true,
+      "accepted": true,
+      "terminal": "correct-acceptance",
+      "elapsedMs": 7455,
+      "attempts": [
+        {
+          "number": 1,
+          "assignment": [],
+          "agent": "alpha",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 374,
+            "outputTokens": 250,
+            "promptBytes": 1698,
+            "elapsedMs": 4596
+          },
+          "result": "verifier-rejected",
+          "sourceHash": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointBefore": "sha256:e4d545e9ff51ee93b3bbaee37614094945ee8b0c16a17a1b3b728c1a91191027",
+          "checkpointAfter": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a"
+        },
+        {
+          "number": 2,
+          "assignment": [
+            {
+              "lead": "beta",
+              "quote": "0.15",
+              "reason": "submitted",
+              "signedBidHash": "sha256:1da159083de5f9bff46fba876dde68a3ea7b337667c4122a3586fad58505ded6"
+            },
+            {
+              "lead": "gamma",
+              "quote": "0.36",
+              "reason": "outbid",
+              "signedBidHash": "sha256:60ef65f08e94720ba6870bb7cad18e266759e67e69c640f037df42aafa9fc784"
+            },
+            {
+              "lead": "epsilon",
+              "quote": "0.45",
+              "reason": "outbid",
+              "signedBidHash": "sha256:ee5a4ed6720c87165bf64e235b93f608f90917abbea4e8617b210b5d45093924"
+            }
+          ],
+          "agent": "beta",
+          "inference": {
+            "status": "ok",
+            "promptTokens": 491,
+            "outputTokens": 156,
+            "promptBytes": 2055,
+            "elapsedMs": 2848
+          },
+          "result": "correct-acceptance",
+          "sourceHash": "sha256:91aeea401c96386b61ff06c47aae23ff9c20cc8aa571910776da6cd7e0474813",
+          "checkpointBefore": "sha256:43b2e2bb3a809bfaa37e70e5b99ae84d9bb320c8b24919555b2c5638ec30232a",
+          "checkpointAfter": "sha256:91aeea401c96386b61ff06c47aae23ff9c20cc8aa571910776da6cd7e0474813"
+        }
+      ],
+      "deliveredSource": "function freeSlots({start,end,bookings}) {\n  let cursor = start;\n  const out = [];\n  const clipped = [];\n  for (const [a,b] of bookings) {\n    const lo = Math.max(a, start);\n    const hi = Math.min(b, end);\n    if (lo < hi) clipped.push([lo, hi]);\n  }\n  clipped.sort((x,y) => x[0] - y[0]);\n  for (const [a,b] of clipped) {\n    if (a > cursor) out.push([cursor, a]);\n    if (b > cursor) cursor = b;\n  }\n  if (cursor < end) out.push([cursor, end]);\n  return out;\n}\n",
+      "customerNetNear": "0.15",
+      "compensationNear": "0",
+      "bondConsumedNear": "0",
+      "operatorPayoutNear": "0.15"
+    }
+  ]
+}

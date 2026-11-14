@@ -8,7 +8,8 @@ export type RepairBrief = {
   readonly rules: string;
   readonly brokenSource: string;
   readonly resumedFrom: string | null;
-  readonly suite: TestSuite;
+  readonly suite: Pick<TestSuite, "entry" | "cases">;
+  readonly generic?: boolean;
   readonly validatedSubtasks: readonly string[];
   readonly failureHistory: readonly string[];
   readonly diagnosis: Diagnosis | null;
@@ -20,11 +21,10 @@ const diagnosisText = ({ from, finding }: Diagnosis) =>
     `Failing cases on the current source (input, expected, actual):\n${canonicalJson(finding.failingCases)}`,
   ].join("\n");
 
-const system = [
-  "You repair one JavaScript function for a paid task.",
-  "Reply with only the complete corrected source in a single ```js code block: plain function declarations, no imports, no exports, no comments, no explanation.",
-  "Money is integer cents. An independent verifier runs hidden tests, and challengers are paid to find any input where your function disagrees with the specification.",
-].join(" ");
+const baseSystem =
+  "You repair one JavaScript function for a paid task. Reply with only the complete corrected source in a single ```js code block: plain function declarations, no imports, no exports, no comments, no explanation.";
+const verifySystem =
+  "An independent verifier runs hidden tests, and challengers are paid to find any input where your function disagrees with the specification.";
 
 export function repairPrompt(brief: RepairBrief): ChatMessage[] {
   const examples = publicView(brief.suite).cases.map((testCase) => ({
@@ -50,8 +50,11 @@ export function repairPrompt(brief: RepairBrief): ChatMessage[] {
       : "No earlier attempts failed.",
     ...(brief.diagnosis === null ? [] : [diagnosisText(brief.diagnosis)]),
   ].join("\n\n");
+  const domain = brief.generic
+    ? "The entry is a deterministic synchronous function of a single JSON input. Return a JSON value."
+    : "Money is integer cents.";
   return [
-    { role: "system", content: system },
+    { role: "system", content: `${baseSystem} ${domain} ${verifySystem}` },
     { role: "user", content: user },
   ];
 }

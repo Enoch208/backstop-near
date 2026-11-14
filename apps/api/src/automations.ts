@@ -2,9 +2,10 @@ import { roster } from "@backstop/agents";
 import { checkoutSuite, fixtureAccounts } from "@backstop/fixture-checkout";
 import { maxTransferRetries } from "@backstop/ledger";
 import { dueCommands, type TaskEvent, type TaskRecord } from "@backstop/orchestrator";
-import { verifyArtifact } from "@backstop/verifier";
-import { mirrorEvents } from "./chain.js";
+import { runIsolated, verifyArtifact } from "@backstop/verifier";
+import { mirrorEvents, mirrorTask } from "./chain.js";
 import { quotePayouts } from "./payouts.js";
+import { repairTaskFor } from "./repair-task.js";
 import { execute, type Runtime } from "./runtime.js";
 
 function verifySubmission(runtime: Runtime, record: TaskRecord): void {
@@ -12,20 +13,25 @@ function verifySubmission(runtime: Runtime, record: TaskRecord): void {
   if (candidate === null || candidate.evidence !== null) return;
   const source = runtime.artifacts.get(candidate.artifactHash);
   if (source === undefined) return;
-  const evidence = verifyArtifact({
-    taskId: record.taskId,
-    attempt: candidate.attempt,
-    fencingToken: candidate.fencingToken,
-    policyHash: record.manifestHash,
-    artifactHash: candidate.artifactHash,
-    artifactSource: source,
-    suite: checkoutSuite,
-    suiteHash: record.manifest.suite.suiteHash,
-    runnerId: record.manifest.suite.runnerId,
-    verifierAccount: fixtureAccounts.verifier,
-    signer: roster.verifier.key,
-    inference: runtime.inferences.get(candidate.artifactHash) ?? null,
-  });
+  const repairTask = repairTaskFor(runtime, record.manifest);
+  if (record.manifest.repairTaskHash !== undefined && repairTask === undefined) return;
+  const evidence = verifyArtifact(
+    {
+      taskId: record.taskId,
+      attempt: candidate.attempt,
+      fencingToken: candidate.fencingToken,
+      policyHash: record.manifestHash,
+      artifactHash: candidate.artifactHash,
+      artifactSource: source,
+      suite: repairTask?.suite ?? checkoutSuite,
+      suiteHash: record.manifest.suite.suiteHash,
+      runnerId: record.manifest.suite.runnerId,
+      verifierAccount: fixtureAccounts.verifier,
+      signer: roster.verifier.key,
+      inference: runtime.inferences.get(candidate.artifactHash) ?? null,
+    },
+    repairTask === undefined ? undefined : runIsolated,
+  );
   execute(runtime, record.taskId, "verifier", { kind: "recordVerification", evidence });
 }
 
@@ -59,6 +65,11 @@ export function react(runtime: Runtime, events: readonly TaskEvent[]): void {
 
 export function tick(runtime: Runtime): void {
   for (const record of Object.values(runtime.store.records)) {
+    if (runtime.pendingFunding.has(record.taskId)) continue;
+    if (record.state === "VERIFYING") verifySubmission(runtime, record);
+    if (runtime.chain !== null) mirrorTask(runtime, runtime.chain, record.taskId);
+    else if (record.ledger.transfers.some((transfer) => transfer.status === "PENDING"))
+      settleTransfers(runtime, record);
     for (const command of dueCommands(record, runtime.now())) {
       execute(runtime, record.taskId, "keeper", command);
     }

@@ -1,26 +1,26 @@
 import {
+  digestOf,
   digestSchema,
-  fromYocto,
   leadAgent,
+  repairRunnerId,
+  repairTaskSchema,
   signatureSchema,
   signedBidSchema,
+  suiteHash,
   taskManifestSchema,
-  yoctoSchema,
 } from "@backstop/shared";
+import { checkoutRunnerId, checkoutSuite, checkoutSuiteHash } from "@backstop/fixture-checkout";
+import { roster } from "@backstop/agents";
 import { z } from "zod";
 import { signedWrite } from "../auth.js";
-import { failure, type ApiError } from "../http.js";
-import { record as recordStep } from "../chain.js";
-import { chainDeposit, chainGuarantee } from "@backstop/near";
-import { decide, type TaskRecord } from "@backstop/orchestrator";
+import { failure } from "../http.js";
+import { invalidRepairTask } from "../repair-task.js";
 import { execute, type Runtime } from "../runtime.js";
 import { fromOutcome, parseBody, refuse } from "./outcome.js";
 
-const createBody = z.strictObject({ manifest: taskManifestSchema });
-const fundBody = z.strictObject({
-  pool: z.enum(["escrow", "premium", "bond"]),
-  amountYocto: yoctoSchema,
-  liabilityYocto: yoctoSchema.nullable(),
+const createBody = z.strictObject({
+  manifest: taskManifestSchema,
+  repairTask: repairTaskSchema.optional(),
 });
 const bidBody = z.strictObject({ bid: signedBidSchema });
 const endorseBody = z.strictObject({ bidHash: digestSchema, signature: signatureSchema });
@@ -29,7 +29,7 @@ export function createTask(runtime: Runtime, request: Request): Promise<Response
   return signedWrite(runtime, request, ({ actor, body }) => {
     const parsed = parseBody(createBody, body);
     if (!parsed.ok) return { error: parsed.error, taskVersion: null };
-    const { manifest } = parsed.value;
+    const { manifest, repairTask } = parsed.value;
     if (manifest.owner !== actor.account) {
       return refuse(
         runtime,
@@ -37,90 +37,44 @@ export function createTask(runtime: Runtime, request: Request): Promise<Response
         failure("UNAUTHORIZED", "Only the manifest owner creates the task"),
       );
     }
-    return fromOutcome(
-      runtime,
-      manifest.taskId,
-      execute(runtime, manifest.taskId, actor.id, { kind: "create", manifest }),
-      201,
-    );
-  });
-}
-
-type Funding =
-  | { kind: "deposit"; pool: "escrow" | "premium"; amount: bigint; reference: string }
-  | {
-      kind: "postGuarantee";
-      guarantor: string;
-      bond: bigint;
-      liability: bigint;
-      reference: string;
-    };
-
-async function onChain(
-  runtime: Runtime,
-  record: TaskRecord,
-  funding: Funding,
-): Promise<string | ApiError> {
-  const bridge = runtime.chain;
-  if (bridge === null) return funding.reference;
-  const step =
-    funding.kind === "deposit"
-      ? await chainDeposit(
-          bridge.parties,
-          record,
-          funding.pool,
-          funding.amount,
-          record.ledger.inflow.escrow === 0n,
-        )
-      : await chainGuarantee(bridge.parties, record, funding.bond, funding.liability);
-  recordStep(bridge, record.taskId, step, true);
-  return step.call.ok
-    ? `near:${step.call.txHash}`
-    : failure(
-        "POLICY_VIOLATION",
-        `NEAR refused it: ${step.call.errorCode ?? "unknown"} (${step.call.txHash})`,
-      );
-}
-
-export function fund(runtime: Runtime, request: Request, taskId: string): Promise<Response> {
-  return signedWrite(runtime, request, async ({ actor, body }) => {
-    const parsed = parseBody(fundBody, body);
-    if (!parsed.ok) return refuse(runtime, taskId, parsed.error);
-    const record = runtime.store.records[taskId];
-    if (record === undefined)
-      return refuse(runtime, taskId, failure("NOT_FOUND", `No task ${taskId}`));
-    const amount = fromYocto(parsed.value.amountYocto);
-    const reference = `fixture-vault:${actor.id}:${parsed.value.pool}`;
-    if (parsed.value.pool !== "bond" && actor.account !== record.manifest.owner) {
-      return refuse(
-        runtime,
-        taskId,
-        failure("UNAUTHORIZED", "Only the customer funds escrow and premium"),
-      );
+    const taskHash = manifest.repairTaskHash;
+    if (repairTask === undefined) {
+      if (
+        taskHash !== undefined ||
+        manifest.suite.suiteHash !== checkoutSuiteHash ||
+        manifest.suite.suiteId !== checkoutSuite.suiteId ||
+        manifest.suite.runnerId !== checkoutRunnerId
+      ) {
+        return refuse(
+          runtime,
+          manifest.taskId,
+          failure("POLICY_VIOLATION", "The manifest selects an unknown suite"),
+        );
+      }
+    } else {
+      if (
+        taskHash === undefined ||
+        taskHash !== digestOf(repairTask) ||
+        manifest.objective !== repairTask.objective ||
+        manifest.suite.suiteId !== repairTask.suite.suiteId ||
+        manifest.suite.suiteHash !== suiteHash(repairTask.suite) ||
+        manifest.suite.runnerId !== repairRunnerId
+      ) {
+        return refuse(
+          runtime,
+          manifest.taskId,
+          failure("POLICY_VIOLATION", "The manifest must pin the repair task, suite and runner"),
+        );
+      }
+      const invalid = invalidRepairTask(repairTask);
+      if (invalid !== null)
+        return refuse(runtime, manifest.taskId, failure("POLICY_VIOLATION", invalid));
     }
-    const funding: Funding =
-      parsed.value.pool === "bond"
-        ? {
-            kind: "postGuarantee",
-            guarantor: actor.account,
-            bond: amount,
-            liability:
-              parsed.value.liabilityYocto === null
-                ? amount
-                : fromYocto(parsed.value.liabilityYocto),
-            reference,
-          }
-        : { kind: "deposit", pool: parsed.value.pool, amount, reference };
-    const check = decide(record, funding, { nowMs: runtime.now(), registry: runtime.registry });
-    if (!check.ok)
-      return refuse(runtime, taskId, failure(check.failure.code, check.failure.message));
-    const settled = await onChain(runtime, record, funding);
-    if (typeof settled !== "string") return refuse(runtime, taskId, settled);
-    return fromOutcome(
-      runtime,
-      taskId,
-      execute(runtime, taskId, actor.id, { ...funding, reference: settled }),
-    );
+    const outcome = execute(runtime, manifest.taskId, actor.id, { kind: "create", manifest });
+    if (outcome.ok && taskHash !== undefined && repairTask !== undefined) {
+      runtime.repairTasks.set(taskHash, repairTask);
+    }
+    return fromOutcome(runtime, manifest.taskId, outcome, 201);
   });
 }
 
@@ -136,7 +90,68 @@ export function bid(runtime: Runtime, request: Request, taskId: string): Promise
         failure("UNAUTHORIZED", "A bid is submitted by its lead agent"),
       );
     }
-    const state = runtime.store.records[taskId]?.state;
+    const record = runtime.store.records[taskId];
+    const members = signed.bid.members;
+    if (
+      members.some((member) => runtime.identities.get(member.agentId)?.account !== member.account)
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure("POLICY_VIOLATION", "Bid payees must match registered accounts"),
+      );
+    }
+    const builtIn = members.map((member) =>
+      Object.values(roster).some((agent) => agent.agentId === member.agentId),
+    );
+    if (
+      builtIn.includes(false) &&
+      (record?.manifest.repairTaskHash === undefined || builtIn.includes(true))
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure(
+          "POLICY_VIOLATION",
+          "Use outside workers on an isolated repair task; fixture and outside payout accounts cannot share a bid",
+        ),
+      );
+    }
+    if (new Set(members.map((member) => member.account)).size !== members.length) {
+      return refuse(runtime, taskId, failure("POLICY_VIOLATION", "Bid payees must be distinct"));
+    }
+    if (
+      members.some((member) =>
+        Object.values(
+          runtime.chain === null
+            ? {}
+            : {
+                customer: runtime.chain.parties.customer.accountId,
+                guarantor: runtime.chain.parties.guarantor.accountId,
+                verifier: runtime.chain.parties.verifier.accountId,
+                coordinator: runtime.chain.parties.coordinator.accountId,
+                vault: runtime.chain.parties.vault.contractId,
+              },
+        ).includes(member.account),
+      ) ||
+      members.some(
+        (member) =>
+          member.account === record?.manifest.owner || member.account === record?.ledger.guarantor,
+      )
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure("POLICY_VIOLATION", "Funding and control accounts cannot receive worker pay"),
+      );
+    }
+    if (runtime.pendingFunding.has(taskId))
+      return refuse(
+        runtime,
+        taskId,
+        failure("STALE_STATE", "A NEAR funding action is awaiting confirmation"),
+      );
+    const state = record?.state;
     if (signed.bid.epoch === 0 && (state === "FUNDED" || state === "BONDED")) {
       return fromOutcome(
         runtime,

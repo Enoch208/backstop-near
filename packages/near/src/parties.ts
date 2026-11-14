@@ -1,11 +1,12 @@
 import { near } from "@backstop/shared";
-import type { Account } from "near-api-js";
+import { Account } from "near-api-js";
+import { getRoles } from "./vault.js";
 import { ensureSubAccounts } from "./accounts.js";
 import { ensureVault } from "./deploy.js";
 import { startLocalChain } from "./local.js";
 import type { ChainParties } from "./mirror.js";
 import { defaultTestnetRpc, testnetParty, testnetRoot, topUp } from "./network.js";
-import { parseKey } from "./credentials.js";
+import { loadKey, parseKey } from "./credentials.js";
 import { restrictToVault, type RestrictedRole } from "./keys.js";
 
 export const partyFunding: Readonly<Record<string, bigint>> = {
@@ -141,5 +142,32 @@ export function chainOptionsFromEnv(
     account,
     privateKey: env.BACKSTOP_TESTNET_PRIVATE_KEY ?? null,
     rpc: env.BACKSTOP_TESTNET_RPC ?? null,
+  };
+}
+
+export async function connectTestnetVault(account: string, rpc: string): Promise<ChainParties> {
+  const connect = (role: string) => {
+    const id = `${role}.${account}`;
+    const key = loadKey("testnet", id);
+    if (key === null) throw new Error(`NEAR credentials are required for ${id}`);
+    return new Account(id, rpc, key);
+  };
+  const vault = { contractId: `vault.${account}` };
+  const customer = connect("customer");
+  const guarantor = connect("guarantor");
+  const coordinator = connect("coordinator");
+  const verifier = connect("verifier");
+  const roles = await getRoles(vault, coordinator);
+  if (roles?.coordinator !== coordinator.accountId || roles.verifier !== verifier.accountId)
+    throw new Error(
+      `The deployed vault ${vault.contractId} does not authorize the configured roles`,
+    );
+  return {
+    vault,
+    customer,
+    guarantor,
+    coordinator,
+    verifier,
+    payoutAccount: (agentId) => `${agentId}.${account}`,
   };
 }

@@ -8,6 +8,7 @@ const runResultSchema = z.discriminatedUnion("ok", [
   z.strictObject({ ok: z.literal(false), error: z.string() }),
 ]);
 export type RunResult = z.infer<typeof runResultSchema>;
+export type Runner = (source: string, entry: string, inputs: readonly unknown[]) => RunResult[];
 
 const harness = (entry: string) =>
   [

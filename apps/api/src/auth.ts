@@ -1,6 +1,6 @@
-import { isAuthenticRequest, signedRequestSchema } from "@backstop/shared";
-import { errorResponse, failure, json, readJson, type ApiError } from "./http.js";
-import type { Identity, Runtime } from "./runtime.js";
+import { digestOf, isAuthenticRequest, signedRequestSchema, type Digest } from "@backstop/shared";
+import { errorBody, errorResponse, failure, readJson, toJson, type ApiError } from "./http.js";
+import { atomic, type Identity, type Reply, type Runtime } from "./runtime.js";
 
 export const requestFreshnessMs = 300_000;
 
@@ -8,6 +8,7 @@ export type Authenticated = {
   readonly actor: Identity;
   readonly body: unknown;
   readonly key: string;
+  readonly fingerprint: Digest;
 };
 
 export type Handled = { readonly status: number; readonly value: unknown };
@@ -33,42 +34,76 @@ export async function authenticate(
   }
   return {
     ok: true,
-    value: { actor, body: parsed.data.body, key: `${actor.id}:${parsed.data.requestId}` },
+    value: {
+      actor,
+      body: parsed.data.body,
+      key: `${actor.id}:${parsed.data.requestId}`,
+      fingerprint: digestOf({ ...scope, body: parsed.data.body }),
+    },
   };
 }
 
-type HandlerResult = Handled | { error: ApiError; taskVersion: number | null };
+export type HandlerResult = Handled | { error: ApiError; taskVersion: number | null };
 
-const replay = (cached: { status: number; body: string }) =>
+const replay = (cached: Reply) =>
   new Response(cached.body, {
     status: cached.status,
     headers: { "content-type": "application/json", "idempotent-replay": "true" },
   });
 
+export function keepReply(
+  runtime: Runtime,
+  { key, fingerprint }: { key: string; fingerprint: Digest },
+  result: HandlerResult,
+  traceId: string,
+): Reply {
+  const status = "error" in result ? result.error.status : result.status;
+  const value =
+    "error" in result ? errorBody(result.error, traceId, result.taskVersion) : result.value;
+  const reply: Reply = { status, body: toJson(value), fingerprint };
+  if (runtime.persistence === null) runtime.replies.set(key, reply);
+  else runtime.persistence.putReply(key, reply);
+  return reply;
+}
+
 export async function signedWrite(
   runtime: Runtime,
   request: Request,
-  handle: (auth: Authenticated) => HandlerResult | Promise<HandlerResult>,
+  handle: (auth: Authenticated) => HandlerResult | Promise<() => HandlerResult>,
 ): Promise<Response> {
   const traceId = crypto.randomUUID();
   const auth = await authenticate(runtime, request);
   if (!auth.ok) return errorResponse(auth.error, traceId, null);
-  const key = auth.value.key;
-  const cached = runtime.replies.get(key);
-  if (cached !== undefined) return replay(cached);
+  const { key, fingerprint } = auth.value;
+  const duplicate = () =>
+    errorResponse(
+      failure("DUPLICATE", "This request ID belongs to a different operation"),
+      traceId,
+      null,
+    );
+  const cached = runtime.persistence?.getReply(key) ?? runtime.replies.get(key);
+  if (cached !== undefined)
+    return cached.fingerprint === fingerprint ? replay(cached) : duplicate();
   const running = runtime.inflight.get(key);
-  if (running !== undefined) return replay(await running);
-  const work = (async () => {
-    const result = await handle(auth.value);
-    const response =
-      "error" in result
-        ? errorResponse(result.error, traceId, result.taskVersion)
-        : json(result.value, result.status);
-    const reply = { status: response.status, body: await response.text() };
-    runtime.replies.set(key, reply);
-    return reply;
-  })();
-  runtime.inflight.set(key, work);
+  if (running !== undefined) {
+    return running.fingerprint === fingerprint ? replay(await running.promise) : duplicate();
+  }
+  const work = Promise.resolve().then(async () => {
+    let pending: Promise<() => HandlerResult> | undefined;
+    const immediate = atomic(runtime, () => {
+      const result = handle(auth.value);
+      if (result instanceof Promise) {
+        pending = result;
+        return undefined;
+      }
+      return keepReply(runtime, auth.value, result, traceId);
+    });
+    if (immediate !== undefined) return immediate;
+    if (pending === undefined) throw new Error("Signed write produced no result");
+    const finalize = await pending;
+    return atomic(runtime, () => keepReply(runtime, auth.value, finalize(), traceId));
+  });
+  runtime.inflight.set(key, { fingerprint, promise: work });
   try {
     const reply = await work;
     return new Response(reply.body, {

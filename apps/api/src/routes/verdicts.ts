@@ -1,9 +1,11 @@
 import { roster } from "@backstop/agents";
 import { checkoutSuite } from "@backstop/fixture-checkout";
-import { attestRuling, judgeChallenge } from "@backstop/verifier";
+import { canonicalJson } from "@backstop/shared";
+import { attestRuling, judgeChallenge, runIsolated } from "@backstop/verifier";
 import { z } from "zod";
 import { signedWrite } from "../auth.js";
 import { failure } from "../http.js";
+import { repairTaskFor } from "../repair-task.js";
 import { execute, type Runtime } from "../runtime.js";
 import { fromOutcome, parseBody, refuse } from "./outcome.js";
 
@@ -29,15 +31,35 @@ export function challenge(runtime: Runtime, request: Request, taskId: string): P
     const source = runtime.artifacts.get(candidate.artifactHash);
     if (source === undefined)
       return refuse(runtime, taskId, failure("NOT_FOUND", "The artifact is not stored"));
-    const ruling = judgeChallenge({
-      taskId,
-      attempt: candidate.attempt,
-      artifactHash: candidate.artifactHash,
-      artifactSource: source,
-      suite: checkoutSuite,
-      input: parsed.value.input,
-      challenger: actor.id,
-    });
+    const repairTask = repairTaskFor(runtime, record.manifest);
+    if (record.manifest.repairTaskHash !== undefined && repairTask === undefined) {
+      return refuse(runtime, taskId, failure("NOT_FOUND", "The pinned repair task is unavailable"));
+    }
+    const input = parsed.value.input;
+    if (
+      repairTask !== undefined &&
+      !(repairTask.challengeInputs ?? []).some(
+        (probe) => canonicalJson(probe) === canonicalJson(input),
+      )
+    ) {
+      return refuse(
+        runtime,
+        taskId,
+        failure("POLICY_VIOLATION", "The challenge input is outside the pinned probes"),
+      );
+    }
+    const ruling = judgeChallenge(
+      {
+        taskId,
+        attempt: candidate.attempt,
+        artifactHash: candidate.artifactHash,
+        artifactSource: source,
+        suite: repairTask?.suite ?? checkoutSuite,
+        input,
+        challenger: actor.id,
+      },
+      repairTask === undefined ? undefined : runIsolated,
+    );
     return fromOutcome(
       runtime,
       taskId,

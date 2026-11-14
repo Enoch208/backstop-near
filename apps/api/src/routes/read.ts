@@ -2,6 +2,7 @@ import { quote, statement } from "@backstop/ledger";
 import type { TaskEvent } from "@backstop/orchestrator";
 import { digestSchema } from "@backstop/shared";
 import { errorResponse, failure, json, toJson } from "../http.js";
+import { repairBrief, repairTaskFor } from "../repair-task.js";
 import type { Runtime } from "../runtime.js";
 
 const notFound = (what: string) =>
@@ -25,6 +26,12 @@ export function getTask(runtime: Runtime, taskId: string): Response {
     statement: statement(record.ledger),
     quote: quote(record.manifest),
   });
+}
+
+export function getRepairBrief(runtime: Runtime, taskId: string): Response {
+  const record = runtime.store.records[taskId];
+  const task = record === undefined ? undefined : repairTaskFor(runtime, record.manifest);
+  return task === undefined ? notFound(`No repair brief for ${taskId}`) : json(repairBrief(task));
 }
 
 export function getArtifact(runtime: Runtime, hash: string): Response {

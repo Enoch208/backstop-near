@@ -1,7 +1,9 @@
 import { identities, roster } from "@backstop/agents";
-import type { AttestedInference, Digest, Finding, Outcome } from "@backstop/shared";
+import type { AttestedInference, Digest, Finding, Outcome, RepairTask } from "@backstop/shared";
 import { react } from "./automations.js";
 import type { ChainBridge } from "./chain.js";
+import { openPersistence, type Persistence, type replySchema } from "./persistence.js";
+import type { z } from "zod";
 import type { IntentsConfig, PayoutQuote } from "./payouts.js";
 import {
   dispatch,
@@ -51,8 +53,12 @@ export type Runtime = {
   readonly teeSigners: Map<string, string>;
   readonly agentLog: Map<string, AgentLine[]>;
   readonly inferences: Map<Digest, AttestedInference>;
-  readonly replies: Map<string, { status: number; body: string }>;
-  readonly inflight: Map<string, Promise<{ status: number; body: string }>>;
+  readonly repairTasks: Map<Digest, RepairTask>;
+  readonly persistence: Persistence | null;
+  deferredEvents: TaskEvent[] | null;
+  readonly pendingFunding: Set<string>;
+  readonly replies: Map<string, Reply>;
+  readonly inflight: Map<string, { fingerprint: Digest; promise: Promise<Reply> }>;
   readonly listeners: Set<(event: TaskEvent) => void>;
   readonly faults: { failNextTransfer: boolean };
   store: Store;
@@ -62,11 +68,13 @@ export type Runtime = {
   readonly payouts: Map<string, readonly PayoutQuote[]>;
 };
 
-export function createRuntime(now: () => number, demo: boolean): Runtime {
+export type Reply = z.infer<typeof replySchema>;
+
+export function createRuntime(now: () => number, demo: boolean, statePath?: string): Runtime {
   const agentKeys = Object.fromEntries(
     identities.map((identity) => [identity.id, identity.key.publicKey]),
   );
-  return {
+  const runtime: Runtime = {
     mode: "fixture",
     demo,
     now,
@@ -82,6 +90,10 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     teeSigners: new Map(),
     agentLog: new Map(),
     inferences: new Map(),
+    repairTasks: new Map(),
+    persistence: statePath === undefined ? null : openPersistence(statePath),
+    deferredEvents: null,
+    pendingFunding: new Set(),
     replies: new Map(),
     inflight: new Map(),
     listeners: new Set(),
@@ -92,6 +104,37 @@ export function createRuntime(now: () => number, demo: boolean): Runtime {
     intents: null,
     payouts: new Map(),
   };
+  runtime.persistence?.restore(runtime);
+  return runtime;
+}
+
+function publish(runtime: Runtime, events: readonly TaskEvent[]): void {
+  for (const event of events) {
+    for (const listener of runtime.listeners) listener(event);
+  }
+  react(runtime, events);
+}
+
+export function atomic<T>(runtime: Runtime, run: () => T): T {
+  const persistence = runtime.persistence;
+  if (runtime.deferredEvents !== null) return run();
+  const events: TaskEvent[] = [];
+  persistence?.db.exec("BEGIN IMMEDIATE");
+  runtime.deferredEvents = events;
+  let result: T;
+  try {
+    result = run();
+    persistence?.flush(runtime, events);
+    persistence?.db.exec("COMMIT");
+  } catch (error) {
+    persistence?.db.exec("ROLLBACK");
+    persistence?.restore(runtime);
+    throw error;
+  } finally {
+    runtime.deferredEvents = null;
+  }
+  if (events.length > 0) publish(runtime, events);
+  return result;
 }
 
 export function execute(
@@ -100,16 +143,15 @@ export function execute(
   actor: string,
   command: Command,
 ): Outcome<TaskEvent[]> {
-  const outcome = dispatch(
-    runtime.store,
-    { taskId, actor, command },
-    { nowMs: runtime.now(), registry: runtime.registry },
-  );
-  if (!outcome.ok) return outcome;
-  runtime.store = outcome.value.store;
-  for (const event of outcome.value.events) {
-    for (const listener of runtime.listeners) listener(event);
-  }
-  react(runtime, outcome.value.events);
-  return { ok: true, value: outcome.value.events };
+  return atomic(runtime, () => {
+    const outcome = dispatch(
+      runtime.store,
+      { taskId, actor, command },
+      { nowMs: runtime.now(), registry: runtime.registry },
+    );
+    if (!outcome.ok) return outcome;
+    runtime.store = outcome.value.store;
+    runtime.deferredEvents?.push(...outcome.value.events);
+    return { ok: true, value: outcome.value.events };
+  });
 }

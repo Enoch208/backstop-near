@@ -13,15 +13,22 @@ import {
   setUpChain,
   toHex32,
 } from "@backstop/near";
-import { checkoutManifest, liveTiming } from "@backstop/fixture-checkout";
 import { formatNear, near, toYocto } from "@backstop/shared";
 import { signerRecord, type Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
 import { capture } from "./capture.js";
+import { checked, confirmKill, deliver, demoManifest, demoOptions } from "./repair-demo.js";
 import { z } from "zod";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const model = modelFromEnv(process.env);
+const options = demoOptions();
+if (options.task !== undefined && model === null) {
+  throw new Error("--task requires BACKSTOP_AI_API_KEY for the live workers");
+}
+if (options.output !== undefined && existsSync(options.output)) {
+  throw new Error("--output must point to a new file");
+}
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const startedAt = Date.now();
 const stamp = () => `+${((Date.now() - startedAt) / 1_000).toFixed(1).padStart(5, " ")}s`;
@@ -72,12 +79,21 @@ const registerSigners = async (attestation: Attestation, modelName: string) => {
 if (model !== null)
   await registerSigners(await trustAttestedModel(runtime, model.model, out), model.model);
 const api = await startApi(runtime, "127.0.0.1", Number(process.env.PORT ?? "8840"));
-runtime.workers = supervise(runtime, api.url, (line) => out(`${stamp()}   ${line}`));
+runtime.workers = supervise(
+  runtime,
+  api.url,
+  (line) => out(`${stamp()}   ${line}`),
+  options.external ? ["alpha", "kappa"] : undefined,
+);
 
 const customer = apiClient(api.url, principals.customer);
 const guarantor = apiClient(api.url, principals.guarantor);
 const coordinator = apiClient(api.url, principals.coordinator);
-const taskId = `checkout-live-${String(startedAt % 100_000)}`;
+const taskId =
+  options.taskId ??
+  (options.task === undefined
+    ? `checkout-live-${String(startedAt % 100_000)}`
+    : `repair-${crypto.randomUUID().slice(0, 8)}`);
 const recorder = process.argv.includes("--capture") ? capture(customer, taskId, startedAt) : null;
 
 out(`Backstop live demo: ${taskId} on ${api.url}`);
@@ -94,28 +110,38 @@ out(
   "real worker processes, a real SIGKILL, the real verifier sandbox, challenge search and ledger.",
 );
 
-const manifest = checkoutManifest({
-  taskId,
-  createdAtMs: startedAt,
-  maxAttempts: 3,
-  timing: liveTiming,
-});
-await customer.post("/api/tasks", { manifest });
-await customer.post(`/api/tasks/${taskId}/funding`, {
-  pool: "escrow",
-  amountYocto: toYocto(near("0.40")),
-  liabilityYocto: null,
-});
-await customer.post(`/api/tasks/${taskId}/funding`, {
-  pool: "premium",
-  amountYocto: toYocto(near("0.04")),
-  liabilityYocto: null,
-});
-await guarantor.post(`/api/tasks/${taskId}/funding`, {
-  pool: "bond",
-  amountYocto: toYocto(near("0.25")),
-  liabilityYocto: toYocto(near("0.25")),
-});
+const manifest = demoManifest(options, taskId, startedAt);
+await checked(
+  customer.post("/api/tasks", {
+    manifest,
+    ...(options.task === undefined ? {} : { repairTask: options.task }),
+  }),
+  "Create task",
+);
+await checked(
+  customer.post(`/api/tasks/${taskId}/funding`, {
+    pool: "escrow",
+    amountYocto: toYocto(near("0.40")),
+    liabilityYocto: null,
+  }),
+  "Fund escrow",
+);
+await checked(
+  customer.post(`/api/tasks/${taskId}/funding`, {
+    pool: "premium",
+    amountYocto: toYocto(near("0.04")),
+    liabilityYocto: null,
+  }),
+  "Fund premium",
+);
+await checked(
+  guarantor.post(`/api/tasks/${taskId}/funding`, {
+    pool: "bond",
+    amountYocto: toYocto(near("0.25")),
+    liabilityYocto: toYocto(near("0.25")),
+  }),
+  "Post bond",
+);
 
 const eventSchema = z.object({
   version: z.int(),
@@ -124,7 +150,15 @@ const eventSchema = z.object({
 });
 let killed = false;
 let closing = false;
-const settled = new Promise<string>((resolve) => {
+const killPrimary = async () => {
+  if (options.manualKill) await confirmKill();
+  out(`${stamp()}     judge: kill alpha`);
+  await checked(
+    coordinator.post("/api/demo/faults", { action: "kill_worker", taskId, agentId: "alpha" }),
+    "Kill the primary worker",
+  );
+};
+const settled = new Promise<string>((resolve, reject) => {
   const following = customer.follow(taskId, (raw) => {
     const event = eventSchema.parse(raw);
     if (event.body.type !== "heartbeat_recorded") recorder?.record(raw);
@@ -133,22 +167,26 @@ const settled = new Promise<string>((resolve) => {
     );
     if (event.body.type === "checkpoint_recorded" && event.actor === "alpha" && !killed) {
       killed = true;
-      out(`${stamp()}     judge: kill alpha`);
-      void coordinator.post("/api/demo/faults", {
-        action: "kill_worker",
-        taskId,
-        agentId: "alpha",
-      });
+      void killPrimary().catch(reject);
     }
     if (event.body.type === "task_settled") resolve(String(event.body.kind));
   });
-  following.catch((error: unknown) => {
-    if (!closing)
-      out(`event stream failed: ${error instanceof Error ? error.message : String(error)}`);
-  });
+  following.then(
+    () => {
+      if (!closing) reject(new Error("The task event stream closed before settlement"));
+    },
+    (error: unknown) => {
+      if (!closing) reject(error instanceof Error ? error : new Error(String(error)));
+    },
+  );
 });
 
 const kind = await settled;
+if (options.task !== undefined && kind === "success") {
+  const path = options.output ?? `${taskId}.js`;
+  const hash = await deliver(customer, taskId, path);
+  out(`${stamp()}     downloaded verified source to ${path} (${hash})`);
+}
 const again = await coordinator.post("/api/demo/faults", { action: "repeat_settlement", taskId });
 out(`${stamp()}     judge: settle again -> HTTP ${String(again.status)}`);
 

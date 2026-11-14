@@ -23,6 +23,6 @@ export function suiteHash(suite: TestSuite): Digest {
   return digestOf(suite);
 }
 
-export function publicView(suite: TestSuite): TestSuite {
+export function publicView<Suite extends Pick<TestSuite, "cases">>(suite: Suite): Suite {
   return { ...suite, cases: suite.cases.filter((testCase) => testCase.visibility === "public") };
 }

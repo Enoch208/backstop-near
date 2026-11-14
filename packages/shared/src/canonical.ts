@@ -30,6 +30,10 @@ export function sha256Hex(text: string): string {
   return bytesToHex(sha256(utf8ToBytes(text)));
 }
 
+export function utf8Length(text: string): number {
+  return utf8ToBytes(text).length;
+}
+
 export function digestText(text: string): Digest {
   return `sha256:${sha256Hex(text)}`;
 }

@@ -1,9 +1,12 @@
-import { Account, actions, teraToGas } from "near-api-js";
+import { Account, actions, teraToGas, type Action } from "near-api-js";
 import type { z } from "zod";
 import { readOutcome, type ChainCall } from "./outcome.js";
 import { ledgerViewSchema, rolesSchema, transferViewSchema, type Hex32 } from "./wire.js";
 
-export type Vault = { readonly contractId: string };
+export type Vault = {
+  readonly contractId: string;
+  readonly send?: (signer: Account, actions: Action[]) => Promise<ChainCall>;
+};
 
 export const defaultGas = teraToGas("30");
 export const settlementGas = teraToGas("300");
@@ -15,9 +18,13 @@ export async function callVault(
   args: Record<string, unknown>,
   options: { deposit?: bigint; gas?: bigint } = {},
 ): Promise<ChainCall> {
+  const calls = [
+    actions.functionCall(method, args, options.gas ?? defaultGas, options.deposit ?? 0n),
+  ];
+  if (vault.send !== undefined) return vault.send(signer, calls);
   const response = await signer.signAndSendTransaction({
     receiverId: vault.contractId,
-    actions: [actions.functionCall(method, args, options.gas ?? defaultGas, options.deposit ?? 0n)],
+    actions: calls,
     waitUntil: "EXECUTED_OPTIMISTIC",
     throwOnFailure: false,
   });
@@ -31,7 +38,12 @@ async function view<T>(
   args: Record<string, unknown>,
   schema: z.ZodType<T>,
 ) {
-  const result = await reader.provider.callFunction({ contractId: vault.contractId, method, args });
+  const result = await reader.provider.callFunction({
+    contractId: vault.contractId,
+    method,
+    args,
+    blockQuery: { finality: "final" },
+  });
   return schema.nullable().parse(result ?? null);
 }
 

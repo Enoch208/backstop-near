@@ -9,6 +9,7 @@ import {
   type Diagnosis,
   type FixtureAgent,
   type ModelConfig,
+  type PricingProfile,
 } from "@backstop/agents";
 import { candidate, checkoutSuite } from "@backstop/fixture-checkout";
 import {
@@ -19,11 +20,13 @@ import {
   leadAgent,
   minYocto,
   pendingEndorsers,
+  repairBriefSchema,
   type Digest,
+  type RepairTaskBrief,
   type SignedBid,
 } from "@backstop/shared";
 import type { ApiClient } from "./client.js";
-import { diagnose, fetchFinding, findingBoard } from "./diagnosis.js";
+import { diagnose, fetchFinding, findingBoard, probeRepair } from "./diagnosis.js";
 import { produce, publicFailures, type Resume } from "./produce.js";
 import {
   artifactReplySchema,
@@ -44,14 +47,25 @@ export function agentLoop(
   log: Log,
   onDone: () => void,
   model: ModelConfig | null = null,
+  externalProfile?: PricingProfile,
 ) {
   const base = `/api/tasks/${taskId}`;
   const bidEpochs = new Set<number>();
   const history: string[] = [];
   const board = findingBoard();
+  let repairBrief: RepairTaskBrief | undefined;
 
   const snapshot = async (): Promise<Snapshot> =>
     snapshotSchema.parse((await client.get(base)).body).task;
+
+  const repairTaskFor = async (task: Snapshot): Promise<RepairTaskBrief | undefined> => {
+    if (task.manifest.repairTaskHash === undefined) return undefined;
+    repairBrief ??= repairBriefSchema.parse((await client.get(`${base}/repair`)).body);
+    return repairBrief;
+  };
+
+  const startingSource = (repairTask?: RepairTaskBrief) =>
+    repairTask?.source ?? candidate("original").source;
 
   const bidPrimary = async () => {
     const signed = primaryBid(agent, taskId, "0.30", Date.now());
@@ -60,16 +74,28 @@ export function agentLoop(
   };
 
   const bidRecovery = async (epoch: number) => {
-    const offer = recoveryTeam(agent.agentId);
-    if (offer === null) return;
+    const offer =
+      externalProfile === undefined
+        ? recoveryTeam(agent.agentId)
+        : {
+            team: [{ agent, profile: externalProfile }],
+            plan: "Repair and verify the pinned checkpoint",
+          };
+    if (offer === null || (externalProfile !== undefined && agent.role !== "repairer")) return;
     const task = await snapshot();
+    const repairTask = await repairTaskFor(task);
+    if (
+      (externalProfile !== undefined && repairTask === undefined) ||
+      (repairTask !== undefined && model === null)
+    )
+      return;
     const failed = offer.team.find((member) => task.excludedAgents.includes(member.agent.agentId));
     if (failed !== undefined) {
       log(`sits out epoch ${String(epoch)}: ${failed.agent.agentId} already failed this task`);
       return;
     }
     const resume = await resumeFrom(task);
-    const check = publicFailures(resume?.source ?? candidate("original").source);
+    const check = publicFailures(resume?.source ?? startingSource(repairTask), repairTask);
     const { ledger } = task;
     const liability = fromYocto(ledger.maxBondLiability) - fromYocto(ledger.bondConsumed);
     const quote = priceRecovery(offer.team, {
@@ -85,7 +111,9 @@ export function agentLoop(
     if (quote.kind === "decline") return;
     const mine = pricedBid(
       { taskId, epoch, nowMs: Date.now(), bidWindowMs: task.manifest.policy.bidWindowMs },
-      offer.plan,
+      repairTask === undefined || externalProfile !== undefined
+        ? offer.plan
+        : `Repair the checkpoint for ${repairTask.suite.entry} with ${offer.team.map(({ agent }) => agent.role).join(" and ")}`,
       quote,
     );
     const reply = await client.post(`${base}/bids`, { bid: mine });
@@ -124,12 +152,11 @@ export function agentLoop(
   };
 
   const diagnoseAttempt = async (attempt: number) => {
-    const original = candidate("original");
-    const code = (await resumeFrom(await snapshot())) ?? {
-      source: original.source,
-      hash: original.artifactHash,
-    };
-    const finding = diagnose(taskId, attempt, agent.agentId, code);
+    const task = await snapshot();
+    const repairTask = await repairTaskFor(task);
+    const source = startingSource(repairTask);
+    const code = (await resumeFrom(task)) ?? { source, hash: digestText(source) };
+    const finding = diagnose(taskId, attempt, agent.agentId, code, repairTask);
     const reply = await client.post(`${base}/findings`, { attempt, finding });
     const cases = finding.failingCases.map((failing) => failing.id).join(", ") || "none";
     log(
@@ -173,6 +200,7 @@ export function agentLoop(
       return;
     }
     const task = await snapshot();
+    const repairTask = await repairTaskFor(task);
     log(`claimed attempt ${String(task.attempt)} with fencing token ${String(token)}`);
     const beat = setInterval(
       () => {
@@ -194,6 +222,7 @@ export function agentLoop(
       history,
       resume,
       diagnosis,
+      ...(repairTask === undefined ? {} : { repairTask }),
     }).catch((error: unknown) => {
       clearInterval(beat);
       log("stopped heartbeats so the lease expires and the work is re-auctioned");
@@ -211,11 +240,15 @@ export function agentLoop(
       provenanceEventIds: [`${taskId}#${String(task.version)}`],
       parentCheckpointHash: parent,
     };
-    await client.post(`${base}/checkpoints`, {
+    const checkpointReply = await client.post(`${base}/checkpoints`, {
       fencingToken: token,
       checkpoint,
       source: product.source,
     });
+    if (checkpointReply.status < 200 || checkpointReply.status >= 300) {
+      clearInterval(beat);
+      throw new Error(`Checkpoint refused (HTTP ${String(checkpointReply.status)})`);
+    }
     log(`checkpointed ${product.validatedSubtasks.join(", ") || "no validated subtasks"}`);
     if (!product.completes) {
       log("still working; heartbeats continue until the process ends");
@@ -238,6 +271,19 @@ export function agentLoop(
     const fetched = artifactReplySchema.parse(
       (await client.get(`${base}/artifacts/${artifactHash}`)).body,
     );
+    const repairTask = await repairTaskFor(await snapshot());
+    if (repairTask !== undefined) {
+      const probe = probeRepair(fetched.source, repairTask);
+      if (probe === null) {
+        log(
+          `checked ${String(repairTask.probes.length)} pinned challenge probes, no counterexample`,
+        );
+        return;
+      }
+      const reply = await client.post(`${base}/challenge`, { input: probe.input });
+      log(`challenged with ${probe.id} (HTTP ${String(reply.status)})`);
+      return;
+    }
     const target = {
       taskId,
       attempt,

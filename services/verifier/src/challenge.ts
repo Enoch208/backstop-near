@@ -8,7 +8,7 @@ import {
   type SigningKey,
   type TestSuite,
 } from "@backstop/shared";
-import { runInSandbox } from "./sandbox.js";
+import { runInSandbox, type Runner } from "./sandbox.js";
 
 export type ChallengeRequest = {
   readonly taskId: string;
@@ -20,9 +20,12 @@ export type ChallengeRequest = {
   readonly challenger: string;
 };
 
-export function judgeChallenge(request: ChallengeRequest): ChallengeRuling {
-  const [oracle] = runInSandbox(request.suite.oracleSource, request.suite.entry, [request.input]);
-  const [candidate] = runInSandbox(request.artifactSource, request.suite.entry, [request.input]);
+export function judgeChallenge(
+  request: ChallengeRequest,
+  run: Runner = runInSandbox,
+): ChallengeRuling {
+  const [oracle] = run(request.suite.oracleSource, request.suite.entry, [request.input]);
+  const [candidate] = run(request.artifactSource, request.suite.entry, [request.input]);
   const expected = oracle?.ok === true ? oracle.value : null;
   const actual = candidate?.ok === true ? candidate.value : null;
   const upheld =

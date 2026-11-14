@@ -15,3 +15,4 @@ export * from "./intents.js";
 export * from "./verify.js";
 export * from "./tee.js";
 export * from "./keys.js";
+export * from "./journal.js";
