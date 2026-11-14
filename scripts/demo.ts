@@ -121,6 +121,20 @@ const kind = await settled;
 const again = await coordinator.post("/api/demo/faults", { action: "repeat_settlement", taskId });
 out(`${stamp()}     judge: settle again -> HTTP ${String(again.status)}`);
 
+if (runtime.intents !== null) {
+  for (let waited = 0; waited < 20_000 && !runtime.payouts.has(taskId); waited += 200) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  for (const payout of runtime.payouts.get(taskId) ?? []) {
+    const paid = formatNear(BigInt(payout.payoutYocto));
+    out(
+      payout.quote === null
+        ? `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout: no quote (${payout.error ?? "unknown"})`
+        : `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout -> ${payout.quote.quote.amountOutFormatted} ${payout.wants} to ${payout.recipient.slice(0, 10)}… in ~${String(payout.quote.quote.timeEstimate)} s (dry quote, signed ${payout.quote.signature.slice(0, 18)}…)`,
+    );
+  }
+}
+
 if (chain !== null) {
   const repeat = await finalizeSuccess(chain.parties.vault, chain.parties.coordinator, taskId);
   out(
@@ -154,20 +168,6 @@ if (chain !== null) {
   out(
     `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
   );
-}
-
-if (runtime.intents !== null) {
-  for (let waited = 0; waited < 20_000 && !runtime.payouts.has(taskId); waited += 200) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  for (const payout of runtime.payouts.get(taskId) ?? []) {
-    const paid = formatNear(BigInt(payout.payoutYocto));
-    out(
-      payout.quote === null
-        ? `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout: no quote (${payout.error ?? "unknown"})`
-        : `${stamp()} [intents] ${payout.agentId}'s ${paid} NEAR payout -> ${payout.quote.quote.amountOutFormatted} ${payout.wants} to ${payout.recipient.slice(0, 10)}… in ~${String(payout.quote.quote.timeEstimate)} s (dry quote, signed ${payout.quote.signature.slice(0, 18)}…)`,
-    );
-  }
 }
 
 const workers = runtime.workers;
