@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { record } from "./record.js";
 
-const rpc = "https://test.rpc.fastnear.com";
+export const rpc = "https://test.rpc.fastnear.com";
 
 const responseSchema = z.object({
   result: z.object({ result: z.array(z.number()) }).optional(),
   error: z.unknown().optional(),
 });
 
-async function viewVault(method: string, args: Record<string, unknown>): Promise<unknown> {
+export async function viewVault(method: string, args: Record<string, unknown>): Promise<unknown> {
   const response = await fetch(rpc, {
     method: "POST",
     headers: { "content-type": "application/json" },

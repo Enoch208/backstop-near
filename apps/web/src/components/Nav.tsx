@@ -6,7 +6,7 @@ import { Pill } from "./Pill.js";
 
 const links = [
   { label: "How it works", to: asset("#recover") },
-  { label: "Verify", to: asset("#verify") },
+  { label: "Verify it yourself", to: asset("verify") },
   { label: "Settlement", to: asset("#settlement") },
   { label: "GitHub", to: repository },
 ];

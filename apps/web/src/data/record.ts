@@ -6,6 +6,7 @@ const stepSchema = z.object({
   txHash: z.string(),
   outcome: z.string(),
   explorer: z.string(),
+  signer: z.string().optional(),
 });
 
 const recordSchema = z.object({

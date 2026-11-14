@@ -1,7 +1,7 @@
 import { Accordion } from "../components/Accordion.js";
 import { Pill } from "../components/Pill.js";
 import { inferenceSchema, useVaultView, type ChainInference, type Reading } from "../data/near.js";
-import { enclaveKey, liveRun, repository } from "../data/record.js";
+import { enclaveKey, liveRun } from "../data/record.js";
 
 const folds = [
   {
@@ -70,8 +70,8 @@ export function Verify() {
         </h2>
         <div className="mt-7 flex flex-wrap gap-2">
           <Pill to={enclaveKey.explorer}>See the enclave key on NEAR</Pill>
-          <Pill to={`${repository}#verify-every-claim`} tone="ghost-dark">
-            Re-check every claim
+          <Pill to="/verify" tone="ghost-dark">
+            Re-check every claim now
           </Pill>
         </div>
         <Accordion folds={folds} />
