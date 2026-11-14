@@ -89,3 +89,5 @@ jobs:
         run: pnpm test:chain
       - name: Replay the recovery episode on a local NEAR node
         run: pnpm chain sandbox
+      - name: Run the live swarm settling on a local NEAR node
+        run: pnpm demo --chain sandbox
