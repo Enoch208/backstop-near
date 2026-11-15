@@ -4,6 +4,8 @@ This flow accepts a custom dependency-free JavaScript function, runs team-operat
 
 [Recorded development checks and their limitations](custom-repair-results.md) include actual recovery, compensation and the reporting failure encountered during validation.
 
+The [hosted operating guide](hosted-repair.md) describes the separate worker service, persistent storage, reverse proxy and release procedure.
+
 ## Run locally
 
 Use Node 24 and the pinned pnpm version, then `pnpm install --frozen-lockfile`. Configure these server-only values in `.env`:

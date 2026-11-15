@@ -1,0 +1,40 @@
+[Unit]
+Description=Backstop access-controlled repair pilot (live AI and team-funded NEAR testnet)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=usebackstop-repair
+Group=usebackstop-repair
+WorkingDirectory=/srv/usebackstop/repair-current
+Environment=HOME=/var/lib/usebackstop-repair
+Environment=BACKSTOP_REPAIR_ORIGIN=https://usebackstop.xyz
+Environment=BACKSTOP_REPAIR_PORT=8842
+EnvironmentFile=/etc/usebackstop/repair.env
+ExecStart=/usr/bin/node --import tsx scripts/repair-service.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+StateDirectory=usebackstop-repair
+StateDirectoryMode=0700
+UMask=0077
+MemoryHigh=700M
+MemoryMax=1000M
+CPUQuota=100%
+TasksMax=256
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
