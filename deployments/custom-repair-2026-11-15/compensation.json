@@ -1,0 +1,101 @@
+{
+  "version": "backstop-compensation-proof-1",
+  "checkedAt": "2026-11-15T00:14:28.292Z",
+  "network": "testnet",
+  "mode": "read-only settlement verification",
+  "contractId": "vault.backstop-6501bb.testnet",
+  "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+  "codeHash": "DzH4SmiRMvH9ZWcXsaZM2drpxG94BYkvWPno3nDUDMBL",
+  "scope": "Checks public settlement state. Does not establish live inference, independent operators, artifact rejection or a benchmark result.",
+  "task": {
+    "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+    "owner": "customer.backstop-6501bb.testnet",
+    "guarantor": "guarantor.backstop-6501bb.testnet",
+    "state": "FAILURE_SETTLED",
+    "policy": {
+      "compensation_cap": "100000000000000000000000"
+    },
+    "max_bond_liability": "250000000000000000000000",
+    "bond_consumed": "100000000000000000000000",
+    "inflow_escrow": "400000000000000000000000",
+    "inflow_premium": "40000000000000000000000",
+    "inflow_bond": "250000000000000000000000",
+    "transfer_ids": [
+      "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:0",
+      "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:1",
+      "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:2",
+      "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:3"
+    ]
+  },
+  "ledger": {
+    "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+    "state": "FAILURE_SETTLED",
+    "state_version": 10,
+    "total_inflow": "690000000000000000000000",
+    "escrow_available": "0",
+    "premium_available": "0",
+    "bond_available": "0",
+    "bond_consumed": "100000000000000000000000",
+    "pending_outflow": "0",
+    "failed_outflow": "0",
+    "confirmed_outflow": "690000000000000000000000",
+    "confirmed_by_recipient": [
+      {
+        "recipient": "customer.backstop-6501bb.testnet",
+        "amount": "540000000000000000000000"
+      },
+      {
+        "recipient": "guarantor.backstop-6501bb.testnet",
+        "amount": "150000000000000000000000"
+      }
+    ]
+  },
+  "transfers": [
+    {
+      "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:0",
+      "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "recipient": "customer.backstop-6501bb.testnet",
+      "amount": "400000000000000000000000",
+      "pool": "ESCROW",
+      "status": "CONFIRMED",
+      "retries": 0
+    },
+    {
+      "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:1",
+      "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "recipient": "customer.backstop-6501bb.testnet",
+      "amount": "100000000000000000000000",
+      "pool": "BOND",
+      "status": "CONFIRMED",
+      "retries": 0
+    },
+    {
+      "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:2",
+      "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "recipient": "customer.backstop-6501bb.testnet",
+      "amount": "40000000000000000000000",
+      "pool": "PREMIUM",
+      "status": "CONFIRMED",
+      "retries": 0
+    },
+    {
+      "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:3",
+      "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "recipient": "guarantor.backstop-6501bb.testnet",
+      "amount": "150000000000000000000000",
+      "pool": "BOND",
+      "status": "CONFIRMED",
+      "retries": 0
+    }
+  ],
+  "compensationYocto": "100000000000000000000000",
+  "customerRefundYocto": "440000000000000000000000",
+  "duplicate": {
+    "txHash": "AuEijyQuAKZ6LyyHpH2MyCnRgbChHcdmhKqackZqEZLh",
+    "signer": "coordinator.backstop-6501bb.testnet",
+    "ok": false,
+    "errorCode": "ERR_ALREADY_SETTLED",
+    "vaultEvents": {},
+    "events": []
+  }
+}

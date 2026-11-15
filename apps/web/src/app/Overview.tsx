@@ -68,6 +68,9 @@ export function Overview() {
         subtitle="Agents finish verified work, or the customer receives the contract’s bounded refund and compensation. Inspect both recorded outcomes below, with the limits of each proof made explicit."
         actions={
           <>
+            <Link to="/app/repair" className={buttonClass.primary}>
+              Repair your function
+            </Link>
             <Link to={`/app/runs/${recoveryProofId}`} className={buttonClass.primary}>
               Work recovered
             </Link>

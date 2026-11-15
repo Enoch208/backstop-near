@@ -117,7 +117,9 @@ export async function produce(
     check = publicFailures(repair.source, task);
   }
   if (check.failures.length > 0)
-    throw new Error("The repair still fails public verification after the bounded retry");
+    throw new Error(
+      `The repair still fails public verification after the bounded retry: ${check.failures.join("; ").slice(0, 2_000)}`,
+    );
   if (milestone !== undefined && task !== undefined) {
     const start = publicFailures(brief.brokenSource, task);
     const remaining = probeRepair(repair.source, task);

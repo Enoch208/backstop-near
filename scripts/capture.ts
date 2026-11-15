@@ -1,4 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { ApiClient } from "@backstop/workers";
 import { z } from "zod";
 
@@ -16,7 +18,12 @@ export type Capture = {
   readonly finish: (meta: Record<string, unknown>) => Promise<string>;
 };
 
-export function capture(client: ApiClient, taskId: string, startedAt: number): Capture {
+export function capture(
+  client: ApiClient,
+  taskId: string,
+  startedAt: number,
+  outputDirectory?: string,
+): Capture {
   const frames: Frame[] = [];
   const last = { task: "", workers: "", chain: "", logs: "" };
   let queue = Promise.resolve();
@@ -50,7 +57,10 @@ export function capture(client: ApiClient, taskId: string, startedAt: number): C
     finish: async (meta) => {
       await queue;
       await snapshot(null);
-      const directory = new URL("../apps/web/public/runs/", import.meta.url);
+      const directory =
+        outputDirectory === undefined
+          ? new URL("../apps/web/public/runs/", import.meta.url)
+          : pathToFileURL(`${resolve(outputDirectory)}/`);
       mkdirSync(directory, { recursive: true });
       const path = new URL(`${taskId}.json`, directory);
       writeFileSync(path, `${JSON.stringify({ taskId, ...meta, frames })}\n`);

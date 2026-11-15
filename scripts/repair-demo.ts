@@ -18,6 +18,10 @@ export function demoOptions() {
     options: {
       task: { type: "string" },
       output: { type: "string" },
+      report: { type: "string" },
+      fault: { type: "string" },
+      "capture-directory": { type: "string" },
+      "record-path": { type: "string" },
       "task-id": { type: "string" },
       "external-recovery": { type: "boolean" },
       chain: { type: "string" },
@@ -33,6 +37,13 @@ export function demoOptions() {
     values.task === undefined
       ? undefined
       : repairTaskSchema.parse(JSON.parse(readFileSync(values.task, "utf8")));
+  const fault = z
+    .enum(["none", "primary-after-checkpoint", "recovery-unavailable"])
+    .parse(values.fault ?? "primary-after-checkpoint");
+  if (fault === "none" && task?.primaryMilestone !== undefined)
+    throw new Error("A partial primary milestone requires an explicit checkpoint outage");
+  if (values.report !== undefined && (task === undefined || values.chain !== "testnet"))
+    throw new Error("--report requires a custom task on testnet");
   if (task === undefined && (values.output !== undefined || values["external-recovery"])) {
     throw new Error("--output and --external-recovery require --task <file.json>");
   }
@@ -63,6 +74,10 @@ export function demoOptions() {
   }
   return {
     task,
+    fault,
+    report: values.report,
+    captureDirectory: values["capture-directory"],
+    recordPath: values["record-path"],
     output: values.output,
     taskId: values["task-id"],
     external: values["external-recovery"] === true,
@@ -91,6 +106,7 @@ export function demoManifest(
   if (task === undefined) return base;
   return {
     ...base,
+    deadlineMs: createdAtMs + 5 * 60_000,
     objective: task.objective,
     repairTaskHash: digestOf(task),
     suite: {

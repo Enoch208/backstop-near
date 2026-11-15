@@ -9,6 +9,7 @@ import { RunsPage } from "./app/RunsPage.js";
 import { routerBasename } from "./data/base.js";
 import { Landing } from "./landing/Landing.js";
 import { LatestReplay, LivePage } from "./live/Live.js";
+import { RepairPage } from "./repair/RepairPage.js";
 import { VerifyPage } from "./verify/VerifyPage.js";
 import "./styles.css";
 
@@ -27,6 +28,7 @@ const router = createBrowserRouter(
       children: [
         { index: true, element: <Overview /> },
         { path: "live", element: <LivePage /> },
+        { path: "repair", element: <RepairPage /> },
         { path: "replay", element: <LatestReplay /> },
         { path: "runs", element: <RunsPage /> },
         { path: "runs/:runId", element: <RunPage /> },

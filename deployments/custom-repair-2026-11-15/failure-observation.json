@@ -1,0 +1,170 @@
+{
+  "observedAt": "2026-11-15T00:13:37.516Z",
+  "task": {
+    "mode": "fixture",
+    "task": {
+      "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "manifest": {
+        "version": "backstop-manifest-1",
+        "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+        "owner": "customer.fixture.testnet",
+        "objective": "Repair replenishment so a small warehouse orders the correct whole packs for each active SKU.",
+        "repairTaskHash": "sha256:8f914a08ec7bebcb2827bf6f78b91b612549f287dab2f6a1cdfc271d4bedc583",
+        "suite": {
+          "suiteId": "warehouse-replenishment-custom-v1",
+          "suiteHash": "sha256:45d6f2d4c31b5c000f1e0cfebd8e0631b94eb2042bb21f7a3554e65f76e732cc",
+          "runnerId": "quickjs-wasm-0.32.0-json-v1"
+        },
+        "allowedTools": [
+          "read_workspace",
+          "write_patch",
+          "run_public_tests"
+        ],
+        "deadlineMs": 1794701608712,
+        "budget": {
+          "escrowYocto": "400000000000000000000000",
+          "premiumYocto": "40000000000000000000000"
+        },
+        "guarantee": {
+          "maxLiabilityYocto": "250000000000000000000000",
+          "compensationCapYocto": "100000000000000000000000"
+        },
+        "policy": {
+          "maxAttempts": 3,
+          "leaseMs": 4000,
+          "heartbeatGraceMs": 1000,
+          "bidWindowMs": 3000,
+          "challengeWindowMs": 8000
+        }
+      },
+      "manifestHash": "sha256:6eeb1e2f3e44222f29af68787d479e38baf6b9088612fb4f4c68c3ff88f4b4de",
+      "state": "FAILURE_SETTLED",
+      "version": 23,
+      "attempt": 1,
+      "epoch": 1,
+      "fencingToken": 1,
+      "assignment": null,
+      "lease": null,
+      "checkpoints": [
+        {
+          "checkpoint": {
+            "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+            "attempt": 1,
+            "stateVersion": 6,
+            "contentHash": "sha256:da07d3b61822697fc664aa336dcf049b0be0b682113de84725449451766e1352",
+            "artifactUri": "live-ai://deepseek-ai/DeepSeek-V4.1-Flash-1017",
+            "validatedSubtasks": [
+              "public:empty",
+              "public:inactive"
+            ],
+            "provenanceEventIds": [
+              "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a#6"
+            ],
+            "parentCheckpointHash": null
+          },
+          "hash": "sha256:d8c9a9cfab43ff3a28ab9ca81bad680445d370794ed9933caa1c2ebaf1a3cf66"
+        }
+      ],
+      "findings": [],
+      "auction": null,
+      "standby": [],
+      "standbyAvailability": {},
+      "candidate": null,
+      "excludedAgents": [
+        "alpha"
+      ],
+      "failures": [
+        {
+          "attempt": 1,
+          "reason": "LEASE_EXPIRED",
+          "agents": [
+            "alpha"
+          ]
+        }
+      ],
+      "recoveryFeedback": [],
+      "ledger": {
+        "customer": "customer.fixture.testnet",
+        "guarantor": "guarantor.fixture.testnet",
+        "inflow": {
+          "escrow": "400000000000000000000000",
+          "premium": "40000000000000000000000",
+          "bond": "250000000000000000000000"
+        },
+        "available": {
+          "escrow": "0",
+          "premium": "0",
+          "bond": "0"
+        },
+        "maxBondLiability": "250000000000000000000000",
+        "bondConsumed": "100000000000000000000000",
+        "settlementKey": "sha256:bb8375b3393cedbf44bd49d12a829f4131b4ce9ec0ad0f0128aaada43e4e7dee",
+        "settlementKind": "failure",
+        "transfers": [
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "400000000000000000000000",
+            "pool": "escrow",
+            "purpose": "escrow_refund",
+            "amount": "400000000000000000000000",
+            "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:0",
+            "status": "CONFIRMED",
+            "retries": 0
+          },
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "100000000000000000000000",
+            "pool": "bond",
+            "purpose": "compensation",
+            "amount": "100000000000000000000000",
+            "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:1",
+            "status": "CONFIRMED",
+            "retries": 0
+          },
+          {
+            "recipient": "customer.fixture.testnet",
+            "amountYocto": "40000000000000000000000",
+            "pool": "premium",
+            "purpose": "premium_refund",
+            "amount": "40000000000000000000000",
+            "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:2",
+            "status": "CONFIRMED",
+            "retries": 0
+          },
+          {
+            "recipient": "guarantor.fixture.testnet",
+            "amountYocto": "150000000000000000000000",
+            "pool": "bond",
+            "purpose": "bond_release",
+            "amount": "150000000000000000000000",
+            "id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a:f:3",
+            "status": "CONFIRMED",
+            "retries": 0
+          }
+        ]
+      }
+    },
+    "statement": {
+      "totalIn": "690000000000000000000000",
+      "held": "0",
+      "byStatus": {
+        "PENDING": "0",
+        "FAILED": "0",
+        "CONFIRMED": "690000000000000000000000"
+      },
+      "confirmedByRecipient": {
+        "customer.fixture.testnet": "540000000000000000000000",
+        "guarantor.fixture.testnet": "150000000000000000000000"
+      }
+    },
+    "quote": {
+      "escrow": "400000000000000000000000",
+      "premium": "40000000000000000000000",
+      "coverageLimit": "250000000000000000000000",
+      "compensationCap": "100000000000000000000000",
+      "customerMaxCharge": "440000000000000000000000",
+      "recoveryBudget": "650000000000000000000000",
+      "protocolFee": "0"
+    }
+  }
+}

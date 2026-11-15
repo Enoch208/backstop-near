@@ -1,0 +1,92 @@
+{
+  "network": "testnet",
+  "contractId": "vault.backstop-6501bb.testnet",
+  "deployTx": null,
+  "upgrades": [],
+  "teeSigners": [
+    {
+      "at": "2026-11-15T00:08:28.706Z",
+      "txHash": "FGqrwcE4tYTP4Nsxn2nkuquWxCVhrKeyvMmPAQCzJ7Uk",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "signingAddress": "0xfe0071895500a9755c18044948ab4f4e1a7f337e",
+      "attestationHash": "sha256:5f0cade86998a67defe97dba99557c9aa341dd79fa95bdc36413a7dfd03ae3bb",
+      "nonce": "aa1c8de58de65e3baf1e1ab2fc411b19e85a1ef32b4c11897ce6651abc20bc87",
+      "instances": 2,
+      "tcbStatus": "UpToDate",
+      "mrTd": "df4d77c857de652bd0fafa343a2026b51071ee03773d076d283abf1a7d36ff91ffa279ee4a617ac664f7e2a2c8d5891b",
+      "nvidiaKeyId": "nv-eat-kid-prod-20261114220933119-9043421b-83b9-416f-9512-039c7243a40b",
+      "explorer": "https://testnet.nearblocks.io/txns/FGqrwcE4tYTP4Nsxn2nkuquWxCVhrKeyvMmPAQCzJ7Uk"
+    }
+  ],
+  "runs": [
+    {
+      "at": "2026-11-15T00:13:40.552Z",
+      "kind": "live swarm",
+      "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+      "steps": [
+        {
+          "label": "Customer creates the task and escrows",
+          "txHash": "4U6KfrUnGUSbKvA4P62D1hiDLCL7Ce4maBbDvrn6sPuf",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/4U6KfrUnGUSbKvA4P62D1hiDLCL7Ce4maBbDvrn6sPuf"
+        },
+        {
+          "label": "Customer pays the premium",
+          "txHash": "3LcKocm56u11eorjpewdxpLbtJgFs6dShvsQyotiW4Ye",
+          "signer": "customer.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/3LcKocm56u11eorjpewdxpLbtJgFs6dShvsQyotiW4Ye"
+        },
+        {
+          "label": "Guarantor bonds the outcome",
+          "txHash": "4cinwzMGhxTK1G4jiwQkqGFPy3qvaeypM6TXzGmki78o",
+          "signer": "guarantor.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/4cinwzMGhxTK1G4jiwQkqGFPy3qvaeypM6TXzGmki78o"
+        },
+        {
+          "label": "Coordinator commits attempt 1 to alpha",
+          "txHash": "d9oAypiHwP2Zpr7WMHy1cYk8LJCwFBaeZ27U7y2CbD9",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/d9oAypiHwP2Zpr7WMHy1cYk8LJCwFBaeZ27U7y2CbD9"
+        },
+        {
+          "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+          "txHash": "GpBmXoyMhH7JE22BzAouNRx5Dzx2Jc2g7BddSPzMiXyY",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/GpBmXoyMhH7JE22BzAouNRx5Dzx2Jc2g7BddSPzMiXyY"
+        },
+        {
+          "label": "Coordinator finalizes the failure settlement",
+          "txHash": "ACqBrvDqzd22kvhSeyr22oqVvvZjvvyQtcp4vX7ASnEs",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "refused ERR_DEADLINE_NOT_REACHED",
+          "explorer": "https://testnet.nearblocks.io/txns/ACqBrvDqzd22kvhSeyr22oqVvvZjvvyQtcp4vX7ASnEs"
+        },
+        {
+          "label": "Coordinator finalizes the failure settlement",
+          "txHash": "9J4YdF61gJe6dYgKf2CfwkK8HJQzAzBsxLa4NXoNgrLU",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "success",
+          "explorer": "https://testnet.nearblocks.io/txns/9J4YdF61gJe6dYgKf2CfwkK8HJQzAzBsxLa4NXoNgrLU"
+        },
+        {
+          "label": "A repeated settlement is refused",
+          "txHash": "AuEijyQuAKZ6LyyHpH2MyCnRgbChHcdmhKqackZqEZLh",
+          "signer": "coordinator.backstop-6501bb.testnet",
+          "outcome": "refused ERR_ALREADY_SETTLED",
+          "explorer": "https://testnet.nearblocks.io/txns/AuEijyQuAKZ6LyyHpH2MyCnRgbChHcdmhKqackZqEZLh"
+        }
+      ],
+      "primaryExit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "ledgerState": "FAILURE_SETTLED",
+      "intentQuotes": []
+    }
+  ]
+}

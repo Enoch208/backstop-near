@@ -7,6 +7,7 @@ import {
   chainOptionsFromEnv,
   explorerTx,
   finalizeSuccess,
+  finalizeFailure,
   oneClickQuoter,
   getLedger,
   registerTeeSigner,
@@ -17,6 +18,7 @@ import { formatNear, near, toYocto } from "@backstop/shared";
 import { signerRecord, type Attestation } from "@backstop/tee";
 import { apiClient } from "@backstop/workers";
 import { capture } from "./capture.js";
+import { writeDemoReport, type DemoReportInput } from "./demo-report.js";
 import { checked, confirmKill, deliver, demoManifest, demoOptions } from "./repair-demo.js";
 import {
   setUpTokenDemo,
@@ -36,6 +38,8 @@ if (options.task !== undefined && model === null) {
 if (options.output !== undefined && existsSync(options.output)) {
   throw new Error("--output must point to a new file");
 }
+if (options.report !== undefined && existsSync(options.report))
+  throw new Error("--report must point to a new file");
 const out = (line: string) => process.stdout.write(`${line}\n`);
 const startedAt = Date.now();
 const stamp = () => `+${((Date.now() - startedAt) / 1_000).toFixed(1).padStart(5, " ")}s`;
@@ -81,6 +85,7 @@ if (process.argv.includes("--intents")) {
     refundTo: chain?.contract.accountId ?? "backstop-vault.near",
   };
 }
+let finalReport: DemoReportInput | undefined;
 if (chain !== null) {
   runtime.chain = chainBridge(chain.network, chain.parties, ({ step, diverged }) => {
     const outcome = step.call.ok ? "ok" : `refused ${step.call.errorCode ?? ""}`;
@@ -100,10 +105,15 @@ const registerSigners = async (attestation: Attestation, modelName: string) => {
       toHex32(attestation.attestationHash),
     );
     if (call.ok && chain.network === "testnet" && !tokenDemo) {
-      appendTestnetEntry(chain.contract.accountId, "teeSigners", {
-        txHash: call.txHash,
-        ...signerRecord(attestation, signer),
-      });
+      appendTestnetEntry(
+        chain.contract.accountId,
+        "teeSigners",
+        {
+          txHash: call.txHash,
+          ...signerRecord(attestation, signer),
+        },
+        options.recordPath,
+      );
     }
     if (!call.ok && tokenDemo)
       throw new Error(`Token vault refused the attested signer at ${link(call.txHash)}`);
@@ -126,7 +136,9 @@ runtime.workers = supervise(
 const customer = apiClient(api.url, principals.customer);
 const guarantor = apiClient(api.url, principals.guarantor);
 const coordinator = apiClient(api.url, principals.coordinator);
-const recorder = process.argv.includes("--capture") ? capture(customer, taskId, startedAt) : null;
+const recorder = process.argv.includes("--capture")
+  ? capture(customer, taskId, startedAt, options.captureDirectory)
+  : null;
 const tokenWorkers = tokenDemo
   ? tokenDemoWorkers(api.url, taskId, chain, (line) => out(`${stamp()}   ${line}`))
   : [];
@@ -142,10 +154,10 @@ out(
     : `Mode: ${vaultMode}, LIVE AI patches from ${model.model}; real HTTP, signed requests,`,
 );
 out(
-  "real worker processes, a real SIGKILL, the real verifier sandbox, challenge search and ledger.",
+  `Team-controlled worker processes, ${options.fault === "none" ? "no injected outage" : `injected outage: ${options.fault}`}, the real verifier sandbox, challenge search and ledger.`,
 );
 
-const originalManifest = demoManifest(options, taskId, startedAt);
+const originalManifest = demoManifest(options, taskId, Date.now());
 const manifest = tokenDemo
   ? {
       ...originalManifest,
@@ -205,6 +217,19 @@ const killPrimary = async () => {
     coordinator.post("/api/demo/faults", { action: "kill_worker", taskId, agentId: "alpha" }),
     "Kill the primary worker",
   );
+  if (options.fault === "recovery-unavailable") {
+    for (const worker of runtime.workers?.processes() ?? []) {
+      if (worker.taskId !== taskId || worker.agentId === "alpha" || worker.exit !== null) continue;
+      await checked(
+        coordinator.post("/api/demo/faults", {
+          action: "kill_worker",
+          taskId,
+          agentId: worker.agentId,
+        }),
+        `Inject recovery outage for ${worker.agentId}`,
+      );
+    }
+  }
 };
 const settled = new Promise<string>((resolve, reject) => {
   const following = customer.follow(taskId, (raw) => {
@@ -213,7 +238,12 @@ const settled = new Promise<string>((resolve, reject) => {
     out(
       `${stamp()} v${String(event.version).padStart(2, "0")} ${event.actor.padEnd(26)} ${event.body.type}`,
     );
-    if (event.body.type === "checkpoint_recorded" && event.actor === "alpha" && !killed) {
+    if (
+      options.fault !== "none" &&
+      event.body.type === "checkpoint_recorded" &&
+      event.actor === "alpha" &&
+      !killed
+    ) {
       killed = true;
       void killPrimary().catch(reject);
     }
@@ -239,9 +269,11 @@ const kind = await settled.catch(async (error: unknown) => {
   await stop();
   throw error;
 });
+let artifactHash;
 if (options.task !== undefined && kind === "success") {
   const path = options.output ?? `${taskId}.js`;
   const hash = await deliver(customer, taskId, path);
+  artifactHash = hash;
   out(`${stamp()}     downloaded verified source to ${path} (${hash})`);
 }
 const again = await coordinator.post("/api/demo/faults", { action: "repeat_settlement", taskId });
@@ -270,7 +302,11 @@ if (chain !== null) {
     : null;
   const repeat =
     proof?.duplicate ??
-    (await finalizeSuccess(chain.parties.vault, chain.parties.coordinator, taskId));
+    (await (kind === "success" ? finalizeSuccess : finalizeFailure)(
+      chain.parties.vault,
+      chain.parties.coordinator,
+      taskId,
+    ));
   out(
     `${stamp()}     judge: settle again on NEAR -> refused ${repeat.errorCode ?? "(accepted!)"} ${link(repeat.txHash)}`,
   );
@@ -287,17 +323,22 @@ if (chain !== null) {
       },
     ];
     const killedWorker = runtime.workers.processes().find((worker) => worker.agentId === "alpha");
-    appendTestnetRun(chain.contract.accountId, chain.deployTx, {
-      kind: "live swarm",
-      taskId,
-      steps,
-      extra: {
-        primaryExit: killedWorker?.exit ?? null,
-        ledgerState: ledger?.state ?? null,
-        intentQuotes: runtime.payouts.get(taskId) ?? [],
+    appendTestnetRun(
+      chain.contract.accountId,
+      chain.deployTx,
+      {
+        kind: "live swarm",
+        taskId,
+        steps,
+        extra: {
+          primaryExit: killedWorker?.exit ?? null,
+          ledgerState: ledger?.state ?? null,
+          intentQuotes: runtime.payouts.get(taskId) ?? [],
+        },
       },
-    });
-    out(`${stamp()}     recorded in deployments/testnet.json`);
+      options.recordPath,
+    );
+    out(`${stamp()}     recorded in ${options.recordPath ?? "deployments/testnet.json"}`);
   }
   if (tokenDemo) {
     out(
@@ -307,6 +348,21 @@ if (chain !== null) {
     out(
       `${stamp()}     on-chain ledger: ${ledger?.state ?? "missing"}, in ${formatNear(BigInt(ledger?.total_inflow ?? "0"))} NEAR, confirmed out ${formatNear(BigInt(ledger?.confirmed_outflow ?? "0"))} NEAR`,
     );
+  }
+  if (options.report !== undefined && model !== null) {
+    finalReport = {
+      taskId,
+      client: customer,
+      chain,
+      transactions: (runtime.chain?.log ?? [])
+        .filter((entry) => entry.taskId === taskId)
+        .map((entry) => entry.step),
+      duplicate: repeat,
+      fault: options.fault,
+      model: model.model,
+      ...(artifactHash === undefined ? {} : { artifactHash }),
+      recordedAt: new Date(startedAt).toISOString(),
+    };
   }
 }
 
@@ -326,6 +382,12 @@ if (recorder !== null) {
     recordedAt: new Date(startedAt).toISOString(),
   });
   out(`${stamp()}     captured the run for replay in ${path}`);
+}
+if (finalReport !== undefined && options.report !== undefined) {
+  await writeDemoReport(options.report, finalReport).catch(async (error: unknown) => {
+    await stop();
+    throw error;
+  });
 }
 
 const view = z

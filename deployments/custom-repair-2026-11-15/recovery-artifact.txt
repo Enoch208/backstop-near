@@ -1,0 +1,11 @@
+function replenishment(items) {
+  return items
+    .filter(item => item.active && item.onHand - item.reserved < item.reorderPoint)
+    .map(item => {
+      const available = item.onHand - item.reserved;
+      const packs = Math.max(0, Math.ceil((item.target - available) / item.packSize));
+      return { sku: item.sku, quantity: packs * item.packSize };
+    })
+    .filter(item => item.quantity > 0)
+    .sort((a, b) => a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0);
+}

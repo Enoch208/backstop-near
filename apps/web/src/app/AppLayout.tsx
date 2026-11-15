@@ -12,6 +12,7 @@ const groups: readonly { readonly title: string | null; readonly items: readonly
     title: null,
     items: [
       { label: "Overview", to: "/app", icon: "overview" },
+      { label: "Repair a function", to: "/app/repair", icon: "code" },
       { label: "Mission Control", to: "/app/live", icon: "live" },
       { label: "Runs", to: "/app/runs", icon: "runs" },
     ],
@@ -35,6 +36,7 @@ const outside: readonly {
 ];
 
 const sections: Record<string, string> = {
+  repair: "Repair a function",
   live: "Mission Control",
   runs: "Runs",
   verify: "Verify",

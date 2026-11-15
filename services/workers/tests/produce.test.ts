@@ -106,7 +106,7 @@ describe("live production", () => {
         { baseUrl: model.baseUrl, apiKey: "test", model: "test/model" },
         context,
       ),
-    ).rejects.toThrow("still fails public verification");
+    ).rejects.toThrow(/still fails public verification.*expected .*but got.*failedRetryMarker/u);
     expect(model.calls()).toBe(2);
     expect(prompts[1]).toContain("failedRetryMarker");
     expect(prompts[1]).toContain(digestText(failed));

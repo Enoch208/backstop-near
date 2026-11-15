@@ -8,7 +8,10 @@ export default defineConfig({
   server: {
     port: 5210,
     strictPort: true,
-    proxy: { "/api": "http://127.0.0.1:8840" },
+    proxy: {
+      "/api/repair-jobs": "http://127.0.0.1:8842",
+      "/api": "http://127.0.0.1:8840",
+    },
   },
   preview: { port: 5210, strictPort: true },
   build: { outDir: "dist", assetsInlineLimit: 0 },

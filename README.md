@@ -10,7 +10,7 @@ Backstop coordinates recovery from an agent’s last checkpoint, checks the repl
 
 [Live demo](https://usebackstop.xyz) · [Demo video and launch post on X](https://x.com/dreyethh/status/2121737332801888540) · [Kill an agent yourself](https://usebackstop.xyz/app/live) · [Verify every claim in your browser](https://usebackstop.xyz/app/verify) · [The vault on NEAR testnet](https://testnet.nearblocks.io/address/vault.backstop-6501bb.testnet)
 
-Built for the NEAR Hackathon 2026 · AI Swarms track · every line written during the hackathon (first commit 13 Nov 2026).
+Built for the NEAR Hackathon 2026 · AI Swarms track · first commit 13 Nov 2026. Custom-task pilot improvements dated 15 Nov are post-deadline work.
 
 [![CI](https://github.com/Enoch208/backstop-near/actions/workflows/ci.yml/badge.svg)](https://github.com/Enoch208/backstop-near/actions/workflows/ci.yml) [![Testnet record](https://github.com/Enoch208/backstop-near/actions/workflows/testnet.yml/badge.svg)](https://github.com/Enoch208/backstop-near/actions/workflows/testnet.yml)
 
@@ -65,6 +65,8 @@ Outside agents can also join over MCP with their own keys ([Join over MCP](#join
 
 ## Evidence
 
+- **Post-deadline custom-task pilot (15 Nov):** a real checkpoint recovery settled after 6/6 checks; an unavailable-recovery task paid 0.44 NEAR refund plus 0.10 compensation on testnet. An unstaged task failed and was also compensated; a clarified task then succeeded without an injected outage. All four development runs, including the reporting failure and reconciliation, are disclosed in the [custom-task results](docs/custom-repair-results.md). Team workers and accounts only; this does not replace the benchmark below.
+
 - **Latest matched live-model evaluation:** Backstop delivered **79/80**, quote-aware fixed specialists **80/80**, with zero false acceptances in either arm. Same call, token, quote, funding and outage caps; ten fresh five-function modules, 80 matched pairs. Simulated settlement per correct result was 0.386962 versus 0.380750 NEAR; Backstop was 1.63% more expensive. Operators were team-controlled; there is **no demonstrated routing advantage** in this run. [Frozen protocol, raw results and limitations](benchmarks/BOUNDED-RECOVERY.md).
 - **On NEAR testnet:** 12 recorded runs and 116 transactions, 19 of them attacks or repeats that the vault refused, and 5 AI patches whose enclave signature the vault checked. Every transaction is linked in [`deployments/testnet.json`](deployments/testnet.json).
 - **Scripted fixture comparison against a single agent:** across 32 seeded fault cases, Backstop delivered 19 correct patches and 1 wrong one; a single agent delivered 15 and 8. Wrong acceptance was 5% against 34.8%. Without the paid challenger, wrong deliveries rise from 1 to 12 ([Reliability arena](#reliability-arena)).
@@ -72,6 +74,8 @@ Outside agents can also join over MCP with their own keys ([Join over MCP](#join
 - **Stated limits:** what is simulated, what is centralized and what is unproven is listed under [What is real and what is a fixture](#what-is-real-and-what-is-a-fixture) and [Status and limitations](#status-and-limitations).
 
 ## Try it
+
+**Custom tasks, added after the deadline:** run the [protected local repair pilot](docs/custom-repair.md) to submit your own bounded JavaScript task, use live team workers, download verified output and inspect actual testnet settlement. The static site alone cannot run this service. This is separate from the scripted public demo below.
 
 Nothing to install:
 

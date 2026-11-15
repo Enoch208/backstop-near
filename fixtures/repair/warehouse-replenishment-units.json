@@ -1,0 +1,148 @@
+{
+  "objective": "Repair replenishment so a small warehouse orders the correct whole packs for each active SKU.",
+  "rules": "Input is an array of stock records with unique sku strings, integer onHand, reserved, reorderPoint, target, positive integer packSize, and boolean active. Available stock is onHand minus reserved and may be negative. Include only active records whose available stock is strictly below reorderPoint. Order max(0, ceil((target - available)/packSize)) whole packs; omit zero quantities. Return [{sku, quantity}] sorted by sku ascending. Preserve the input. All numeric results are within the safe integer range. The returned quantity is the number of individual stock units, NOT the number of packs: multiply the calculated whole-pack count by packSize. For target 9, available 2 and packSize 4, order 2 packs and return quantity 8.",
+  "source": "function replenishment(items) { return items.map(item => ({ sku: item.sku, quantity: Math.floor((item.target - Math.max(0, item.onHand - item.reserved)) / item.packSize) * item.packSize })); }",
+  "suite": {
+    "suiteId": "warehouse-replenishment-units-v2",
+    "entry": "replenishment",
+    "oracleSource": "function replenishment(items) { const rows = []; for (const item of items) { const available = item.onHand - item.reserved; if (!item.active || available >= item.reorderPoint) continue; const quantity = Math.max(0, Math.ceil((item.target - available) / item.packSize)) * item.packSize; if (quantity > 0) rows.push({sku:item.sku,quantity}); } return rows.sort((a,b) => a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0); }",
+    "cases": [
+      {
+        "id": "empty",
+        "visibility": "public",
+        "input": [],
+        "expected": []
+      },
+      {
+        "id": "inactive",
+        "visibility": "public",
+        "input": [
+          {
+            "sku": "OFF",
+            "onHand": 0,
+            "reserved": 0,
+            "reorderPoint": 4,
+            "target": 12,
+            "packSize": 4,
+            "active": false
+          }
+        ],
+        "expected": []
+      },
+      {
+        "id": "whole-packs",
+        "visibility": "public",
+        "input": [
+          {
+            "sku": "B",
+            "onHand": 2,
+            "reserved": 0,
+            "reorderPoint": 4,
+            "target": 9,
+            "packSize": 4,
+            "active": true
+          }
+        ],
+        "expected": [
+          {
+            "sku": "B",
+            "quantity": 8
+          }
+        ]
+      },
+      {
+        "id": "threshold-equality",
+        "visibility": "held_out",
+        "input": [
+          {
+            "sku": "A",
+            "onHand": 6,
+            "reserved": 2,
+            "reorderPoint": 4,
+            "target": 12,
+            "packSize": 3,
+            "active": true
+          }
+        ],
+        "expected": []
+      },
+      {
+        "id": "negative-available",
+        "visibility": "held_out",
+        "input": [
+          {
+            "sku": "N",
+            "onHand": 1,
+            "reserved": 5,
+            "reorderPoint": 0,
+            "target": 3,
+            "packSize": 2,
+            "active": true
+          }
+        ],
+        "expected": [
+          {
+            "sku": "N",
+            "quantity": 8
+          }
+        ]
+      },
+      {
+        "id": "sort-and-zero",
+        "visibility": "held_out",
+        "input": [
+          {
+            "sku": "Z",
+            "onHand": 1,
+            "reserved": 0,
+            "reorderPoint": 2,
+            "target": 4,
+            "packSize": 2,
+            "active": true
+          },
+          {
+            "sku": "A",
+            "onHand": 0,
+            "reserved": 1,
+            "reorderPoint": 2,
+            "target": 2,
+            "packSize": 3,
+            "active": true
+          },
+          {
+            "sku": "M",
+            "onHand": 5,
+            "reserved": 0,
+            "reorderPoint": 6,
+            "target": 4,
+            "packSize": 2,
+            "active": true
+          }
+        ],
+        "expected": [
+          {
+            "sku": "A",
+            "quantity": 3
+          },
+          {
+            "sku": "Z",
+            "quantity": 4
+          }
+        ]
+      }
+    ]
+  },
+  "challengeInputs": [
+    [
+      {
+        "sku": "P",
+        "onHand": 1,
+        "reserved": 4,
+        "reorderPoint": 0,
+        "target": 5,
+        "packSize": 3,
+        "active": true
+      }
+    ]
+  ]
+}

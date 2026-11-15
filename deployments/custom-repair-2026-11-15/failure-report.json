@@ -1,0 +1,99 @@
+{
+  "taskId": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+  "state": "FAILURE_SETTLED",
+  "network": "testnet",
+  "mode": "live-ai",
+  "verified": true,
+  "fault": "recovery-unavailable",
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "recordedAt": "2026-11-15T00:13:40.552Z",
+  "vaultId": "vault.backstop-6501bb.testnet",
+  "transactions": [
+    {
+      "txHash": "4U6KfrUnGUSbKvA4P62D1hiDLCL7Ce4maBbDvrn6sPuf",
+      "label": "Customer creates the task and escrows",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "3LcKocm56u11eorjpewdxpLbtJgFs6dShvsQyotiW4Ye",
+      "label": "Customer pays the premium",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "4cinwzMGhxTK1G4jiwQkqGFPy3qvaeypM6TXzGmki78o",
+      "label": "Guarantor bonds the outcome",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "d9oAypiHwP2Zpr7WMHy1cYk8LJCwFBaeZ27U7y2CbD9",
+      "label": "Coordinator commits attempt 1 to alpha",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "GpBmXoyMhH7JE22BzAouNRx5Dzx2Jc2g7BddSPzMiXyY",
+      "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "ACqBrvDqzd22kvhSeyr22oqVvvZjvvyQtcp4vX7ASnEs",
+      "label": "Coordinator finalizes the failure settlement — before deadline; later retried",
+      "ok": false,
+      "refusalExpected": true,
+      "errorCode": "ERR_DEADLINE_NOT_REACHED"
+    },
+    {
+      "txHash": "9J4YdF61gJe6dYgKf2CfwkK8HJQzAzBsxLa4NXoNgrLU",
+      "label": "Coordinator finalizes the failure settlement",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    }
+  ],
+  "ledger": {
+    "task_id": "repair-88996f37-1ec7-4cf6-871c-1fdec48db01a",
+    "state": "FAILURE_SETTLED",
+    "state_version": 10,
+    "total_inflow": "690000000000000000000000",
+    "escrow_available": "0",
+    "premium_available": "0",
+    "bond_available": "0",
+    "bond_consumed": "100000000000000000000000",
+    "pending_outflow": "0",
+    "failed_outflow": "0",
+    "confirmed_outflow": "690000000000000000000000",
+    "confirmed_by_recipient": [
+      {
+        "recipient": "customer.backstop-6501bb.testnet",
+        "amount": "540000000000000000000000"
+      },
+      {
+        "recipient": "guarantor.backstop-6501bb.testnet",
+        "amount": "150000000000000000000000"
+      }
+    ],
+    "compensation": "100000000000000000000000",
+    "customer_refund": "440000000000000000000000"
+  },
+  "duplicateSettlement": {
+    "txHash": "AuEijyQuAKZ6LyyHpH2MyCnRgbChHcdmhKqackZqEZLh",
+    "rejected": true,
+    "errorCode": "ERR_ALREADY_SETTLED"
+  },
+  "teamControlled": true,
+  "reconciliation": {
+    "checkedAt": "2026-11-15T00:14:01.988Z",
+    "mode": "read-only",
+    "previousError": "Worker exited 1. Execution was interrupted. Settlement is not confirmed. An operator must reconcile this task with the testnet vault and complete or trigger its overdue refund before accepting another job.",
+    "previousStatusFile": "interrupted-status-2026-11-15T00-14-00.087Z.json"
+  }
+}

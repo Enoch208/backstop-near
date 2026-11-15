@@ -51,6 +51,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/dist/**",
       "coverage/**",
+      ".backstop/**",
       "apps/web/public/runs/**",
       "contracts/**/target/**",
     ],

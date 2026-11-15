@@ -1,0 +1,111 @@
+{
+  "taskId": "repair-bbd3835f-6d50-4d44-8cc6-2658a9789daf",
+  "state": "SETTLED",
+  "network": "testnet",
+  "mode": "live-ai",
+  "fault": "primary-after-checkpoint",
+  "verified": true,
+  "artifactHash": "sha256:184481ac7dcb8e2ca66ad627cdfdc0584b41c5e551c6c0df01df755b78bfacaa",
+  "evidenceHash": "sha256:88a1d5105410f271edf3a58d5e360049270a8b87039db6005b35449873485f54",
+  "suiteHash": "sha256:45d6f2d4c31b5c000f1e0cfebd8e0631b94eb2042bb21f7a3554e65f76e732cc",
+  "checks": {
+    "passed": 6,
+    "total": 6
+  },
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "recordedAt": "2026-11-15T00:14:15.614Z",
+  "vaultId": "vault.backstop-6501bb.testnet",
+  "transactions": [
+    {
+      "txHash": "495FNxQpRagH3ShuhMH11C9x2apiQTqWJZUjDnbLekcG",
+      "label": "Customer creates the task and escrows",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "9FnmfWxKCYdBeLwMDuDkMzuG5nmf8Kupqi6kQRs6tUD6",
+      "label": "Customer pays the premium",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "Cm95DDPGq2JvE3kVN6xptqq4jMJ1SaYcJA5X1RxXVjwX",
+      "label": "Guarantor bonds the outcome",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "8p5vhNCUsobJCLPyPZT2GKST14h4qBXEpZSFF6KcYYWa",
+      "label": "Coordinator commits attempt 1 to alpha",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "66nwrf2ECzTPJfCjBoyyEaM3KubGanFxd7hs4ma5x5Ua",
+      "label": "Coordinator opens recovery after attempt 1 (LEASE_EXPIRED)",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "28SGDQfbjYx2hydqJrJFpU8hX9qA58fqmRhKdTx2nYEe",
+      "label": "Coordinator commits attempt 2 to beta",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "7xzH4B3TPh6D2jgeNErPyPpMNLJCGetFgPNpmzSAJoK5",
+      "label": "Verifier records ACCEPT for attempt 2; the vault checks the TEE signature of deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    },
+    {
+      "txHash": "9xxki5YWjkX55Cup6JgnuunD8kn4zkVZtG7MXV5SRswp",
+      "label": "Coordinator finalizes the success settlement",
+      "ok": true,
+      "refusalExpected": false,
+      "errorCode": null
+    }
+  ],
+  "ledger": {
+    "task_id": "repair-bbd3835f-6d50-4d44-8cc6-2658a9789daf",
+    "state": "SETTLED",
+    "state_version": 12,
+    "total_inflow": "690000000000000000000000",
+    "escrow_available": "0",
+    "premium_available": "0",
+    "bond_available": "0",
+    "bond_consumed": "0",
+    "pending_outflow": "0",
+    "failed_outflow": "0",
+    "confirmed_outflow": "690000000000000000000000",
+    "confirmed_by_recipient": [
+      {
+        "recipient": "beta.backstop-6501bb.testnet",
+        "amount": "250000000000000000000000"
+      },
+      {
+        "recipient": "customer.backstop-6501bb.testnet",
+        "amount": "190000000000000000000000"
+      },
+      {
+        "recipient": "guarantor.backstop-6501bb.testnet",
+        "amount": "250000000000000000000000"
+      }
+    ],
+    "compensation": "0",
+    "customer_refund": "190000000000000000000000"
+  },
+  "duplicateSettlement": {
+    "txHash": "GCFUPJQrL2jMHCjoaQ4oLrTrhkVPb7L85PVRscUJbk4E",
+    "rejected": true,
+    "errorCode": "ERR_ALREADY_SETTLED"
+  },
+  "teamControlled": true
+}
