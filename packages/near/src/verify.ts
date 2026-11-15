@@ -4,6 +4,7 @@ import { vaultMethods, type RestrictedRole } from "./keys.js";
 import { defaultTestnetRpc } from "./network.js";
 import { readFinalOutcome } from "./journal.js";
 import { teeSignerSchema } from "./tee.js";
+import { matchesTeeRegistration } from "./tee-registration.js";
 import { ledgerViewSchema } from "./wire.js";
 import { ProofProvider } from "./proof-provider.js";
 
@@ -107,18 +108,25 @@ export async function verifyTeeSigner(
   recorded: z.infer<typeof signerRecordSchema>,
   latest: boolean,
 ): Promise<Finding> {
-  const raw = await provider.callFunction({
-    contractId,
-    method: "get_tee_signer",
-    args: { address: recorded.signingAddress },
+  const registration = await provider.viewTransactionStatus({
+    txHash: recorded.txHash,
+    accountId: contractId,
+    waitUntil: "FINAL",
   });
-  const onChain = teeSignerSchema.nullable().parse(raw ?? null);
+  const historical = matchesTeeRegistration(registration, contractId, recorded);
+  const raw = latest
+    ? await provider.callFunction({
+        contractId,
+        method: "get_tee_signer",
+        args: { address: recorded.signingAddress },
+      })
+    : null;
+  const current = teeSignerSchema.nullable().parse(raw ?? null);
   const hash = recorded.attestationHash.replace(/^sha256:/, "");
-  const matches = onChain?.model === recorded.model && onChain.attestation_hash === hash;
   return {
-    ok: latest ? matches : onChain?.model === recorded.model,
+    ok: historical && (!latest || current?.model === recorded.model),
     subject: recorded.signingAddress,
-    detail: `${recorded.signingAddress} is registered on chain for ${recorded.model}${latest ? ` with attestation ${hash.slice(0, 12)}...` : ""}${onChain === null ? " (MISSING)" : ""}`,
+    detail: `${recorded.signingAddress}: finalized registration ${recorded.txHash} ${historical ? "matches" : "DOES NOT MATCH"} model ${recorded.model} and attestation ${hash.slice(0, 12)}...${latest ? `; current model authorization ${current?.model === recorded.model ? "confirmed" : "MISSING OR CHANGED"}` : ""}`,
   };
 }
 

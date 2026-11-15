@@ -42,7 +42,9 @@ Task `repair-4a946b2f-d87a-4af9-8f76-39f8de0011dd` used the explicit-units revis
 
 Across these **four development runs**, two delivered accepted artifacts and two paid refunds and compensation. All four conserved their 0.69 NEAR inflow and refused duplicate settlement. The web client's report schema accepted all four actual reports; both successful downloads matched their hashes and both failed tasks refused artifact download. These deliberately different conditions are not a success-rate benchmark. A separate diagnostic inference call is disclosed above.
 
-Validation of this implementation: `pnpm gate` passed **274 tests in 52 files**, both lint configurations passed, and the production web build passed with the existing bundle-size warning. The original `deployments/testnet.json` and frozen benchmark were preserved.
+CI also exposed an archived-proof assumption: refreshing the same enclave key with a fresh attestation changed its current hash, so the checker incorrectly rejected the older recorded hash. Historical registration verification now binds every recorded address, model and attestation hash to its finalized registration transaction and vault event; current model authorization is checked separately. All six frozen registration records passed a new read-only chain check. No registration was rolled back and no frozen record was edited.
+
+Validation of the final implementation: `pnpm gate` passed **287 tests in 53 files**, including 13 historical-registration regression tests; both lint configurations passed, and the production web build passed with the existing bundle-size warning. The original `deployments/testnet.json` and frozen benchmark were preserved.
 
 ## What this does not establish
 
