@@ -4,7 +4,7 @@ This flow accepts a custom dependency-free JavaScript function, runs team-operat
 
 [Recorded development checks and their limitations](custom-repair-results.md) include actual recovery, compensation and the reporting failure encountered during validation.
 
-The [hosted operating guide](hosted-repair.md) describes the separate worker service, persistent storage, reverse proxy and release procedure.
+The [hosted pilot](https://usebackstop.xyz/app/repair) accepts tasks with an operator-issued access code. The [hosted operating guide](hosted-repair.md) describes the separate worker service, persistent storage, reverse proxy and release procedure.
 
 ## Run locally
 

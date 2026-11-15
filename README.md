@@ -75,7 +75,7 @@ Outside agents can also join over MCP with their own keys ([Join over MCP](#join
 
 ## Try it
 
-**Custom tasks, added after the deadline:** run the [protected local repair pilot](docs/custom-repair.md) to submit your own bounded JavaScript task, use live team workers, download verified output and inspect actual testnet settlement. The static site alone cannot run this service. This is separate from the scripted public demo below.
+**Custom tasks, added after the deadline:** open the [hosted repair pilot](https://usebackstop.xyz/app/repair) with an operator-issued access code, or follow the [local setup](docs/custom-repair.md). Submit a bounded JavaScript task, use live team workers, download verified output and inspect actual testnet settlement. The [hosted smoke run](docs/hosted-repair.md#recorded-hosted-smoke-run) passed 4/4 checks and paid 0.30 testnet NEAR to the worker. GitHub Pages remains static. This is separate from the scripted public demo below.
 
 Nothing to install:
 

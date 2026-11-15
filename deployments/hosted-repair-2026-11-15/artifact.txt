@@ -1,0 +1,16 @@
+function mergeIntervals(ranges) {
+  const sorted = ranges
+    .filter(([s, e]) => s < e)
+    .map(([s, e]) => [s, e])
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const result = [];
+  for (const [s, e] of sorted) {
+    const last = result[result.length - 1];
+    if (last && s < last[1]) {
+      if (e > last[1]) last[1] = e;
+    } else {
+      result.push([s, e]);
+    }
+  }
+  return result;
+}

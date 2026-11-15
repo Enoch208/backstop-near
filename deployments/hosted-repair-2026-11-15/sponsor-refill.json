@@ -1,0 +1,9 @@
+{
+  "network": "testnet",
+  "purpose": "Recycle team-controlled beta funds into the hosted pilot sponsor; separate from task settlement",
+  "from": "beta.backstop-6501bb.testnet",
+  "to": "backstop-6501bb.testnet",
+  "amountYocto": "1000000000000000000000000",
+  "txHash": "4EwR4cPBzhnZhT8SKYWmqMs2LWYxAWeZJmj35NCWSqVb",
+  "confirmed": true
+}

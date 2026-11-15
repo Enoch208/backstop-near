@@ -1,0 +1,85 @@
+{
+  "checkedAt": "2026-11-15T00:48:29.182Z",
+  "deployedCommit": "37bfa860156f409491362b539a91978708a0d05e",
+  "https": true,
+  "unauthenticatedStatus": 401,
+  "wrongOriginStatus": 403,
+  "invalidTaskStatus": 400,
+  "duplicateRequestStatus": 200,
+  "coordinatorWriteStatus": 403,
+  "persistedCompletedJobsAfterRestart": 5,
+  "artifactHash": "sha256:d83e24ab09a56cf78cfeb41e47ace9f08263faeaabc674e16c63871962decac9",
+  "ledgerMatchesChain": true,
+  "chainLedger": {
+    "task_id": "repair-915fe2ee-5b7f-4f68-aae1-ad701fe100af",
+    "state": "SETTLED",
+    "state_version": 10,
+    "inflow_escrow": "400000000000000000000000",
+    "inflow_premium": "40000000000000000000000",
+    "inflow_bond": "250000000000000000000000",
+    "total_inflow": "690000000000000000000000",
+    "escrow_available": "0",
+    "premium_available": "0",
+    "bond_available": "0",
+    "max_bond_liability": "250000000000000000000000",
+    "bond_consumed": "0",
+    "outflow_escrow": "400000000000000000000000",
+    "outflow_premium": "40000000000000000000000",
+    "outflow_bond": "250000000000000000000000",
+    "pending_outflow": "0",
+    "failed_outflow": "0",
+    "confirmed_outflow": "690000000000000000000000",
+    "confirmed_by_recipient": [
+      {
+        "recipient": "alpha.backstop-6501bb.testnet",
+        "amount": "300000000000000000000000"
+      },
+      {
+        "recipient": "customer.backstop-6501bb.testnet",
+        "amount": "100000000000000000000000"
+      },
+      {
+        "recipient": "guarantor.backstop-6501bb.testnet",
+        "amount": "290000000000000000000000"
+      }
+    ]
+  },
+  "transactions": [
+    {
+      "ok": true,
+      "subject": "CWR2rK4H2Ku8riGKz7RpyQCMvSH4Gh7efjQtWbaCVZFJ",
+      "detail": "Customer creates the task and escrows: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "7qc1qbpwvRPiRLYtcF7KVGvtSfpqNu5z2J9hMHVk7ncL",
+      "detail": "Customer pays the premium: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "F9dGbMeCk3HxsF6uEXyDa5gv36SCywyGMDuwAzbNC4SP",
+      "detail": "Guarantor bonds the outcome: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "E2iDXXLiSQYdBgVR9cnS9somFFdkadYzywLcUdQLRRD1",
+      "detail": "Coordinator commits attempt 1 to alpha: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "DvMivi5FZj2WYjt8yuYjEisusHGi6xR8ruLHXUpvcs8c",
+      "detail": "Verifier records ACCEPT for attempt 1; the vault checks the TEE signature of deepseek-ai/DeepSeek-V4.1-Flash-1017: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "ALhD69pGprKa7NFzc1SZaeuN9heZTStj7iUnupot29Kd",
+      "detail": "Coordinator finalizes the success settlement: recorded success, chain says success"
+    },
+    {
+      "ok": true,
+      "subject": "27BHptvub14XgxSQy8Toq4JcYQY4Mt8n3KZjtGDbpU4h",
+      "detail": "A repeated settlement is refused: recorded refused ERR_ALREADY_SETTLED, chain says refused ERR_ALREADY_SETTLED"
+    }
+  ],
+  "teamControlled": true
+}
